@@ -13,6 +13,7 @@ class DocstringStyle(str, Enum):
     google = "google"
     numpy = "numpy"
     sphinx = "sphinx"
+    epydoc = "epydoc"
 
 
 SUPPORTED_STYLES = {DocstringStyle.google}

@@ -95,6 +95,3 @@ EPYDOC_PLAIN_TAGS = frozenset(
     }
 )
 EPYDOC_TAGS = EPYDOC_ITEM_TAGS | EPYDOC_PLAIN_TAGS
-
-# pydoc is a documentation viewer, not a docstring format.
-# It has no distinct section keywords and renders whatever is in the docstring.
