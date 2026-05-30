@@ -14,12 +14,15 @@ class DocstringSectionFormatter:
     """Formats the content sections of a docstring into the Google Docstring format."""
 
     def __init__(self, line_length: int, current_indent: str, indent_unit: str) -> None:
-        """Initialises the DocstringSectionFormatter.
+        """
+        Initialises the DocstringSectionFormatter.
 
         Args:
+            line_length (int): Maximum characters per line including indentation.
             current_indent (str): The accumulated indentation string at the current nesting level.
+            indent_unit (str): The indentation unit string used in the source file.
         """
-        self.line_length = line_length
+        self._line_length = line_length
         self._current_indent = current_indent
         self._indent_unit = indent_unit
         self._indent_length = len(self._indent_unit)
@@ -38,7 +41,7 @@ class DocstringSectionFormatter:
             formatted (str): The wrapped paragraph string.
         """
         normalized = re.sub(r"\s+", " ", paragraph.strip())
-        width = self.line_length - len(self._current_indent)
+        width = self._line_length - len(self._current_indent)
         lines = textwrap.wrap(
             normalized,
             width=width,
@@ -67,13 +70,11 @@ class DocstringSectionFormatter:
             formatted (str): The wrapped paragraph string.
         """
         normalized = re.sub(r"\s+", " ", paragraph.strip())
-        wrap_width = self.line_length - len(self._current_indent) - self._indent_length
+        wrap_width = self._line_length - len(self._current_indent) - self._indent_length
         lines = textwrap.wrap(normalized, width=wrap_width)
 
         line_separator = "\n" + self._current_indent + self._indent_unit
         formatted = line_separator.join(lines)
-
-        return formatted
 
         return formatted
 
@@ -90,7 +91,7 @@ class DocstringSectionFormatter:
         Returns:
             formatted (str): The formatted item string with correct indentation.
         """
-        wrap_width = self.line_length - len(self._current_indent) - self._indent_length
+        wrap_width = self._line_length - len(self._current_indent) - self._indent_length
         lines = textwrap.wrap(
             item_text.strip(), width=wrap_width, subsequent_indent=self._indent_unit
         )

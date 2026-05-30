@@ -28,7 +28,7 @@ class DocstringVisitor(cst.CSTTransformer):
             line_length (int): Maximum characters per line including indentation and/or triple
                 quotes.
         """
-        self.line_length = line_length
+        self._line_length = line_length
         self._current_indent = ""
         self._indent_unit = "    "
 
@@ -98,7 +98,7 @@ class DocstringVisitor(cst.CSTTransformer):
                 delimiters.
         """
         section_formatter = DocstringSectionFormatter(
-            line_length=self.line_length,
+            line_length=self._line_length,
             current_indent=self._current_indent,
             indent_unit=self._indent_unit,
         )
@@ -134,7 +134,7 @@ class DocstringVisitor(cst.CSTTransformer):
             len(self._current_indent)
             + len(normalized_content)
             + 2 * DOCSTRING_DELIMITER_LENGTH
-            <= self.line_length
+            <= self._line_length
         )
 
         if fits_on_one_line and not is_deliberately_multiline:
@@ -164,13 +164,8 @@ class DocstringVisitor(cst.CSTTransformer):
             DOCSTRING_DELIMITER_LENGTH:-DOCSTRING_DELIMITER_LENGTH
         ].strip()
 
-        # print(raw_string_value)
-        # print(repr(content))
-
         # Build and apply raw string
         new_raw = self._build_raw_docstring(content=content)
-
-        # print("\n")
 
         # Update node
         new_string_node = cst.SimpleString(new_raw)
