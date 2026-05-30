@@ -21,7 +21,7 @@ def test_module_docstring_too_long() -> None:
     expected_code = read_fixture("formatted", "all_docstring_types.py")
 
     input_tree = cst.parse_module(source=input_code)
-    modified_tree = input_tree.visit(DocstringVisitor())
+    modified_tree = input_tree.visit(DocstringVisitor(line_length=100))
 
     assert modified_tree.code == expected_code
 
@@ -32,6 +32,6 @@ def test_module_docstring_too_short() -> None:
     expected_code = read_fixture("formatted", "all_docstring_types.py")
 
     input_tree = cst.parse_module(source=input_code)
-    modified_tree = input_tree.visit(DocstringVisitor())
+    modified_tree = input_tree.visit(DocstringVisitor(line_length=100))
 
     assert modified_tree.code == expected_code
