@@ -5,8 +5,8 @@ import textwrap
 
 from src.docstring_tailor.constants import (
     DOCSTRING_DELIMITER_LENGTH,
-    ITEM_SECTIONS,
-    PLAIN_SECTIONS,
+    GOOGLE_ITEM_SECTIONS,
+    GOOGLE_PLAIN_SECTIONS,
 )
 
 
@@ -14,8 +14,7 @@ class DocstringSectionFormatter:
     """Formats the content sections of a docstring into the Google Docstring format."""
 
     def __init__(self, line_length: int, current_indent: str, indent_unit: str) -> None:
-        """
-        Initialises the DocstringSectionFormatter.
+        """Initialises the DocstringSectionFormatter.
 
         Args:
             line_length (int): Maximum characters per line including indentation.
@@ -191,10 +190,10 @@ class DocstringSectionFormatter:
         """
         first_line = section.split("\n")[0].strip().rstrip(":")
 
-        if first_line in ITEM_SECTIONS:
+        if first_line in GOOGLE_ITEM_SECTIONS:
             return self._format_item_section(section_name=first_line, section=section)
 
-        if first_line in PLAIN_SECTIONS:
+        if first_line in GOOGLE_PLAIN_SECTIONS:
             section_content = "\n".join(section.split("\n")[1:])
             return (
                 first_line
