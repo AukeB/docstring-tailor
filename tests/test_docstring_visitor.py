@@ -1,27 +1,37 @@
 """Tests for DocstringVisitor."""
 
+from pathlib import Path
+
 import libcst as cst
 
 from src.docstring_tailor.docstring_visitor import DocstringVisitor
-from tests.mock_data.mock_data import (
-    MODULE_DOCSTRING_NOT_SAME_LINE_EXPECTED,
-    MODULE_DOCSTRING_NOT_SAME_LINE_INPUT,
-    MODULE_DOCSTRING_TOO_LONG_EXPECTED,
-    MODULE_DOCSTRING_TOO_LONG_INPUT,
-)
+
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
+
+
+def read_fixture(*path_parts: str) -> str:
+    """Reads a fixture file and returns its contents."""
+    path = FIXTURES_DIR.joinpath(*path_parts)
+    return path.read_text(encoding="utf-8")
 
 
 def test_module_docstring_too_long() -> None:
-    """Tests that a module docstring exceeding the line length is wrapped correctly."""
-    input_tree = cst.parse_module(source=MODULE_DOCSTRING_TOO_LONG_INPUT)
+    """Tests that overly long docstrings are formatted correctly."""
+    input_code = read_fixture("raw", "all_docstring_types_too_long.py")
+    expected_code = read_fixture("formatted", "all_docstring_types.py")
+
+    input_tree = cst.parse_module(source=input_code)
     modified_tree = input_tree.visit(DocstringVisitor())
 
-    assert modified_tree.code == MODULE_DOCSTRING_TOO_LONG_EXPECTED
+    assert modified_tree.code == expected_code
 
 
-def test_module_docstring_not_same_line() -> None:
-    """Tests that a module docstring not starting on the same line as the triple quotes is fixed."""
-    input_tree = cst.parse_module(source=MODULE_DOCSTRING_NOT_SAME_LINE_INPUT)
+def test_module_docstring_too_short() -> None:
+    """Tests that short docstrings are formatted correctly."""
+    input_code = read_fixture("raw", "all_docstring_types_too_short.py")
+    expected_code = read_fixture("formatted", "all_docstring_types.py")
+
+    input_tree = cst.parse_module(source=input_code)
     modified_tree = input_tree.visit(DocstringVisitor())
 
-    assert modified_tree.code == MODULE_DOCSTRING_NOT_SAME_LINE_EXPECTED
+    assert modified_tree.code == expected_code
