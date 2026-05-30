@@ -1,0 +1,34 @@
+[project]
+name = "template-repo"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "logging>=0.4.9.6",
+    "pydantic>=2.12.3",
+    "pygame>=2.6.1",
+    "pyyaml>=6.0.3",
+]
+
+[dependency-groups]
+dev = [
+    "prek>=0.3.8",
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.11.6",
+    "ty>=0.0.29",
+]
+
+[tool.ruff.lint]
+select = [
+    "I",    # isort-style import sorting
+    "ANN",  # annotation rules
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
