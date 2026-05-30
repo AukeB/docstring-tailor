@@ -1,56 +1,26 @@
-"""Module for running the main repository workflow."""
+"""Main module"""
+
+import libcst as cst
+
+from src.docstring_tailor.docstring_visitor import DocstringVisitor
+from src.docstring_tailor.constants import FILE_PATH_INPUT, FILE_PATH_OUTPUT, ENCODING, STYLE
 
 
-def main() -> None:
-    """
-    Load configuration and print the loaded settings.
+def main():
+    """Main function"""
+    if STYLE != "Google":
+        raise ValueError("Unsupported docstring format detected.")
 
-    1. Instantiate ConfigManager and load the config file.
-    2. Print the loaded configuration as YAML.
-    """
-    import yaml
+    # Input
+    input_data = FILE_PATH_INPUT.read_text(encoding=ENCODING)
+    input_tree = cst.parse_module(source=input_data)
 
-    from src.my_project.config_manager import ConfigManager
+    # Process
+    modified_tree = input_tree.visit(DocstringVisitor())
 
-    manager = ConfigManager()
-    config = manager.load_config_file()
-
-    print("Loaded config:")
-    print(yaml.safe_dump(config.model_dump(), sort_keys=False, default_flow_style=False))
-
-
-def main_with_pygame_initialisation() -> None:
-    """
-    Load configuration and launch a scaled pygame window.
-
-    1. Instantiate ConfigManager and load the config file.
-    2. Initialise pygame and resolve window dimensions from screen size.
-    3. Create the display surface and run the event loop until the window is closed.
-    """
-    import pygame as pg
-
-    from src.my_project.config_manager import ConfigManager
-    from src.my_project.utils.utils_pygame import get_window_size_from_screen_resolution
-
-    # Config
-    manager = ConfigManager()
-    manager.load_config_file()
-
-    # Pygame init
-    pg.init()
-    width, height = get_window_size_from_screen_resolution()
-    
-    pg.display.set_mode((width, height))
-    pg.display.set_caption("my_project")
-
-    # Event loop
-    running: bool = True
-    while running:
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                running = False
-
-    pg.quit()
+    # Output
+    output_data = modified_tree.code
+    FILE_PATH_OUTPUT.write_text(output_data, encoding=ENCODING)
 
 
 if __name__ == "__main__":
