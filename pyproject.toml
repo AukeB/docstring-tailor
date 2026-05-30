@@ -31,3 +31,9 @@ known-first-party = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+docstring_tailor = "src.docstring_tailor.main:app"
