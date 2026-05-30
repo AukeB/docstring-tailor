@@ -15,12 +15,12 @@ from src.docstring_tailor.cli_config import (
     SUPPORTED_STYLES,
     DocstringStyle,
 )
-
 from src.docstring_tailor.constants import ENCODING
-from src.docstring_tailor.utils import collect_python_files, validate_paths
 from src.docstring_tailor.docstring_visitor import DocstringVisitor
+from src.docstring_tailor.utils import collect_python_files, load_config, validate_paths
 
 app = typer.Typer()
+
 
 @app.command()
 def main(
@@ -29,18 +29,18 @@ def main(
         typer.Argument(help="Files or directories to process. Defaults to 'src/'."),
     ] = None,
     style: Annotated[
-        DocstringStyle,
+        DocstringStyle | None,
         typer.Option("--style", help="Docstring style to format to."),
-    ] = DEFAULT_STYLE,
+    ] = None,
     line_length: Annotated[
-        int,
+        int | None,
         typer.Option(
             "--line-length",
             help=f"Maximum line length. Must be between {LINE_LENGTH_MIN} and {LINE_LENGTH_MAX}.",
             min=LINE_LENGTH_MIN,
             max=LINE_LENGTH_MAX,
         ),
-    ] = LINE_LENGTH_DEFAULT,
+    ] = None,
 ) -> None:
     """
     Formats Python docstrings in the given files or directories to the specified style.
@@ -50,27 +50,29 @@ def main(
 
     Args:
         paths (list[Path] | None): Files or directories to process. Defaults to 'src/'.
-        style (DocstringStyle): The docstring style to format to.
-        line_length (int): The maximum line length to wrap docstrings to.
+        style (DocstringStyle | None): The docstring style to format to.
+        line_length (int | None): The maximum line length to wrap docstrings to.
     """
-    if paths is None:
-        paths = [Path(p) for p in DEFAULT_PATHS]
+    # Resolve configuration with priority: CLI argument > config file > built-in default.
+    file_config = load_config()
+    resolved_paths = paths or [Path(p) for p in DEFAULT_PATHS]
+    resolved_style = style or DocstringStyle(file_config.get("style", DEFAULT_STYLE.value))
+    resolved_line_length = line_length or file_config.get("line-length", LINE_LENGTH_DEFAULT)
 
-    if style not in SUPPORTED_STYLES:
+    if resolved_style not in SUPPORTED_STYLES:
         typer.echo(
-            f"Style '{style.value}' is not yet supported. "
-            f"Currently supported: {', '.join(f'{s.value}' for s in SUPPORTED_STYLES)}."
+            f"Style '{resolved_style.value}' is not yet supported. "
+            f"Currently supported: {', '.join(s.value for s in SUPPORTED_STYLES)}."
         )
         raise typer.Exit(code=1)
 
-    validate_paths(paths=paths)
-
-    python_files = collect_python_files(paths=paths)
+    validate_paths(paths=resolved_paths)
+    python_files = collect_python_files(paths=resolved_paths)
 
     for file_path in python_files:
         input_data = file_path.read_text(encoding=ENCODING)
         input_tree = cst.parse_module(source=input_data)
-        modified_tree = input_tree.visit(DocstringVisitor(line_length=line_length))
+        modified_tree = input_tree.visit(DocstringVisitor(line_length=resolved_line_length))
         file_path.write_text(modified_tree.code, encoding=ENCODING)
 
 

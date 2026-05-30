@@ -5,6 +5,36 @@ from pathlib import Path
 import typer
 
 
+def load_config() -> dict:
+    """
+    Loads configuration from docstring_tailor.toml or pyproject.toml.
+
+    Walks up from the current directory. docstring_tailor.toml takes priority
+    over pyproject.toml if both exist at the same level. Stops at the first
+    file found containing docstring_tailor configuration.
+
+    Returns:
+        config (dict): Configuration settings, or an empty dict if none found.
+    """
+    import tomllib
+
+    for directory in [Path.cwd(), *Path.cwd().parents]:
+        tailor_config = directory / "docstring_tailor.toml"
+        if tailor_config.exists():
+            with open(tailor_config, "rb") as file:
+                return tomllib.load(file)
+
+        pyproject = directory / "pyproject.toml"
+        if pyproject.exists():
+            with open(pyproject, "rb") as file:
+                data = tomllib.load(file)
+            tool_config = data.get("tool", {}).get("docstring_tailor", {})
+            if tool_config:
+                return tool_config
+
+    return {}
+
+
 def collect_python_files(paths: list[Path]) -> list[Path]:
     """Collects all Python files from a list of file and/or directory paths.
 
