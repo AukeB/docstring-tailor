@@ -25,13 +25,13 @@ class DocstringSectionFormatter:
         self._indent_unit = indent_unit
         self._indent_length = len(self._indent_unit)
 
-    def _format_plain_paragraph(self, paragraph: str) -> str:
+    def _format_opening_paragraph(self, paragraph: str) -> str:
         """
-        Formats a plain text paragraph by wrapping it to the configured line length.
+        Formats a plain text paragraph that starts immediately after the opening triple quotes.
 
-        Normalises all internal whitespace to a single space before wrapping, so that
-        lines that are too short are correctly joined rather than merged with their
-        original indentation intact.
+        Uses initial_indent to simulate the triple quotes consuming space on the first line,
+        ensuring it wraps correctly. The placeholder is stripped before returning since the
+        actual triple quotes are prepended by the caller.
 
         Args:
             paragraph (str): A plain text paragraph.
@@ -39,13 +39,45 @@ class DocstringSectionFormatter:
         Returns:
             formatted (str): The wrapped paragraph string.
         """
-        wrap_width = (
-            LINE_LENGTH - DOCSTRING_DELIMITER_LENGTH - len(self._current_indent)
-        )
         normalized = re.sub(r"\s+", " ", paragraph.strip())
-        lines = textwrap.wrap(normalized, width=wrap_width)
+        width = LINE_LENGTH - len(self._current_indent)
+        lines = textwrap.wrap(
+            normalized,
+            width=width,
+            initial_indent=" " * DOCSTRING_DELIMITER_LENGTH,
+            subsequent_indent="",
+        )
+
+        if lines:
+            lines[0] = lines[0][DOCSTRING_DELIMITER_LENGTH:]
+
         line_separator = "\n" + self._current_indent
         formatted = line_separator.join(lines)
+
+        return formatted
+
+    def _format_plain_paragraph(self, paragraph: str) -> str:
+        """
+        Formats a plain text paragraph within an indented section body.
+
+        Used for sections such as Note: and Example: where the body is indented
+        one level beyond the section header. All lines including continuations
+        are at the same indentation level.
+
+        Args:
+            paragraph (str): A plain text paragraph.
+
+        Returns:
+            formatted (str): The wrapped paragraph string.
+        """
+        normalized = re.sub(r"\s+", " ", paragraph.strip())
+        wrap_width = LINE_LENGTH - len(self._current_indent) - self._indent_length
+        lines = textwrap.wrap(normalized, width=wrap_width)
+
+        line_separator = "\n" + self._current_indent + self._indent_unit
+        formatted = line_separator.join(lines)
+
+        return formatted
 
         return formatted
 
@@ -180,7 +212,7 @@ class DocstringSectionFormatter:
                 + self._format_plain_paragraph(paragraph=section_content)
             )
 
-        return self._format_plain_paragraph(paragraph=section)
+        return self._format_opening_paragraph(paragraph=section)
 
     def format(self, content: str) -> str:
         """

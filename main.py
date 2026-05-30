@@ -24,7 +24,7 @@ def main():
 
         # Output
         output_data = modified_tree.code
-        output_file_path = Path(str(input_file_path).replace("input", "output"))
+        output_file_path = Path(str(input_file_path).replace("input", "input"))
         output_file_path.write_text(output_data, encoding=ENCODING)
 
 
