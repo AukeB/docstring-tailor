@@ -4,6 +4,7 @@ __pycache__/
 .ruff_cache/
 .ipynb_checkpoints/
 artifacts/
+data/
 
 # Virtual environments
 venv/
