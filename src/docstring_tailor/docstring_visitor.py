@@ -1,7 +1,6 @@
 """Module providing functionality to format Python docstrings into the Google Docstring format."""
 
 import re
-import textwrap
 
 import libcst as cst
 
@@ -29,6 +28,16 @@ class DocstringVisitor(cst.CSTTransformer):
         at any nesting level.
         """
         self._current_indent = ""
+        self._indent_unit = "    "
+
+    def visit_Module(self, node: cst.Module) -> None:
+        """
+        Captures the default indentation unit from the module on first entry.
+
+        Args:
+            node (cst.Module): The root module node.
+        """
+        self._indent_unit = node.default_indent
 
     def _is_docstring(self, node: cst.SimpleStatementLine) -> bool:
         """
@@ -49,20 +58,14 @@ class DocstringVisitor(cst.CSTTransformer):
 
         return is_docstring
 
-    def visit_IndentedBlock(self, node: cst.IndentedBlock) -> bool:
+    def visit_IndentedBlock(self, node: cst.IndentedBlock) -> None:
         """
         Tracks the current indentation level when entering an indented block.
 
         Args:
             node (cst.IndentedBlock): The indented block node being visited.
-
-        Returns:
-            result (bool): Always True, to continue traversal into the block.
         """
-        indent = node.indent
-        self._current_indent += indent if isinstance(indent, str) else "    "
-
-        return True
+        self._current_indent += self._indent_unit
 
     def leave_IndentedBlock(
         self,
@@ -79,9 +82,7 @@ class DocstringVisitor(cst.CSTTransformer):
         Returns:
             updated_node (cst.IndentedBlock): The updated node, unchanged.
         """
-        indent = original_node.indent
-        level = indent if isinstance(indent, str) else "    "
-        self._current_indent = self._current_indent[: -len(level)]
+        self._current_indent = self._current_indent[: -len(self._indent_unit)]
 
         return updated_node
 
@@ -99,8 +100,9 @@ class DocstringVisitor(cst.CSTTransformer):
             raw (str): The formatted raw multi-line docstring string including the triple quote delimiters.
         """
         section_formatter = DocstringSectionFormatter(
-            current_indent=self._current_indent
+            current_indent=self._current_indent, indent_unit=self._indent_unit
         )
+
         joined_content = section_formatter.format(content=content)
 
         raw = (
@@ -128,7 +130,10 @@ class DocstringVisitor(cst.CSTTransformer):
             raw (str): The formatted raw docstring string including the triple quote delimiters.
         """
         is_deliberately_multiline = bool(re.search(r"\n\s*\n", content))
-        fits_on_one_line = len(content) + 2 * DOCSTRING_DELIMITER_LENGTH <= LINE_LENGTH
+        fits_on_one_line = (
+            len(self._current_indent) + len(content) + 2 * DOCSTRING_DELIMITER_LENGTH
+            <= LINE_LENGTH
+        )
 
         if fits_on_one_line and not is_deliberately_multiline:
             raw = DOCSTRING_DELIMITER + content + DOCSTRING_DELIMITER
@@ -158,13 +163,13 @@ class DocstringVisitor(cst.CSTTransformer):
             DOCSTRING_DELIMITER_LENGTH:-DOCSTRING_DELIMITER_LENGTH
         ].strip()
 
-        print(raw_string_value)
-        print(repr(content))
+        # print(raw_string_value)
+        # print(repr(content))
 
         # Build and apply raw string
         new_raw = self._build_raw_docstring(content=content)
 
-        print("\n")
+        # print("\n")
 
         # Update node
         new_string_node = cst.SimpleString(new_raw)

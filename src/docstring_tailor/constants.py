@@ -18,6 +18,3 @@ SECTION_HEADERS = ITEM_SECTIONS | PLAIN_SECTIONS
 # Runtime parameters.
 LINE_LENGTH: int = 100  # Maximum characters per line (defaults to `100`).
 STYLE: str = "Google"  # Docstring format style. Options: ["Google"].
-IN_PLACE: bool = (
-    True  # Whether to write files back or just print the diff (defaults to 'True')
-)

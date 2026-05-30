@@ -14,7 +14,7 @@ from src.docstring_tailor.constants import (
 class DocstringSectionFormatter:
     """Formats the content sections of a docstring into the Google Docstring format."""
 
-    def __init__(self, current_indent: str) -> None:
+    def __init__(self, current_indent: str, indent_unit: str) -> None:
         """
         Initialises the DocstringSectionFormatter.
 
@@ -22,6 +22,8 @@ class DocstringSectionFormatter:
             current_indent (str): The accumulated indentation string at the current nesting level.
         """
         self._current_indent = current_indent
+        self._indent_unit = indent_unit
+        self._indent_length = len(self._indent_unit)
 
     def _format_plain_paragraph(self, paragraph: str) -> str:
         """
@@ -61,19 +63,12 @@ class DocstringSectionFormatter:
         Returns:
             formatted (str): The formatted item string with correct indentation.
         """
-        # 4 accounts for the one indent level of the item relative to the section header.
-        wrap_width = (
-            LINE_LENGTH - len(self._current_indent) - 4
-        )  # TODO: Same here, would be perfect if we can determine the number of spaces a single indentation is at the beginning of the program.
+        wrap_width = LINE_LENGTH - len(self._current_indent) - self._indent_length
         lines = textwrap.wrap(
-            item_text.strip(),
-            width=wrap_width,
-            # Adds 4 spaces to continuation lines; when joined with the item separator
-            # (\n + current_indent + 4 spaces), this produces the correct double-indent.
-            subsequent_indent="    ",  # TODO: Same here.
+            item_text.strip(), width=wrap_width, subsequent_indent=self._indent_unit
         )
 
-        line_separator = "\n" + self._current_indent + "    "  # TODO: Same here.
+        line_separator = "\n" + self._current_indent + self._indent_unit
         formatted = line_separator.join(lines)
 
         return formatted
@@ -93,12 +88,11 @@ class DocstringSectionFormatter:
             items (list[str]): A list of stripped item strings, one per labelled item.
         """
         lines = [line for line in section_content.split("\n") if line.strip()]
+
         if not lines:
             return []
 
-        base_indent = min(
-            len(line) - len(line.lstrip()) for line in lines
-        )  # TODO: Wondering if this can be done more efficiently using `self._current_indent`.
+        base_indent = min(len(line) - len(line.lstrip()) for line in lines)
 
         items: list[str] = []
         current_item_lines: list[str] = []
@@ -130,7 +124,7 @@ class DocstringSectionFormatter:
             self._format_item(item_text=item_text) for item_text in item_texts
         ]
 
-        item_separator = "\n" + self._current_indent + "    "
+        item_separator = "\n" + self._current_indent + self._indent_unit
         formatted = item_separator.join(formatted_items)
 
         return formatted
@@ -152,8 +146,12 @@ class DocstringSectionFormatter:
         section_content = "\n".join(section.split("\n")[1:])
         formatted_items = self._format_items(section_content=section_content)
         formatted = (
-            section_name + ":\n" + self._current_indent + "    " + formatted_items
-        )  # TODO: This assumes the indentation is 4 spaces, which is the default and recommended value, but could be different based on user preferences.
+            section_name
+            + ":\n"
+            + self._current_indent
+            + self._indent_unit
+            + formatted_items
+        )
 
         return formatted
 
@@ -178,7 +176,7 @@ class DocstringSectionFormatter:
                 first_line
                 + ":\n"
                 + self._current_indent
-                + "    "
+                + self._indent_unit
                 + self._format_plain_paragraph(paragraph=section_content)
             )
 
