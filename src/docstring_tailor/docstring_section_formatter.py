@@ -27,6 +27,10 @@ class DocstringSectionFormatter:
         """
         Formats a plain text paragraph by wrapping it to the configured line length.
 
+        Normalises all internal whitespace to a single space before wrapping, so that
+        lines that are too short are correctly joined rather than merged with their
+        original indentation intact.
+
         Args:
             paragraph (str): A plain text paragraph.
 
@@ -35,8 +39,9 @@ class DocstringSectionFormatter:
         """
         wrap_width = (
             LINE_LENGTH - DOCSTRING_DELIMITER_LENGTH - len(self._current_indent)
-        )  # TODO: For lines that do not have triple quotes (all except first), the line length effectively becomes 97 instead of 100.
-        lines = textwrap.wrap(paragraph.strip(), width=wrap_width)
+        )
+        normalized = re.sub(r"\s+", " ", paragraph.strip())
+        lines = textwrap.wrap(normalized, width=wrap_width)
         line_separator = "\n" + self._current_indent
         formatted = line_separator.join(lines)
 
