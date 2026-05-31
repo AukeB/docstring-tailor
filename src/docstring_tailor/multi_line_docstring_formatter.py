@@ -6,6 +6,7 @@ from collections import namedtuple
 
 from docstring_tailor.constants import (
     DOCSTRING_DELIMITER_LENGTH,
+    GOOGLE_CODE_SECTIONS,
     GOOGLE_ITEM_SECTIONS,
     GOOGLE_PLAIN_SECTIONS,
     GOOGLE_SECTION_HEADERS,
@@ -297,14 +298,18 @@ class MultiLineDocstringFormatter:
                 section_name=section_name, section_body=section_body
             )
 
-        if section_name in GOOGLE_ITEM_SECTIONS:
+        elif section_name in GOOGLE_ITEM_SECTIONS:
             return self._format_item_section(
                 section_name=section_name, section_body=section_body
             )
 
-        return self._format_code_section(
-            section_name=section_name, section_body=section_body
-        )
+        elif section_name in GOOGLE_CODE_SECTIONS:
+            return self._format_code_section(
+                section_name=section_name, section_body=section_body
+            )
+
+        else:
+            raise ValueError(f"Unsupported section_name: {section_name}")
 
     def _format_middle_paragraph(self, paragraph: str) -> str:
         """Formats a plain text paragraph that appears between the opening paragraph and a section.
