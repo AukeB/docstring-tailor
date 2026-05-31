@@ -297,17 +297,14 @@ class MultiLineDocstringFormatter:
             return self._format_plain_section(
                 section_name=section_name, section_body=section_body
             )
-
         elif section_name in GOOGLE_ITEM_SECTIONS:
             return self._format_item_section(
                 section_name=section_name, section_body=section_body
             )
-
         elif section_name in GOOGLE_CODE_SECTIONS:
             return self._format_code_section(
                 section_name=section_name, section_body=section_body
             )
-
         else:
             raise ValueError(f"Unsupported section_name: {section_name}")
 
