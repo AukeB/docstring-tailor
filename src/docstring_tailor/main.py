@@ -85,11 +85,23 @@ if __name__ == "__main__":
     app()
 
 
-"""TODO: - Currently, this code has been written specifically for the 'Google' docstring format.
-Fine for now, but the end state goal is to have the functionality that the user can specify the
-style in the pyproject.toml and that everything formats correctly to that style. The reading from
-pyproject.toml is already there, the biggest effort is in reformatting docstring_section_formatter a
-bit to make it work for all styles. - Check all the parameters in the docstringformatter package to
-see which ones I also want. - Implement feature that you can display the diff in terminal, instead
-of immediately formatting and overwriting the .py files.
+"""TODO:
+
+- Currently, this code has been written specifically for the 'Google' docstring format. Fine for
+now, but the end state goal is to have the functionality that the user can specify the style in the
+pyproject.toml and that everything formats correctly to that style. The reading from pyproject.toml
+is already there, the biggest effort is in reformatting docstring_section_formatter a bit to make it
+work for all styles.
+
+- Check all the parameters in the docstringformatter package to see which ones I also want.
+
+- Implement feature that you can display the diff in terminal, instead of immediately formatting and
+overwriting the .py files.
+
+- Testing. Write more tests. Get to 100% code coverage. Redesign the structure of the 'tests/'
+folder. All tests will be roughly the same, they have an input .py file from the 'raw' folder, which
+will be formatted, and then it should be equal to the content of one of the files in the 'formatted'
+folder. This means we can define a mapping that states which files in the raw folder should be
+identical after formatting to a certain file in the formatted folder. In this way you may only need
+one test function that just iterates over this mapping.
 """
