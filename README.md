@@ -55,8 +55,6 @@ Besides the types, docstrings can occur in two different **forms**.
 9. The docstring for a class should summarize its behavior and list the public methods and instance variables. If the class is intended to be subclassed, and has an additional interface for subclasses, this interface should be listed separately (in the docstring). The class constructor should be documented in the docstring for its __init__ method. Individual methods should be documented by their own docstring.
 10. If a class subclasses another class and its behavior is mostly inherited from that class, its docstring should mention this and summarize the differences.
 
-
-
 ## Formatting operations applied by this tool
 
 **How does this tool detect docstrings?**: All string literals that start with triple double quotes (""") are recognized as docstrings and will potentially be formatted.
@@ -70,8 +68,8 @@ Besides the types, docstrings can occur in two different **forms**.
     - If a docstring exceeds the line length, it will be converted to a multi-line docstring.
 
 **Multi-line docstrings**
-- Regarding the conventions for multi-line docstrings mentioned above, number 2 is applied. This means if the summary line is on the next line, it will enforced on the same line as the opening triple double quotes.
-- Convention number 5 is also enforced, blank lines at the start or end of the docstring are removed.
+- Regarding the conventions for multi-line docstrings mentioned above, number 2 is applied. This means if the summary line is on the next line, it will be enforced on the same line as the opening triple double quotes.
+- Convention number 5 is also enforced, blank lines at the start and end of the docstring are removed.
 - Most of the other conventions are about the content of the docstring, which are not checked by this tool.
 
 Next to that, the layout of the docstring is preserved. For now the focus is on the 'Google' type docstring format, which in its most basic form, looks like this.
@@ -117,6 +115,6 @@ Maintaining this structure, while enforcing a maximum characters per line, means
 
 - If the user starts a new line, even though there is still space on the current line for the next word, it should be corrected and the word should be moved to the current line.
 - If the line is too long, the part that exceed the line limit should be moved to the next line.
-- If the user uses two '\n' values, it means this was a deliberate choice (for example, starting the 'Args' section), and this should be preserved.
+- If the user uses two '\n' values, it means this was a deliberate choice (for example, starting the 'Args' section) and this should be preserved.
 - Single '\n' characters in for example the 'Args' section should be preserved, as each parameter should start on a new line.
-- If the docstring contains an 'Example' or 'Examples' section, the indentation for the code part (indicated with '>>>' and '...') of the examples should be preserved, as this code should be able to be interpreted.
+- If the docstring contains an 'Example' or 'Examples' section, the indentation for the code part and the code itself (indicated with '>>>' and '...') should be untouched, as this code should be able to be interpreted.
