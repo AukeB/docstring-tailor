@@ -18,7 +18,7 @@ def read_fixture(*path_parts: str) -> str:
 def test_module_docstring_too_long() -> None:
     """Tests that overly long docstrings are formatted correctly."""
     input_code = read_fixture("raw", "all_docstring_types_too_long.py")
-    expected_code = read_fixture("formatted", "all_docstring_types.py")
+    expected_code = read_fixture("formatted", "all_docstring_types_100.py")
 
     input_tree = cst.parse_module(source=input_code)
     modified_tree = input_tree.visit(DocstringVisitor(line_length=100))
@@ -29,7 +29,7 @@ def test_module_docstring_too_long() -> None:
 def test_module_docstring_too_short() -> None:
     """Tests that short docstrings are formatted correctly."""
     input_code = read_fixture("raw", "all_docstring_types_too_short.py")
-    expected_code = read_fixture("formatted", "all_docstring_types.py")
+    expected_code = read_fixture("formatted", "all_docstring_types_100.py")
 
     input_tree = cst.parse_module(source=input_code)
     modified_tree = input_tree.visit(DocstringVisitor(line_length=100))
