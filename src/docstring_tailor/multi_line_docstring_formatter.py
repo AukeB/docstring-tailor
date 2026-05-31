@@ -2,6 +2,7 @@
 
 import re
 import textwrap
+from collections import namedtuple
 
 from docstring_tailor.constants import (
     DOCSTRING_DELIMITER_LENGTH,
@@ -9,6 +10,8 @@ from docstring_tailor.constants import (
     GOOGLE_PLAIN_SECTIONS,
     GOOGLE_SECTION_HEADERS,
 )
+
+Section = namedtuple("Section", ["name", "body"])
 
 
 class MultiLineDocstringFormatter:
@@ -385,7 +388,7 @@ class MultiLineDocstringFormatter:
 
         return formatted_preamble
 
-    def _split_content(self, content: str) -> tuple[str, list[tuple[str, str]]]:
+    def _split_content(self, content: str) -> tuple[str, list[Section]]:
         """Splits docstring content into a preamble and a list of named sections.
 
         Scans the content line by line for section headers from GOOGLE_SECTION_HEADERS. Everything
@@ -422,16 +425,7 @@ class MultiLineDocstringFormatter:
             return content, []
 
         preamble = "\n".join(lines[: header_positions[0][0]])
-
-        """Prompt for Claude when I have tokens again: Wondering why you didnt use a dict. Maybe
-        because, of some users have the term Note twice in their docstring (even though that does
-        not make sense), itw ould fail for dicts and not for the current approach with a list of
-        tuples.
-
-        If that's correct, fine, but I think a namedTuple from collections is a slight improvement.
-        Do you agree?
-        """
-        sections: list[tuple[str, str]] = []
+        sections: list[Section] = []
 
         for i, (line_number, section_name) in enumerate(header_positions):
             end = (
@@ -440,7 +434,8 @@ class MultiLineDocstringFormatter:
                 else len(lines)
             )
             section_body = "\n".join(lines[line_number + 1 : end])
-            sections.append((section_name, section_body))
+            section = Section(name=section_name, body=section_body)
+            sections.append(section)
 
         return preamble, sections
 
@@ -465,10 +460,10 @@ class MultiLineDocstringFormatter:
         if preamble.strip():
             formatted_parts.append(self._format_preamble(preamble=preamble))
 
-        for section_name, section_body in sections:
+        for section in sections:
             formatted_parts.append(
                 self._format_section(
-                    section_name=section_name, section_body=section_body
+                    section_name=section.name, section_body=section.body
                 )
             )
 
