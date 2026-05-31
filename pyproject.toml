@@ -3,6 +3,7 @@ name = "docstring-tailor"
 version = "0.1.0"
 description = "Automatic formatting of Python docstrings according to PEP 257"
 authors = [{ name = "Auke Bruinsma", email = "afbruinsma@gmail.com" }]
+license = { file = "LICENSE" }
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
