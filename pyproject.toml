@@ -1,11 +1,11 @@
 [project]
 name = "docstring-tailor"
-version = "0.1.0"
+version = "0.1.1"
 description = "Automatic formatting of Python docstrings according to PEP 257"
 authors = [{ name = "Auke Bruinsma", email = "afbruinsma@gmail.com" }]
 license = { file = "LICENSE" }
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "libcst>=1.8.6",
     "logging>=0.4.9.6",
