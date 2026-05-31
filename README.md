@@ -6,7 +6,7 @@ Automatic formatting of Python docstrings according to PEP 257 and a predefined 
 
 Installation with [UV](https://docs.astral.sh/uv/) (recommended)
 ```bash
-uv add docstring-tailor
+uv add --dev docstring-tailor
 ```
 
 Or with pip:
