@@ -2,16 +2,6 @@
 
 Automatic formatting of Python docstrings according to PEP 257 and a predefined maximum number of chacacters per line.
 
-## Examples
-
-### Docstring is too long
-
-![](images/gif_files/too_long.gif)
-
-### Docstring is too short
-
-![](images/gif_files/too_short.gif)
-
 ## Docstring conventions according to PEP 257
 
 See https://peps.python.org/pep-0257/ for the complete document.
