@@ -8,8 +8,8 @@ import typer
 def load_config() -> dict:
     """Loads configuration from docstring_tailor.toml or pyproject.toml.
 
-    Walks up from the current directory. docstring_tailor.toml takes priority over pyproject.toml
-    if both exist at the same level. Stops at the first file found containing docstring_tailor
+    Walks up from the current directory. docstring_tailor.toml takes priority over pyproject.toml if
+    both exist at the same level. Stops at the first file found containing docstring_tailor
     configuration.
 
     Returns:

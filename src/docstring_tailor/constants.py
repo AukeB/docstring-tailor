@@ -8,30 +8,16 @@ DOCSTRING_DELIMITER: str = '"""'
 DOCSTRING_DELIMITER_LENGTH: int = len(DOCSTRING_DELIMITER)
 
 # Google-style docstring section keywords.
-GOOGLE_ITEM_SECTIONS = frozenset(
-    {
-        "Args",
-        "Arguments",
-        "Attributes",
-        "Raises",
-        "Returns",
-        "Yields",
-    }
-)
 GOOGLE_PLAIN_SECTIONS = frozenset(
-    {
-        "Example",
-        "Examples",
-        "Note",
-        "Notes",
-        "References",
-        "See Also",
-        "Todo",
-        "Warning",
-        "Warnings",
-    }
+    {"Note", "Notes", "References", "See Also", "Todo", "Warning", "Warnings"}
 )
-GOOGLE_SECTION_HEADERS = GOOGLE_ITEM_SECTIONS | GOOGLE_PLAIN_SECTIONS
+GOOGLE_ITEM_SECTIONS = frozenset(
+    {"Args", "Arguments", "Attributes", "Raises", "Returns", "Yields"}
+)
+GOOGLE_CODE_SECTIONS = frozenset({"Example", "Examples"})
+GOOGLE_SECTION_HEADERS = (
+    GOOGLE_PLAIN_SECTIONS | GOOGLE_ITEM_SECTIONS | GOOGLE_CODE_SECTIONS
+)
 
 # NumPy-style docstring section keywords.
 NUMPY_ITEM_SECTIONS = frozenset(
