@@ -2,6 +2,61 @@
 
 Automatic formatting of Python docstrings according to PEP 257 and a predefined maximum number of chacacters per line.
 
+## Installation
+
+Installation with [UV](https://docs.astral.sh/uv/) (recommended)
+```bash
+uv add docstring-tailor
+```
+
+Or with pip:
+
+```bash
+pip install docstring-tailor
+```
+
+## Quick start
+
+Run on a single file or directory:
+
+```bash
+uv run docstring_tailor my_file.py
+uv run docstring_tailor my_folder
+```
+Multiple files and/or folders are also accepted. Without a file path or folder path, it will try to find the `src` folder.
+
+The default line length is 100. To customise it:
+
+```bash
+uv run docstring_tailor --line-length 88
+```
+
+You can also set it permanently in your `pyproject.toml` or in `docstring_tailor.toml`:
+
+```toml
+# pyproject.toml
+[tool.docstring_tailor]
+line-length = 88
+```
+
+```toml
+# docstring_tailor.toml
+line-length = 88
+```
+
+You can also set a docstring style, however the only style that is currently supported is [Google](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html). This is also the default style. If you like to be explicit:
+
+```bash
+uv run docstring_tailor --style google
+```
+
+or in your `pyproject.toml`
+
+```toml
+[tool.docstring_tailor]
+style = "google"
+```
+
 ## Docstring conventions according to PEP 257
 
 See https://peps.python.org/pep-0257/ for the complete document.
