@@ -4,11 +4,11 @@ import re
 
 import libcst as cst
 
-from src.docstring_tailor.constants import (
+from docstring_tailor.constants import (
     DOCSTRING_DELIMITER,
     DOCSTRING_DELIMITER_LENGTH,
 )
-from src.docstring_tailor.docstring_section_formatter import DocstringSectionFormatter
+from docstring_tailor.docstring_section_formatter import DocstringSectionFormatter
 
 
 class DocstringVisitor(cst.CSTTransformer):

@@ -6,7 +6,7 @@ from typing import Annotated
 import libcst as cst
 import typer
 
-from src.docstring_tailor.cli_config import (
+from docstring_tailor.cli_config import (
     DEFAULT_PATHS,
     DEFAULT_STYLE,
     LINE_LENGTH_DEFAULT,
@@ -15,9 +15,9 @@ from src.docstring_tailor.cli_config import (
     SUPPORTED_STYLES,
     DocstringStyle,
 )
-from src.docstring_tailor.constants import ENCODING
-from src.docstring_tailor.docstring_visitor import DocstringVisitor
-from src.docstring_tailor.utils import collect_python_files, load_config, validate_paths
+from docstring_tailor.constants import ENCODING
+from docstring_tailor.docstring_visitor import DocstringVisitor
+from docstring_tailor.utils import collect_python_files, load_config, validate_paths
 
 app = typer.Typer()
 
@@ -42,11 +42,10 @@ def main(
         ),
     ] = None,
 ) -> None:
-    """
-    Formats Python docstrings in the given files or directories to the specified style.
+    """Formats Python docstrings in the given files or directories to the specified style.
 
-    Processes all .py files found at the provided paths, reformatting their docstrings
-    in place. Directories are searched recursively.
+    Processes all .py files found at the provided paths, reformatting their docstrings in place.
+    Directories are searched recursively.
 
     Args:
         paths (list[Path] | None): Files or directories to process. Defaults to 'src/'.
@@ -56,8 +55,12 @@ def main(
     # Resolve configuration with priority: CLI argument > config file > built-in default.
     file_config = load_config()
     resolved_paths = paths or [Path(p) for p in DEFAULT_PATHS]
-    resolved_style = style or DocstringStyle(file_config.get("style", DEFAULT_STYLE.value))
-    resolved_line_length = line_length or file_config.get("line-length", LINE_LENGTH_DEFAULT)
+    resolved_style = style or DocstringStyle(
+        file_config.get("style", DEFAULT_STYLE.value)
+    )
+    resolved_line_length = line_length or file_config.get(
+        "line-length", LINE_LENGTH_DEFAULT
+    )
 
     if resolved_style not in SUPPORTED_STYLES:
         typer.echo(
@@ -72,7 +75,9 @@ def main(
     for file_path in python_files:
         input_data = file_path.read_text(encoding=ENCODING)
         input_tree = cst.parse_module(source=input_data)
-        modified_tree = input_tree.visit(DocstringVisitor(line_length=resolved_line_length))
+        modified_tree = input_tree.visit(
+            DocstringVisitor(line_length=resolved_line_length)
+        )
         file_path.write_text(modified_tree.code, encoding=ENCODING)
 
 

@@ -3,7 +3,7 @@
 import re
 import textwrap
 
-from src.docstring_tailor.constants import (
+from docstring_tailor.constants import (
     DOCSTRING_DELIMITER_LENGTH,
     GOOGLE_ITEM_SECTIONS,
     GOOGLE_PLAIN_SECTIONS,

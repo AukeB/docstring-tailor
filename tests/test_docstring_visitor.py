@@ -4,7 +4,7 @@ from pathlib import Path
 
 import libcst as cst
 
-from src.docstring_tailor.docstring_visitor import DocstringVisitor
+from docstring_tailor.docstring_visitor import DocstringVisitor
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
