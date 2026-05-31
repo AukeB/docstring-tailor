@@ -32,52 +32,19 @@ NUMPY_ITEM_SECTIONS = frozenset(
         "Yields",
     }
 )
-NUMPY_PLAIN_SECTIONS = frozenset(
-    {
-        "Examples",
-        "Notes",
-        "References",
-        "See Also",
-    }
-)
+NUMPY_PLAIN_SECTIONS = frozenset({"Examples", "Notes", "References", "See Also"})
 NUMPY_SECTION_HEADERS = NUMPY_ITEM_SECTIONS | NUMPY_PLAIN_SECTIONS
 
 # Sphinx/reST-style docstring directive markers.
 # Directive-based rather than section-based — no section headers in the Google/NumPy sense.
-SPHINX_ITEM_DIRECTIVES = frozenset(
-    {
-        ":param",
-        ":raises",
-        ":returns",
-        ":rtype",
-        ":type",
-    }
-)
+SPHINX_ITEM_DIRECTIVES = frozenset({":param", ":raises", ":returns", ":rtype", ":type"})
 SPHINX_PLAIN_DIRECTIVES = frozenset(
-    {
-        ".. example::",
-        ".. note::",
-        ".. seealso::",
-        ".. warning::",
-    }
+    {".. example::", ".. note::", ".. seealso::", ".. warning::"}
 )
 SPHINX_DIRECTIVES = SPHINX_ITEM_DIRECTIVES | SPHINX_PLAIN_DIRECTIVES
 
 # Epydoc-style docstring tag markers.
 # Tag-based rather than section-based — no section headers in the Google/NumPy sense.
-EPYDOC_ITEM_TAGS = frozenset(
-    {
-        "@param",
-        "@raise",
-        "@return",
-        "@rtype",
-        "@type",
-    }
-)
-EPYDOC_PLAIN_TAGS = frozenset(
-    {
-        "@note",
-        "@warning",
-    }
-)
+EPYDOC_ITEM_TAGS = frozenset({"@param", "@raise", "@return", "@rtype", "@type"})
+EPYDOC_PLAIN_TAGS = frozenset({"@note", "@warning"})
 EPYDOC_TAGS = EPYDOC_ITEM_TAGS | EPYDOC_PLAIN_TAGS
