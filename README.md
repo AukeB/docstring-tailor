@@ -67,9 +67,9 @@ See https://peps.python.org/pep-0257/ for the complete document.
 
 The PEP document makes distinctions between different types of docstrings. For some docstring properties, the convention depends on the kind of object it belongs to. For module docstrings, it can also further depend on the type of python file. Therefore, a distinction is made between these **types** of docstrings:
 
-**Four types of docstrings**:
+**Three types of docstrings**:
 1. Module docstrings
-    - Module docstrings for scripts (stand-alone program)
+    - Module docstrings for scripts (stand-alone programs)
     - Module docstrings for `__init__.py` files
     - Module docstrings for 'normal' modules.
 2. Class docstrings
@@ -169,7 +169,7 @@ def example_generator(n):
 Maintaining this structure, while enforcing a maximum characters per line, means the following rules have to be implented in the formatting logic.
 
 - If the user starts a new line, even though there is still space on the current line for the next word, it should be corrected and the word should be moved to the current line.
-- If the line is too long, the part that exceed the line limit should be moved to the next line.
-- If the user uses two '\n' values, it means this was a deliberate choice (for example, starting the 'Args' section) and this should be preserved.
-- Single '\n' characters in for example the 'Args' section should be preserved, as each parameter should start on a new line.
-- If the docstring contains an 'Example' or 'Examples' section, the indentation for the code part and the code itself (indicated with '>>>' and '...') should be untouched, as this code should be able to be interpreted.
+- If the line is too long, the part that exceeds the line limit should be moved to the next line.
+- If the user uses two `\n` characters, it means this was a deliberate choice (for example, starting the 'Args' section) and this should be preserved.
+- Single `\n` characters, in for example the 'Args' section should be preserved, as each parameter should start on a new line.
+- If the docstring contains an 'Example' or 'Examples' section, the indentation for the code part and the code itself (indicated with `>>>` and `...`) should be untouched, as this code should be able to be interpreted.
