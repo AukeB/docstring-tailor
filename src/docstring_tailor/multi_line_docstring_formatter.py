@@ -195,43 +195,87 @@ class MultiLineDocstringFormatter:
 
         return formatted_item_section
 
-    def _format_code_section(self, section_name: str, section_body: str) -> str:
-        """Formats a code section such as Examples, preserving all content verbatim.
+    def _format_code_chunk(self, chunk: str) -> str:
+        """Formats a single verbatim code block by stripping original indentation and re-indenting.
 
-        Doctest-format code must not be wrapped or reformatted. The original indentation is stripped
-        and replaced with the correct target indentation for the current nesting level. Blank lines
-        between doctest blocks are preserved.
+        Preserves the content exactly as written, only adjusting the leading indentation to match
+        the current nesting level. Blank lines within the block are preserved.
+
+        Args:
+            chunk (str): A single code block string, delimited by double newlines in the caller.
+
+        Returns:
+            formatted_code_chunk (str): The re-indented code block with no leading prefix on the
+                first line, since the prefix is added by the outer join in _format_code_section.
+        """
+        lines = chunk.split("\n")
+        non_empty_lines = [line for line in lines if line.strip()]
+
+        if not non_empty_lines:
+            return ""
+
+        base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
+
+        formatted_lines: list[str] = []
+        for line in lines:
+            if line.strip():
+                formatted_lines.append(line[base_indent:])
+            else:
+                formatted_lines.append("")
+
+        while formatted_lines and not formatted_lines[0]:
+            formatted_lines.pop(0)
+        while formatted_lines and not formatted_lines[-1]:
+            formatted_lines.pop()
+
+        line_separator = self._line_separator + self._indent_unit
+        formatted_code_chunk = line_separator.join(formatted_lines)
+
+        return formatted_code_chunk
+
+    def _format_code_section(self, section_name: str, section_body: str) -> str:
+        """Formats a code section such as Examples, preserving code verbatim and wrapping plain
+        text.
+
+        Splits the section body on double newlines into chunks. A chunk is treated as a code block
+        if its first non-empty line starts with '>>>'; otherwise it is treated as plain text and
+        formatted with _format_plain_paragraph. This distinction cannot be made perfectly — program
+        output that follows a blank line is indistinguishable from plain text — but the convention
+        that plain text between code blocks does not start with '>>>' covers all practical cases.
 
         Args:
             section_name (str): The section header name, e.g. 'Examples'.
             section_body (str): The section content, excluding the header line.
 
         Returns:
-            formatted_code_section (str): The formatted section string with verbatim content.
+            formatted_code_section (str): The formatted section string with verbatim code blocks and
+                wrapped plain text.
         """
-        lines = section_body.split("\n")
-        non_empty_lines = [line for line in lines if line.strip()]
+        chunks = re.split(r"\n\s*\n", section_body)
+        formatted_chunks: list[str] = []
 
-        if not non_empty_lines:
+        for chunk in chunks:
+            if not chunk.strip():
+                continue
+
+            first_content_line = next(
+                (line.strip() for line in chunk.split("\n") if line.strip()), ""
+            )
+
+            if first_content_line.startswith(">>>"):
+                formatted_chunks.append(self._format_code_chunk(chunk=chunk))
+            else:
+                formatted_chunks.append(self._format_plain_paragraph(paragraph=chunk))
+
+        if not formatted_chunks:
             return section_name + ":"
 
-        base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
-        target_indent = self._current_indent + self._indent_unit
+        chunk_separator = self._paragraph_separator + self._indent_unit
+        content = chunk_separator.join(formatted_chunks)
 
-        formatted_lines: list[str] = []
-        for line in lines:
-            if line.strip():
-                formatted_lines.append(target_indent + line[base_indent:])
-            else:
-                formatted_lines.append("")
-
-        # Strip leading and trailing blank lines introduced by the split.
-        while formatted_lines and not formatted_lines[0].strip():
-            formatted_lines.pop(0)
-        while formatted_lines and not formatted_lines[-1].strip():
-            formatted_lines.pop()
-
-        formatted_code_section = section_name + ":\n" + "\n".join(formatted_lines)
+        formatted_code_section = (
+            section_name + ":\n" + self._current_indent + self._indent_unit + content
+        )
 
         return formatted_code_section
 

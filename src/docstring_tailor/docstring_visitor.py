@@ -8,7 +8,7 @@ from docstring_tailor.constants import (
     DOCSTRING_DELIMITER,
     DOCSTRING_DELIMITER_LENGTH,
 )
-from docstring_tailor.docstring_section_formatter import MultiLineDocstringFormatter
+from docstring_tailor.multi_line_docstring_formatter import MultiLineDocstringFormatter
 
 
 class DocstringVisitor(cst.CSTTransformer):
@@ -114,7 +114,8 @@ class DocstringVisitor(cst.CSTTransformer):
         'Google' docstring format as example, they contain multiple sections of different types
         (plain paragraphs, item sections such as Args and Returns, and code sections such as
         Examples) each requiring different formatting logic. This complexity is delegated entirely
-        to MultiLineDocstringFormatter, which handles section detection and formatting independently.
+        to MultiLineDocstringFormatter, which handles section detection and formatting
+        independently.
 
         Args:
             content (str): The stripped docstring content, excluding the triple quote delimiters.
