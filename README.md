@@ -1,11 +1,11 @@
 # Docstring Tailor 🪡
 
-[![PyPI Version](https://img.shields.io/pypi/v/docstring-tailor?style=for-the-badge&label=PyPI&color=2F5D8C)](https://pypi.org/project/docstring-tailor/)
-[![PyPI Downloads](https://img.shields.io/pypi/dt/docstring-tailor?style=for-the-badge&label=Downloads&color=3D7A99)](https://pypi.org/project/docstring-tailor/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/docstring-tailor?style=for-the-badge&label=Python&color=4C8DA8)](https://pypi.org/project/docstring-tailor/)
-[![License](https://img.shields.io/pypi/l/docstring-tailor?style=for-the-badge&label=License&color=5A9BB5)](https://pypi.org/project/docstring-tailor/)
-[![Wheel](https://img.shields.io/pypi/wheel/docstring-tailor?style=for-the-badge&label=Wheel&color=6AA8C2)](https://pypi.org/project/docstring-tailor/)
-[![Status](https://img.shields.io/pypi/status/docstring-tailor?style=for-the-badge&label=Status&color=7AB5CE)](https://pypi.org/project/docstring-tailor/)
+[![PyPI Version](https://img.shields.io/pypi/v/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
+[![PyPI Downloads](https://img.shields.io/pypi/dt/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
+[![License](https://img.shields.io/pypi/l/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
+[![Wheel](https://img.shields.io/pypi/wheel/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
+[![Status](https://img.shields.io/pypi/status/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
 
 Automatic formatting of Python docstrings according to PEP 257 and a predefined maximum number of chacacters per line.
 
