@@ -3,7 +3,7 @@
 # Encoding for reading .py files.
 ENCODING: str = "utf-8"
 
-# Docstring delimiters.
+# Docstring delimiter.
 DOCSTRING_DELIMITER: str = '"""'
 DOCSTRING_DELIMITER_LENGTH: int = len(DOCSTRING_DELIMITER)
 
@@ -48,3 +48,7 @@ SPHINX_DIRECTIVES = SPHINX_ITEM_DIRECTIVES | SPHINX_PLAIN_DIRECTIVES
 EPYDOC_ITEM_TAGS = frozenset({"@param", "@raise", "@return", "@rtype", "@type"})
 EPYDOC_PLAIN_TAGS = frozenset({"@note", "@warning"})
 EPYDOC_TAGS = EPYDOC_ITEM_TAGS | EPYDOC_PLAIN_TAGS
+
+# Python interactive/REPL prompt
+PYTHON_REPL_PREFIX_START = ">>>"
+PYTHON_REPL_PREFIX_CONTINUATION = "..."

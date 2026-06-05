@@ -10,6 +10,7 @@ from docstring_tailor.constants import (
     GOOGLE_ITEM_SECTIONS,
     GOOGLE_PLAIN_SECTIONS,
     GOOGLE_SECTION_HEADERS,
+    PYTHON_REPL_PREFIX_START,
 )
 
 Section = namedtuple("Section", ["name", "body"])
@@ -156,45 +157,31 @@ class MultiLineDocstringFormatter:
 
         return items
 
-    def _format_items(self, section_content: str) -> str:
-        """Formats the body of an item section by parsing and formatting each item.
-
-        Args:
-            section_content (str): The section body, excluding the header line.
-
-        Returns:
-            formatted (str): The formatted items joined with the correct indentation.
-        """
-        item_texts = self._parse_items(section_content=section_content)
-        formatted_items = [
-            self._format_item(item_text=item_text) for item_text in item_texts
-        ]
-
-        item_separator = self._line_separator + self._indent_unit
-        formatted_items = item_separator.join(formatted_items)
-
-        return formatted_items
-
     def _format_item_section(self, section_name: str, section_body: str) -> str:
         """Formats a named section whose body consists of labelled items.
 
-        Formats each item independently and reassembles the section with the header on the first
-        line.
+        Parses the section body into individual items, formats each independently, and reassembles
+        the section with the header on the first line.
 
         Args:
             section_name (str): The section header name, e.g. 'Args' or 'Returns'.
             section_body (str): The section content, excluding the header line.
 
         Returns:
-            formatted (str): The formatted section string.
+            formatted_item_section (str): The formatted section string.
         """
-        formatted_items = self._format_items(section_content=section_body)
+        item_texts = self._parse_items(section_content=section_body)
+        formatted_items = [
+            self._format_item(item_text=item_text) for item_text in item_texts
+        ]
+
+        item_separator = self._line_separator + self._indent_unit
         formatted_item_section = (
             section_name
             + ":\n"
             + self._current_indent
             + self._indent_unit
-            + formatted_items
+            + item_separator.join(formatted_items)
         )
 
         return formatted_item_section
@@ -237,19 +224,27 @@ class MultiLineDocstringFormatter:
 
         return formatted_code_chunk
 
-    def _format_code_section(self, section_name: str, section_body: str) -> str:
-        """Formats a code section such as Examples, preserving code verbatim and wrapping plain
-        text.
+    def _format_code_section(
+        self,
+        section_name: str,
+        section_body: str,
+        code_block_prefix: str,
+    ) -> str:
+        """Formats a code-oriented section such as Examples, preserving code verbatim and wrapping
+        plain text.
 
         Splits the section body on double newlines into chunks. A chunk is treated as a code block
-        if its first non-empty line starts with '>>>'; otherwise it is treated as plain text and
-        formatted with _format_plain_paragraph. This distinction cannot be made perfectly — program
-        output that follows a blank line is indistinguishable from plain text — but the convention
-        that plain text between code blocks does not start with '>>>' covers all practical cases.
+        if its first non-empty line starts with ``code_block_prefix``; otherwise it is treated as
+        plain text and formatted with ``_format_plain_paragraph``.
+
+        This distinction cannot be made perfectly — program output that follows a blank line is
+        indistinguishable from plain text — but the convention that explanatory text between code
+        blocks does not start with the configured code prefix covers all practical cases.
 
         Args:
-            section_name (str): The section header name, e.g. 'Examples'.
+            section_name (str): The section header name, e.g. ``'Examples'``.
             section_body (str): The section content, excluding the header line.
+            code_block_prefix (str, optional): Prefix that identifies the start of a code block.
 
         Returns:
             formatted_code_section (str): The formatted section string with verbatim code blocks and
@@ -266,7 +261,7 @@ class MultiLineDocstringFormatter:
                 (line.strip() for line in chunk.split("\n") if line.strip()), ""
             )
 
-            if first_content_line.startswith(">>>"):
+            if first_content_line.startswith(code_block_prefix):
                 formatted_chunks.append(self._format_code_chunk(chunk=chunk))
             else:
                 formatted_chunks.append(self._format_plain_paragraph(paragraph=chunk))
@@ -303,7 +298,9 @@ class MultiLineDocstringFormatter:
             )
         elif section_name in GOOGLE_CODE_SECTIONS:
             return self._format_code_section(
-                section_name=section_name, section_body=section_body
+                section_name=section_name,
+                section_body=section_body,
+                code_block_prefix=PYTHON_REPL_PREFIX_START,
             )
         else:
             raise ValueError(f"Unsupported section_name: {section_name}")
