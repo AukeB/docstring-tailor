@@ -1,11 +1,9 @@
 # Docstring Tailor 🪡
 
 [![PyPI Version](https://img.shields.io/pypi/v/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
-[![PyPI Downloads](https://img.shields.io/pypi/dt/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
 [![License](https://img.shields.io/pypi/l/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
 [![Wheel](https://img.shields.io/pypi/wheel/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
-[![Status](https://img.shields.io/pypi/status/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
+
 
 Automatic formatting of Python docstrings according to PEP 257 and a predefined maximum number of chacacters per line.
 
