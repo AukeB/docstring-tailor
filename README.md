@@ -1,7 +1,6 @@
 # Docstring Tailor 🪡
 
-[![PyPI Version](https://img.shields.io/pypi/v/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
-[![License](https://img.shields.io/pypi/l/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
+[![PyPI Version](https://img.shields.io/pypi/v/docstring-tailor)](https://pypi.org/project/docstring-tailor?color=lightblue/)
 [![Wheel](https://img.shields.io/pypi/wheel/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
 
 
