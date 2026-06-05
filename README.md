@@ -1,6 +1,6 @@
 # Docstring Tailor 🪡
 
-[![PyPI Version](https://img.shields.io/pypi/v/docstring-tailor)](https://pypi.org/project/docstring-tailor?color=lightblue/)
+[![PyPI Version](https://img.shields.io/pypi/v/docstring-tailor)](https://pypi.org/project/docstring-tailor?color=4DA3D9)
 [![Wheel](https://img.shields.io/pypi/wheel/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
 
 
