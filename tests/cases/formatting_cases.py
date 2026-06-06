@@ -28,17 +28,6 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [60, 80, 100]},
     ),
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring"),
-        input_file_paths=Path("module_docstring_ordered_list.py"),
-        output_file_path_template=Path(
-            "module_docstring_ordered_list_{line_length}.py"
-        ),
-        shared_parameters={"detect_lists": True},
-        parameter_grid={
-            "line_length": [100],
-        },
-    ),
-    CaseTemplate(
         fixture_directory_name=Path("module_docstring_blank_lines"),
         input_file_paths=Path("module_docstring_blank_lines.py"),
         output_file_path_template=Path("module_docstring_blank_lines_100.py"),
@@ -54,6 +43,22 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         output_file_path_template=Path("module_docstring_empty.py"),
         shared_parameters={"detect_lists": True, "line_length": 100},
         parameter_grid={},
+    ),
+    CaseTemplate(
+        fixture_directory_name=Path("module_docstring_ordered_list"),
+        input_file_paths=[
+            Path("module_docstring_ordered_list_too_long.py"),
+            Path("module_docstring_ordered_list_60.py"),
+            Path("module_docstring_ordered_list_80.py"),
+            Path("module_docstring_ordered_list_100.py"),
+        ],
+        output_file_path_template=Path(
+            "module_docstring_ordered_list_{line_length}.py"
+        ),
+        shared_parameters={"detect_lists": True},
+        parameter_grid={
+            "line_length": [60, 80, 100],
+        },
     ),
 ]
 

@@ -34,7 +34,8 @@ def format_paragraph(
 
 
 def _is_unordered_list(lines: list[str]) -> bool:
-    """Returns True if at least two consecutive lines start with an unordered list marker.
+    """Returns True if at least two consecutive list items starting with an unordered marker are
+    found, ignoring continuation lines from wrapped items.
 
     Args:
         lines (list[str]): The lines to check.
@@ -42,25 +43,32 @@ def _is_unordered_list(lines: list[str]) -> bool:
     Returns:
         result (bool): True if an unordered list is detected, False otherwise.
     """
+    non_empty_lines = [line for line in lines if line.strip()]
+    if not non_empty_lines:
+        return False
+
+    base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
     pattern = re.compile(r"^\s*[-*+]\s+")
     count = 0
 
     for line in lines:
-        if pattern.match(line):
-            count += 1
-            if count >= 2:
-                return True
-        else:
-            count = 0
+        if not line.strip():
+            continue
+
+        if len(line) - len(line.lstrip()) == base_indent:
+            if pattern.match(line):
+                count += 1
+                if count >= 2:
+                    return True
+            else:
+                count = 0
 
     return False
 
 
 def _is_ordered_list(lines: list[str]) -> bool:
-    """Returns True if at least two consecutive lines form a sequentially numbered list.
-
-    Requires sequential numbering starting from 1 on consecutive lines to avoid false positives from
-    isolated numbered sentences.
+    """Returns True if at least two consecutive sequentially numbered list items are found, ignoring
+    continuation lines from wrapped items.
 
     Args:
         lines (list[str]): The lines to check.
@@ -68,20 +76,29 @@ def _is_ordered_list(lines: list[str]) -> bool:
     Returns:
         result (bool): True if an ordered list is detected, False otherwise.
     """
+    non_empty_lines = [line for line in lines if line.strip()]
+    if not non_empty_lines:
+        return False
+
+    base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
     pattern = re.compile(r"^\s*(\d+)[.)]\s+")
     expected = 1
     count = 0
 
     for line in lines:
-        match = pattern.match(line)
-        if match and int(match.group(1)) == expected:
-            count += 1
-            expected += 1
-            if count >= 2:
-                return True
-        else:
-            expected = 1
-            count = 0
+        if not line.strip():
+            continue
+
+        if len(line) - len(line.lstrip()) == base_indent:
+            match = pattern.match(line)
+            if match and int(match.group(1)) == expected:
+                count += 1
+                expected += 1
+                if count >= 2:
+                    return True
+            else:
+                expected = 1
+                count = 0
 
     return False
 
