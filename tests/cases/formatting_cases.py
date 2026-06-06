@@ -11,6 +11,9 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         input_file_paths=[
             Path("all_docstrings_too_short.py"),
             Path("all_docstrings_too_long.py"),
+            Path("all_docstrings_60.py"),
+            Path("all_docstrings_80.py"),
+            Path("all_docstrings_100.py"),
         ],
         output_file_path_template=Path("all_docstrings_{line_length}.py"),
         shared_parameters={"detect_lists": True},
