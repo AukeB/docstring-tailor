@@ -1,5 +1,10 @@
 """Module for storing project constants."""
 
+from pathlib import Path
+
+# Repository relative file paths.
+DIR_PATH_TEST_FIXTURES = Path(__file__).parent.parent.parent / "tests" / "fixtures"
+
 # Encoding for reading .py files.
 ENCODING: str = "utf-8"
 

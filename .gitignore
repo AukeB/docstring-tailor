@@ -6,11 +6,15 @@ __pycache__/
 artifacts/
 data/
 
+# Temporary
+notes.md
+tests/fixtures/temp/
+
 # Virtual environments
 venv/
 .venv/
 .env/
-notes.md
+
 
 # Python bytecode
 *.pyc

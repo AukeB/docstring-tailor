@@ -20,8 +20,7 @@ ty:
 pytest:
 	uv run pytest tests -vvvs \
 		--cov=$(PROJECT_NAME) \
-		--cov-report=term-missing \
-		--cov-branch
+		--cov-report=term-missing
 	@echo "🧪 Successfully executed pytest."
 
 # Remove caches and temporary files
