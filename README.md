@@ -38,7 +38,7 @@ Run on a single file or directory:
 uv run docstring_tailor my_file.py
 uv run docstring_tailor my_folder
 ```
-Multiple files and/or folders are also accepted. Without a file path or folder path, it will try to find the `src` folder.
+Multiple files and/or folders are also accepted. Without a file path or folder path, it will try to locate the `src` folder.
 
 The default line length is 100. To customise it:
 
@@ -46,7 +46,7 @@ The default line length is 100. To customise it:
 uv run docstring_tailor --line-length 88
 ```
 
-You can also set it permanently in your `pyproject.toml` or in `docstring_tailor.toml`:
+Configure it permanently in `pyproject.toml` or in `docstring_tailor.toml`:
 
 ```toml
 # pyproject.toml
@@ -59,13 +59,13 @@ line-length = 88
 line-length = 88
 ```
 
-You can also set a docstring style, however the only style that is currently supported is [Google](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html). This is also the default style. If you like to be explicit:
+Define a docstring style, however the only style that is currently supported is [Google](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html). This is also the default style. Explicit configuration:
 
 ```bash
 uv run docstring_tailor --style google
 ```
 
-or in your `pyproject.toml`
+or in `pyproject.toml`
 
 ```toml
 [tool.docstring_tailor]
@@ -100,7 +100,7 @@ If no paths are provided, `docstring_tailor` will attempt to locate and format f
 |---|---|---|---|
 | `--line-length`  | `int`  | `100`      | Maximum number of characters allowed per line after formatting.                                                                       |
 | `--style`        | `str`  | `"google"` | Docstring style to enforce. Currently only the Google docstring style is supported.                                                   |
-| `--detect-lists` | `bool` | `true`    | Detect unordered and ordered/numbered lists anywhere in a docstring and preserve each list element on its own line during formatting. |
+| `--detect-lists` | `bool` | `true`     | Detect unordered and ordered/numbered lists anywhere in a docstring and preserve each list element on its own line during formatting. |
 
 ### Examples
 
@@ -115,7 +115,7 @@ uv run docstring_tailor --no-detect-lists
 
 `pyproject.toml`
 
-```tomlIntroduced a declarative golden-file test framework for formatter validation. Test cases are now generated from parametrized templates using Cartesian-product expansion, significantly reducing boilerplate and improving scalability for configuration coverage.
+```toml
 [tool.docstring_tailor]
 line-length = 88
 style = "google"
@@ -137,8 +137,8 @@ detect-lists = true
 | <div style="width:70px">Version</div> | <div style="width:100px">Release date</div> | <div style="width:130px">Type</div> | Details |
 |---|---|---|---|
 | `0.1.0` | 2026-05-31 | Initial release | First public release of `docstring-tailor`. Includes <ul><li>Automatic docstring wrapping for module, class and function docstring, for both one line and multi line docstrings, with a configurable `line-length` parameter.</li><li>Paragraph-aware formatting, differentiating between 'Args', 'Examples' or normal text sections.</li> <li> Docstring support for the Google `style` (Numpy, Sphinx, Epydoc not yet supported). </li><li>TOML-based configuration support.</li><li> Test coverage: 52% </ul> |
-| `0.1.1` | 2026-05-31 | Instruction update | Update the `README.md` file with the 'Installation' and 'Quick Start' section. |
-| `0.2.0` | TBD | Feature update | <ul><li>Implemented the `detect-lists` parameter, adding support for unordered and ordered (numbered) lists in docstrings. When enabled, list structures are detected automatically and each list item is formatted onto its own line.</li><li>Introduced a declarative golden-file test framework for formatter validation. Test cases are now generated from parametrized templates using Cartesian-product expansion, significantly reducing boilerplate and improving scalability for configuration coverage.</li><li>Expanded this `README.md` with the 'API Overview' and 'Release Notes' sections.</li><li>Test coverage: 74%</li></ul> |
+| `0.1.1` | 2026-05-31 | Documentation update | Updated the `README.md` file with the 'Installation' and 'Quick Start' section. |
+| `0.2.0` | TBD | Feature update | <ul><li>Implemented the `detect-lists` parameter, adding support for unordered and ordered (numbered) lists in docstrings. When enabled, list structures are detected automatically and each list item is formatted onto its own line.</li><li>Introduced a declarative golden-file test framework for formatter validation. Test cases are now generated from parametrized templates using Cartesian-product expansion, significantly reducing boilerplate and improving scalability for configuration coverage.</li><li>Expanded this `README.md` with the 'API Overview', 'Release Notes' and 'Roadmap' sections.</li><li>Test coverage: 75%</li></ul> |
 
 
 ## Roadmap
@@ -155,7 +155,7 @@ detect-lists = true
 ### Nice to have
 
 - Add docstring linting functionality by converting the docstring into an AST (Abstract Syntax Tree).
-- Add docstring conversion functionality that allows you to change your docstring style. For example, conversion from the 'Google' docstring style to 'Numpy'.
+- Add docstring conversion functionality that allows you to change your docstring style. For example, conversion from the 'Google' docstring style to 'Numpy'. Passing the linting phase successfully would be a requirement for conversion.
 
 ### Maybe later
 
