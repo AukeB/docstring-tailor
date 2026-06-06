@@ -1,12 +1,12 @@
 """Tests for ``DocstringVisitor``."""
 
-import pytest
 import libcst as cst
+import pytest
 
-from tests.cases.formatting_cases import CASES
-from tests.cases.config_model import Case
-from tests.utils_test import read_fixture, generate_case_ids
 from docstring_tailor.docstring_visitor import DocstringVisitor
+from tests.cases.config_model import Case
+from tests.cases.formatting_cases import CASES
+from tests.utils_test import generate_case_ids, read_fixture
 
 
 @pytest.mark.parametrize("case", CASES, ids=generate_case_ids)

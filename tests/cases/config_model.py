@@ -25,14 +25,14 @@ class CaseTemplate:
     """Defines a parametrized template used to generate multiple test cases.
 
     Attributes:
-        input_file_path (str): The input fixture shared across all generated cases.
+        input_file_path (str | list[str]): The input fixture(s) shared across all generated cases.
         output_file_path_template (str): A format string used to generate output fixture filenames.
         shared_parameters (dict[str, Any]): Configuration values shared across all generated cases.
             For example: 'module_docstring_{line_length}.py'
         parameter_grid (dict[str, list[Any]]): Defines the parametrized dimensions that should be
             expanded into concrete test cases. For example: '{"line_length": [60, 80, 100]}'
     """
-    input_file_path: str
+    input_file_paths: str | list[str]
     output_file_path_template: str
     shared_parameters: dict[str, Any]
     parameter_grid: dict[str, list[Any]]
@@ -50,22 +50,27 @@ def expand_template(template: CaseTemplate) -> list[Case]:
     Returns:
         list[Case]: A list of fully expanded executable test cases.
     """
+    input_file_paths = template.input_file_paths
     parameter_names = list(template.parameter_grid.keys())
     paramater_values = [template.parameter_grid[param_name] for param_name in parameter_names]
     cases: list[Case] = []
 
-    for parameter_combinations in product(*paramater_values):
-        parameter_grid_element = dict(zip(parameter_names, parameter_combinations))
+    if isinstance(input_file_paths, str):
+        input_file_paths = [input_file_paths]
+    
+    for input_file_path in input_file_paths:
+        for parameter_combinations in product(*paramater_values):
+            parameter_grid_element = dict(zip(parameter_names, parameter_combinations))
 
-        all_paramater_settings = {**template.shared_parameters, **parameter_grid_element}
-        output_file_path = template.output_file_path_template.format(**all_paramater_settings)
+            all_paramater_settings = {**template.shared_parameters, **parameter_grid_element}
+            output_file_path = template.output_file_path_template.format(**all_paramater_settings)
 
-        case = Case(
-            input_file_path=template.input_file_path,
-            output_file_path=output_file_path,
-            parameters=all_paramater_settings,
-        )
+            case = Case(
+                input_file_path=input_file_path,
+                output_file_path=output_file_path,
+                parameters=all_paramater_settings,
+            )
 
-        cases.append(case)
+            cases.append(case)
 
     return cases

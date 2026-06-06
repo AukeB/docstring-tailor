@@ -114,7 +114,7 @@ uv run docstring_tailor --no-detect-lists
 
 `pyproject.toml`
 
-```toml
+```tomlIntroduced a declarative golden-file test framework for formatter validation. Test cases are now generated from parametrized templates using Cartesian-product expansion, significantly reducing boilerplate and improving scalability for configuration coverage.
 [tool.docstring_tailor]
 line-length = 88
 style = "google"

@@ -3,6 +3,7 @@
 from docstring_tailor.constants import DIR_PATH_TEST_FIXTURES
 from tests.cases.config_model import Case
 
+
 def read_fixture(*path_parts: str) -> str:
     """Reads a fixture file and returns its contents.
 
@@ -12,7 +13,8 @@ def read_fixture(*path_parts: str) -> str:
     Returns:
         str: The contents of the fixture file.
     """
-    path = DIR_PATH_TEST_FIXTURES.joinpath(*path_parts)
+    # TODO: Do this differently, preferably with Path objects if possible.
+    path = DIR_PATH_TEST_FIXTURES.joinpath(*path_parts) 
     return path.read_text(encoding="utf-8")
 
 
