@@ -12,7 +12,11 @@ from docstring_tailor.constants import (
     GOOGLE_SECTION_HEADERS,
     PYTHON_REPL_PREFIX_START,
 )
-from docstring_tailor.utils.utils_formatting import wrap_paragraph
+from docstring_tailor.utils.utils_formatting import (
+    format_list,
+    format_paragraph,
+    is_list,
+)
 
 Section = namedtuple("Section", ["name", "body"])
 
@@ -48,17 +52,26 @@ class MultiLineDocstringFormatter:
             after accounting for both the current indentation and one additional indentation level.
     """
 
-    def __init__(self, line_length: int, current_indent: str, indent_unit: str) -> None:
+    def __init__(
+        self,
+        line_length: int,
+        current_indent: str,
+        indent_unit: str,
+        detect_lists: bool,
+    ) -> None:
         """Initialises the MultiLineDocstringFormatter.
 
         Args:
             line_length (int): Maximum characters per line including indentation.
             current_indent (str): The accumulated indentation string at the current nesting level.
             indent_unit (str): The indentation unit string used in the source file.
+            detect_lists (bool): Whether to detect and preserve list formatting.
         """
         self._line_length = line_length
         self._current_indent = current_indent
         self._indent_unit = indent_unit
+        self._detect_lists = detect_lists
+
         self._indent_length = len(self._indent_unit)
 
         self._paragraph_separator: str = "\n\n" + self._current_indent
@@ -67,6 +80,37 @@ class MultiLineDocstringFormatter:
 
         self._wrap_width: int = self._line_length - len(self._current_indent)
         self._wrap_width_indented: int = self._wrap_width - self._indent_length
+
+    def _format_text_block(
+        self, text: str, wrap_width: int, line_separator: str
+    ) -> str:
+        """Formats a plain text block, dispatching to list formatting if a list is detected.
+
+        If detect_lists is enabled and the text is identified as a list, delegates to format_list to
+        preserve each item on its own line. Otherwise wraps as a plain paragraph.
+
+        Args:
+            text (str): The text block to format.
+            wrap_width (int): Maximum number of characters per line.
+            line_separator (str): The string used to join lines.
+
+        Returns:
+            formatted (str): The formatted text block.
+        """
+        if self._detect_lists and is_list(text=text):
+            formatted = format_list(
+                text=text,
+                wrap_width=wrap_width,
+                line_separator=line_separator,
+            )
+        else:
+            formatted = format_paragraph(
+                text=text,
+                wrap_width=wrap_width,
+                line_separator=line_separator,
+            )
+
+        return formatted
 
     def _format_plain_section(self, section_name: str, section_body: str) -> str:
         """Formats a plain text section such as 'Note' or 'Warning'.
@@ -78,7 +122,7 @@ class MultiLineDocstringFormatter:
         Returns:
             formatted_plain_section (str): The formatted section string.
         """
-        formatted_content = wrap_paragraph(
+        formatted_content = self._format_text_block(
             text=section_body,
             wrap_width=self._wrap_width_indented,
             line_separator=self._line_separator_indented,
@@ -145,7 +189,7 @@ class MultiLineDocstringFormatter:
         item_texts = self._parse_items(section_content=section_body)
 
         formatted_items = [
-            wrap_paragraph(
+            format_paragraph(
                 text=item_text,
                 wrap_width=self._wrap_width_indented,
                 line_separator=self._line_separator_indented,
@@ -242,7 +286,7 @@ class MultiLineDocstringFormatter:
                 formatted_chunks.append(self._format_code_chunk(chunk=chunk))
             else:
                 formatted_chunks.append(
-                    wrap_paragraph(
+                    self._format_text_block(
                         text=chunk,
                         wrap_width=self._wrap_width_indented,
                         line_separator=self._line_separator_indented,
@@ -342,7 +386,7 @@ class MultiLineDocstringFormatter:
                 )
             else:
                 formatted_paragraphs.append(
-                    wrap_paragraph(
+                    self._format_text_block(
                         text=paragraph,
                         wrap_width=self._wrap_width,
                         line_separator=self._line_separator,

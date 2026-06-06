@@ -46,7 +46,7 @@ class DocstringVisitor(cst.CSTTransformer):
             module node on entry. Initialised to four spaces as a safety placeholder.
     """
 
-    def __init__(self, line_length: int) -> None:
+    def __init__(self, line_length: int, detect_lists: bool) -> None:
         """Initialises the DocstringVisitor.
 
         Sets up the indentation tracker used to correctly format multi-line docstrings at any
@@ -56,8 +56,10 @@ class DocstringVisitor(cst.CSTTransformer):
         Args:
             line_length (int): Maximum characters per line including indentation and triple double
                 quotes.
+            detect_lists (bool): Whether to detect and preserve list formatting. Defaults to True.
         """
         self._line_length = line_length
+        self._detect_lists = detect_lists
         self._current_indent = ""
         self._indent_unit = "    "
 
@@ -128,6 +130,7 @@ class DocstringVisitor(cst.CSTTransformer):
             line_length=self._line_length,
             current_indent=self._current_indent,
             indent_unit=self._indent_unit,
+            detect_lists=self._detect_lists,
         )
 
         formatted_sections = multi_line_docstring_formatter.format(content=content)

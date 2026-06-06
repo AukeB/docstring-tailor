@@ -57,7 +57,7 @@ def expand_template(template: CaseTemplate) -> list[Case]:
     for parameter_combinations in product(*paramater_values):
         parameter_grid_element = dict(zip(parameter_names, parameter_combinations))
 
-        all_paramater_settings = {**template.shared_parameters, **parameter_grid_element}
+        all_paramater_settings = {**template.shared_parameters, **parameter_grid_element} 
         output_file_path = template.output_file_path_template.format(**all_paramater_settings)
 
         case = Case(

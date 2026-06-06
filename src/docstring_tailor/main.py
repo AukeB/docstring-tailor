@@ -9,6 +9,7 @@ import typer
 from docstring_tailor.cli_config import (
     DEFAULT_PATHS,
     DEFAULT_STYLE,
+    DETECT_LISTS_DEFAULT,
     LINE_LENGTH_DEFAULT,
     LINE_LENGTH_MAX,
     LINE_LENGTH_MIN,
@@ -45,6 +46,13 @@ def main(
             max=LINE_LENGTH_MAX,
         ),
     ] = None,
+    detect_lists: Annotated[
+        bool | None,
+        typer.Option(
+            "--detect-lists/--no-detect-lists",
+            help="Detect and preserve list formatting.",
+        ),
+    ] = None,
 ) -> None:
     """Formats Python docstrings in the given files or directories to the specified style.
 
@@ -65,6 +73,11 @@ def main(
     resolved_line_length = line_length or file_config.get(
         "line-length", LINE_LENGTH_DEFAULT
     )
+    resolved_detect_lists = (
+        detect_lists
+        if detect_lists is not None
+        else file_config.get("detect-lists", DETECT_LISTS_DEFAULT)
+    )
 
     if resolved_style not in SUPPORTED_STYLES:
         typer.echo(
@@ -80,7 +93,9 @@ def main(
         input_data = file_path.read_text(encoding=ENCODING)
         input_tree = cst.parse_module(source=input_data)
         modified_tree = input_tree.visit(
-            DocstringVisitor(line_length=resolved_line_length)
+            DocstringVisitor(
+                line_length=resolved_line_length, detect_lists=resolved_detect_lists
+            )
         )
         file_path.write_text(modified_tree.code, encoding=ENCODING)
 
@@ -102,10 +117,8 @@ work for all styles.
 - Implement feature that you can display the diff in terminal, instead of immediately formatting and
 overwriting the .py files.
 
-- Testing. Write more tests. Get to 100% code coverage. Redesign the structure of the 'tests/'
-folder. All tests will be roughly the same, they have an input .py file from the 'raw' folder, which
-will be formatted, and then it should be equal to the content of one of the files in the 'formatted'
-folder. This means we can define a mapping that states which files in the raw folder should be
-identical after formatting to a certain file in the formatted folder. In this way you may only need
-one test function that just iterates over this mapping.
+- In the parametrized test approach: (1) Introduce functionality for a list of input file paths
+instead of just a single file path, that all should result in the output_file_paths. (2) Restructure
+'raw' and 'formatted' test directories into grouping input and output files that belong together in
+a single directory. This makes it more clear what cases I have set up so far.
 """
