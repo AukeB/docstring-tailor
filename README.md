@@ -3,7 +3,9 @@
 Automatic formatting of Python docstrings according to PEP 257 and a predefined maximum number of chacacters per line.
 
 [![PyPI Version](https://img.shields.io/pypi/v/docstring-tailor?color=lightblue)](https://pypi.org/project/docstring-tailor/)
+[![License](https://img.shields.io/pypi/l/docstring-tailor)](https://pypi.org/project/docstring-tailor/)
 [![Wheel](https://img.shields.io/pypi/wheel/docstring-tailor?color=lightblue)](https://pypi.org/project/docstring-tailor/)
+
 
 ## Table of Contents
 1. [Installation](#Installation)

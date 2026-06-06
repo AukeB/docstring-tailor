@@ -45,8 +45,10 @@ git:
 
 # Run full workflow: format, type-check, test, clean, commit
 all:
+	uv run src/docstring_tailor/main.py
 	make ruff
 	make ty
 	make pytest
 	make clean
+	make git
 	@echo "⚡ Successfully executed all tasks."
