@@ -54,6 +54,6 @@ EPYDOC_ITEM_TAGS = frozenset({"@param", "@raise", "@return", "@rtype", "@type"})
 EPYDOC_PLAIN_TAGS = frozenset({"@note", "@warning"})
 EPYDOC_TAGS = EPYDOC_ITEM_TAGS | EPYDOC_PLAIN_TAGS
 
-# Python interactive/REPL prompt
+# Python interactive/REPL prompt (Used in 'Example(s)' section).
 PYTHON_REPL_PREFIX_START = ">>>"
 PYTHON_REPL_PREFIX_CONTINUATION = "..."
