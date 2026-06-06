@@ -16,7 +16,6 @@ ty:
 # -vvvs: Very verbose output, shows print() statements and extra test details
 # --cov=$(PROJECT_NAME): Measure test coverage for the project
 # --cov-report=term-missing: Show which lines are missing coverage
-# --cov-branch: Track branch coverage, not just line coverage
 pytest:
 	uv run pytest tests -vvvs \
 		--cov=$(PROJECT_NAME) \
