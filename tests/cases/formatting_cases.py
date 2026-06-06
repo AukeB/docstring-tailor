@@ -14,9 +14,18 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         ],
         output_file_path_template=Path("all_docstrings_{line_length}.py"),
         shared_parameters={"detect_lists": True},
-        parameter_grid={
-            "line_length": [60, 80, 100],
-        },
+        parameter_grid={"line_length": [60, 80, 100]},
+    ),
+    CaseTemplate(
+        fixture_directory_name=Path("function_docstring_complex"),
+        input_file_paths=[
+            Path("function_docstring_complex_60.py"),
+            Path("function_docstring_complex_80.py"),
+            Path("function_docstring_complex_100.py"),
+        ],
+        output_file_path_template=Path("function_docstring_complex_{line_length}.py"),
+        shared_parameters={"detect_lists": True},
+        parameter_grid={"line_length": [60, 80, 100]},
     ),
     CaseTemplate(
         fixture_directory_name=Path("module_docstrings"),
@@ -28,6 +37,16 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={
             "line_length": [100],
         },
+    ),
+    CaseTemplate(
+        fixture_directory_name=Path("module_docstring_empty"),
+        input_file_paths=[
+            Path("module_docstring_empty.py"),
+            Path("module_docstring_empty_blank_lines.py"),
+        ],
+        output_file_path_template=Path("module_docstring_empty.py"),
+        shared_parameters={"detect_lists": True, "line_length": 100},
+        parameter_grid={},
     ),
 ]
 

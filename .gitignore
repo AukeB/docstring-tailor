@@ -8,7 +8,6 @@ data/
 
 # Temporary
 notes.md
-tests/fixtures/temp/
 
 # Virtual environments
 venv/
