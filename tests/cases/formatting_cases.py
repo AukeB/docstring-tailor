@@ -11,7 +11,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         input_file_paths=[
             Path("all_docstrings_too_short.py"),
             Path("all_docstrings_too_long.py"),
-            Path("all_docstrings_60.py"),
+            Path("all_docstrings_60.py"), #TODO: Also implement _{line_length} functionality for input files.
             Path("all_docstrings_80.py"),
             Path("all_docstrings_100.py"),
         ],
