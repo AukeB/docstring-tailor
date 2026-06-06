@@ -1,21 +1,24 @@
 """Utility module containing helper functions for testing purposes."""
 
+from pathlib import Path
+
 from docstring_tailor.constants import DIR_PATH_TEST_FIXTURES
 from tests.cases.config_model import Case
 
 
-def read_fixture(*path_parts: str) -> str:
+def read_fixture(relative_file_path: Path) -> str:
     """Reads a fixture file and returns its contents.
 
     Args:
-        *path_parts (str): Individual path components relative to the fixtures directory.
+        relative_file_path (Path): Individual path components relative to the fixtures directory.
 
     Returns:
         str: The contents of the fixture file.
     """
-    # TODO: Do this differently, preferably with Path objects if possible.
-    path = DIR_PATH_TEST_FIXTURES.joinpath(*path_parts) 
-    return path.read_text(encoding="utf-8")
+    path = DIR_PATH_TEST_FIXTURES / relative_file_path
+    file_content = path.read_text(encoding="utf-8")
+
+    return file_content
 
 
 def generate_case_ids(case: Case) -> str:
@@ -35,10 +38,6 @@ def generate_case_ids(case: Case) -> str:
         for parameter_name, parameter_value in sorted(case.parameters.items())
     )
 
-    case_id = (
-        f"{case.input_file_path}"
-        f"__{case.output_file_path}"
-        f"__{parameter_settings}"
-    )
+    case_id = f"{case.input_file_path}__{case.output_file_path}__{parameter_settings}"
 
     return case_id

@@ -118,8 +118,4 @@ work for all styles.
 
 - Implement feature that you can display the diff in terminal, instead of immediately formatting and
 overwriting the .py files.
-
-- In the parametrized test approach: Restructure 'raw' and 'formatted' test directories into
-grouping input and output files that belong together in a single directory. This makes it more clear
-what cases I have set up so far.
 """

@@ -16,8 +16,8 @@ def test_formatting(case: Case) -> None:
     Args:
         case (Case): The test case containing fixture paths and formatter configuration.
     """
-    input_code = read_fixture("raw", case.input_file_path)
-    expected_code = read_fixture("formatted", case.output_file_path)
+    input_code = read_fixture(case.input_file_path)
+    expected_code = read_fixture(case.output_file_path)
     input_tree = cst.parse_module(source=input_code)
     modified_tree = input_tree.visit(DocstringVisitor(**case.parameters))
 

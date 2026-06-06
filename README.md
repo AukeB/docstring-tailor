@@ -15,6 +15,7 @@ Automatic formatting of Python docstrings according to PEP 257 and a predefined 
     - [Options](#options)
     - [Examples](#examples)
 4. [Release Notes](#release_notes)
+5. [Roadmap](#roadmap)
 
 ## Installation
 
@@ -138,3 +139,24 @@ detect-lists = true
 | `0.1.0` | 2026-05-31 | Initial release | First public release of `docstring-tailor`. Includes <ul><li>Automatic docstring wrapping for module, class and function docstring, for both one line and multi line docstrings, with a configurable `line-length` parameter.</li><li>Paragraph-aware formatting, differentiating between 'Args', 'Examples' or normal text sections.</li> <li> Docstring support for the Google `style` (Numpy, Sphinx, Epydoc not yet supported). </li><li>TOML-based configuration support.</li><li> Test coverage: 52% </ul> |
 | `0.1.1` | 2026-05-31 | Instruction update | Update the `README.md` file with the 'Installation' and 'Quick Start' section. |
 | `0.2.0` | TBD | Feature update | <ul><li>Implemented the `detect-lists` parameter, adding support for unordered and ordered (numbered) lists in docstrings. When enabled, list structures are detected automatically and each list item is formatted onto its own line.</li><li>Introduced a declarative golden-file test framework for formatter validation. Test cases are now generated from parametrized templates using Cartesian-product expansion, significantly reducing boilerplate and improving scalability for configuration coverage.</li><li>Expanded this `README.md` with the 'API Overview' and 'Release Notes' sections.</li><li>Test coverage: 56%</li></ul> |
+
+
+## Roadmap
+
+### Must have
+
+- 100% test coverage to make sure code is bug-free.
+- Support for all major docstrings styles (Google, Numpy, Sphinx, Epydoc).
+- Add `diff` functionality that will show you the formatting changes before actually changing the file(s).
+- Make sure the package can be used as a pre-commit hook.
+- Add `exclude` parameters that allows the user to ignore specific files.
+- Add `v`/`version` parameter that shows the version of the package.
+
+### Nice to have
+
+- Add docstring linting functionality by converting the docstring into an AST (Abstract Syntax Tree).
+- Add docstring conversion functionality that allows you to change your docstring style. For example, conversion from the 'Google' docstring style to 'Numpy'.
+
+### Maybe later
+
+- Parameter that allows the user to format module, class and function docstrings independently.

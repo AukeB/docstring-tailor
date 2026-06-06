@@ -8,6 +8,7 @@ occaecat cupidatat non proident, sunt in culpa qui officia
 deserunt mollit anim id est laborum
 """
 
+
 class VeryImportantClass:
     """Lorem ipsum dolor sit amet, consectetur adipiscing
     elit, sed do eiusmod tempor incididunt
@@ -35,7 +36,7 @@ class VeryImportantClass:
         qui officia deserunt mollit anim id est laborum
         """
 
-    def execute(self, float_parameter: float=0.5) -> float:
+    def execute(self, float_parameter: float = 0.5) -> float:
         """Lorem ipsum dolor sit amet, consectetur
         adipiscing elit, sed do eiusmod tempor incididunt ut
         labore et dolore magna aliqua. Ut enim ad minim
@@ -92,4 +93,3 @@ class VeryImportantClass:
             raise ValueError("Not allowed")
 
         return result
-        
