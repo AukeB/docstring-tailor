@@ -108,7 +108,8 @@ If no paths are provided, `docstring_tailor` will attempt to locate and format f
 ```bash
 uv run docstring_tailor src/ --line-length 88
 uv run docstring_tailor my_file.py --style google
-uv run docstring_tailor src/ --detect-lists true
+uv run docstring_tailor --detect-lists
+uv run docstring_tailor --no-detect-lists
 ```
 
 `pyproject.toml`
