@@ -5,7 +5,6 @@ PROJECT_NAME = src/docstring_tailor
 ruff:
 	uv run ruff check $(PROJECT_NAME) --fix
 	uv run ruff format $(PROJECT_NAME)
-	uv run ruff format tests
 	@echo "🔧 Successfully executed ruff."
 
 # Static type-check code with ty
