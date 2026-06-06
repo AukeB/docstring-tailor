@@ -106,6 +106,8 @@ if __name__ == "__main__":
 
 """TODO:
 
+- Fix issue with (un)ordered lists if list element span multiple lines.
+
 - Currently, this code has been written specifically for the 'Google' docstring format. Fine for
 now, but the end state goal is to have the functionality that the user can specify the style in the
 pyproject.toml and that everything formats correctly to that style. The reading from pyproject.toml
