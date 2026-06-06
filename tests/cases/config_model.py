@@ -26,14 +26,14 @@ class CaseTemplate:
 
     Attributes:
         input_file_path (str): The input fixture shared across all generated cases.
-        output_template (str): A format string used to generate output fixture filenames.
+        output_file_path_template (str): A format string used to generate output fixture filenames.
         shared_parameters (dict[str, Any]): Configuration values shared across all generated cases.
             For example: 'module_docstring_{line_length}.py'
         parameter_grid (dict[str, list[Any]]): Defines the parametrized dimensions that should be
             expanded into concrete test cases. For example: '{"line_length": [60, 80, 100]}'
     """
     input_file_path: str
-    output_template: str
+    output_file_path_template: str
     shared_parameters: dict[str, Any]
     parameter_grid: dict[str, list[Any]]
 
@@ -58,7 +58,7 @@ def expand_template(template: CaseTemplate) -> list[Case]:
         parameter_grid_element = dict(zip(parameter_names, parameter_combinations))
 
         all_paramater_settings = {**template.shared_parameters, **parameter_grid_element}
-        output_file_path = template.output_template.format(**all_paramater_settings)
+        output_file_path = template.output_file_path_template.format(**all_paramater_settings)
 
         case = Case(
             input_file_path=template.input_file_path,
