@@ -95,7 +95,7 @@ If no paths are provided, `docstring_tailor` will attempt to locate and format f
 
 ### Options
 
-| <div style="width:140px">Option</div> | <div style="width:50px">Type</div> | <div style="width:80px">Default</div> | Description |
+| <div style="width:200px">Option</div> | <div style="width:50px">Type</div> | <div style="width:80px">Default</div> | Description |
 |---|---|---|---|
 | `--line-length`  | `int`  | `100`      | Maximum number of characters allowed per line after formatting.                                                                       |
 | `--style`        | `str`  | `"google"` | Docstring style to enforce. Currently only the Google docstring style is supported.                                                   |
