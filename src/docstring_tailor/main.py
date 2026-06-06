@@ -17,7 +17,11 @@ from docstring_tailor.cli_config import (
 )
 from docstring_tailor.constants import ENCODING
 from docstring_tailor.docstring_visitor import DocstringVisitor
-from docstring_tailor.utils import collect_python_files, load_config, validate_paths
+from docstring_tailor.utils.utils_file_system import (
+    collect_python_files,
+    load_config,
+    validate_paths,
+)
 
 app = typer.Typer()
 

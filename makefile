@@ -50,5 +50,4 @@ all:
 	make ty
 	make pytest
 	make clean
-	make git
 	@echo "⚡ Successfully executed all tasks."
