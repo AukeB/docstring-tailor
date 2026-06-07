@@ -102,20 +102,3 @@ def main(
 
 if __name__ == "__main__":
     app()
-
-
-"""TODO:
-
-- Fix issue with (un)ordered lists if list element span multiple lines.
-
-- Currently, this code has been written specifically for the 'Google' docstring format. Fine for
-now, but the end state goal is to have the functionality that the user can specify the style in the
-pyproject.toml and that everything formats correctly to that style. The reading from pyproject.toml
-is already there, the biggest effort is in reformatting docstring_section_formatter a bit to make it
-work for all styles.
-
-- Check all the parameters in the docstringformatter package to see which ones I also want.
-
-- Implement feature that you can display the diff in terminal, instead of immediately formatting and
-overwriting the .py files.
-"""
