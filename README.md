@@ -282,8 +282,7 @@ def example_generator(n):
 ```
 - Similar to `Returns`, `Yields` is also supported.
 
-```pythonUnordered and numbered lists
-
+```python
 """Demonstrates a Google-style module docstring containing a Note
 section.
 
