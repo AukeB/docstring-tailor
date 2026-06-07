@@ -132,6 +132,14 @@ detect-lists = true
 
 ## Example docstrings
 
+1. [Google](#google)
+    - [Module docstring](#module-docstring)
+    - [Class docstring](#class-docstring)
+    - [Function docstring](#function-docstring)
+    - [Codeblocks](#codeblocks)
+    - [Other sections](#other-sections)
+    - [Unordered and numbered lists](#unordered-and-numbered-lists)
+
 ### Google
 
 #### Module docstring
@@ -274,7 +282,8 @@ def example_generator(n):
 ```
 - Similar to `Returns`, `Yields` is also supported.
 
-```python
+```pythonUnordered and numbered lists
+
 """Demonstrates a Google-style module docstring containing a Note
 section.
 
