@@ -5,12 +5,12 @@ import textwrap
 from collections import namedtuple
 
 from docstring_tailor.constants import (
+    CODE_BLOCK_PREFIXES,
     DOCSTRING_DELIMITER_LENGTH,
     GOOGLE_CODE_SECTIONS,
     GOOGLE_ITEM_SECTIONS,
     GOOGLE_PLAIN_SECTIONS,
     GOOGLE_SECTION_HEADERS,
-    PYTHON_REPL_PREFIX_START,
 )
 from docstring_tailor.utils.utils_formatting import (
     format_list,
@@ -249,13 +249,13 @@ class MultiLineDocstringFormatter:
         self,
         section_name: str,
         section_body: str,
-        code_block_prefix: str,
+        code_block_prefixes: tuple[str, str, str],
     ) -> str:
         """Formats a code-oriented section such as Examples, preserving code verbatim and wrapping
         plain text.
 
         Splits the section body on double newlines into chunks. A chunk is treated as a code block
-        if its first non-empty line starts with ``code_block_prefix``; otherwise it is treated as
+        if its first non-empty line starts with ``code_block_prefixes``; otherwise it is treated as
         plain text and formatted with ``_format_plain_paragraph``.
 
         This distinction cannot be made perfectly — program output that follows a blank line is
@@ -265,7 +265,8 @@ class MultiLineDocstringFormatter:
         Args:
             section_name (str): The section header name, e.g. ``'Examples'``.
             section_body (str): The section content, excluding the header line.
-            code_block_prefix (str, optional): Prefix that identifies the start of a code block.
+            code_block_prefixes (tuple[str, str, str]): Prefixes that identify the start of a code
+                block.
 
         Returns:
             formatted_code_section (str): The formatted section string with verbatim code blocks and
@@ -282,7 +283,7 @@ class MultiLineDocstringFormatter:
                 (line.strip() for line in chunk.split("\n") if line.strip()), ""
             )
 
-            if first_content_line.startswith(code_block_prefix):
+            if first_content_line.startswith(code_block_prefixes):
                 formatted_chunks.append(self._format_code_chunk(chunk=chunk))
             else:
                 formatted_chunks.append(
@@ -327,7 +328,7 @@ class MultiLineDocstringFormatter:
             return self._format_code_section(
                 section_name=section_name,
                 section_body=section_body,
-                code_block_prefix=PYTHON_REPL_PREFIX_START,
+                code_block_prefixes=CODE_BLOCK_PREFIXES,
             )
         else:
             raise ValueError(f"Unsupported section_name: {section_name}")

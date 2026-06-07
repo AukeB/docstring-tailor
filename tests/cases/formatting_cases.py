@@ -48,6 +48,26 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={},
     ),
     CaseTemplate(
+        fixture_directory_name=Path("module_docstring_example_backticks"),
+        input_file_paths=[
+            Path("module_docstring_example_backticks.py"),
+            Path("module_docstring_example_backticks_60.py"),
+        ],
+        output_file_path_template=Path("module_docstring_example_backticks_60.py"),
+        shared_parameters={"detect_lists": True, "line_length": 60},
+        parameter_grid={},
+    ),
+    CaseTemplate(
+        fixture_directory_name=Path("module_docstring_example_tildes"),
+        input_file_paths=[
+            Path("module_docstring_example_tildes.py"),
+            Path("module_docstring_example_tildes_60.py"),
+        ],
+        output_file_path_template=Path("module_docstring_example_tildes_60.py"),
+        shared_parameters={"detect_lists": True, "line_length": 60},
+        parameter_grid={},
+    ),
+    CaseTemplate(
         fixture_directory_name=Path("module_docstring_ordered_list"),
         input_file_paths=[
             Path("module_docstring_ordered_list_too_long.py"),
