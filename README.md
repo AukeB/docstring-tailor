@@ -98,9 +98,9 @@ If no paths are provided, `docstring_tailor` will attempt to locate and format f
 
 | <div style="width:140px">Option</div> | <div style="width:50px">Type</div> | <div style="width:80px">Default</div> | Description |
 |---|---|---|---|
-| `--line-length`  | `int`  | `100`      | Maximum number of characters allowed per line after formatting.                                                                       |
-| `--style`        | `str`  | `"google"` | Docstring style to enforce. Currently only the Google docstring style is supported.                                                   |
-| `--detect-lists` | `bool` | `true`     | Detect unordered and ordered/numbered lists anywhere in a docstring and preserve each list element on its own line during formatting. |
+| `--line-length`  | `int`  | 100      | Maximum number of characters allowed per line after formatting.                                                                       |
+| `--style`        | `str`  | google   | Docstring style to enforce. Currently only the Google docstring style is supported.                                                   |
+| `--detect-lists` | `bool` | true     | Detect unordered and ordered/numbered lists anywhere in a docstring and preserve each list element on its own line during formatting. |
 
 ### Examples
 
@@ -343,7 +343,7 @@ Steps:
 """
 ```
 
-- Personally, Sometimes I like to use unordered and numbered lists in a docstring. Similar to what has been described before, **indentation** is used to detect new list elements. 
+- Personally, I like to use unordered and numbered lists sometimes in a docstring. Similar to what has been described before, **indentation** is used to detect new list elements. 
 
 
 ## Release Notes
@@ -352,7 +352,7 @@ Steps:
 |---|---|---|---|
 | `0.1.0` | 2026-05-31 | Initial release | First public release of `docstring-tailor`. Includes <ul><li>Automatic docstring wrapping for module, class and function docstring, for both one line and multi line docstrings, with a configurable `line-length` parameter.</li><li>Paragraph-aware formatting, differentiating between 'Args', 'Examples' or normal text sections.</li> <li> Docstring support for the Google `style` (Numpy, Sphinx, Epydoc not yet supported). </li><li>TOML-based configuration support.</li><li> Test coverage: 52% </ul> |
 | `0.1.1` | 2026-05-31 | Documentation update | Updated the `README.md` file with the 'Installation' and 'Quick Start' section. |
-| `0.2.0` | TBD | Feature update | <ul><li>Implemented the `detect-lists` parameter, adding support for unordered and ordered (numbered) lists in docstrings. When enabled, list structures are detected automatically and each list item is formatted onto its own line.</li><li>Introduced a declarative golden-file test framework for formatter validation. Test cases are now generated from parametrized templates using Cartesian-product expansion, significantly reducing boilerplate and improving scalability for configuration coverage.</li><li>Expanded this `README.md` with the 'API Overview', 'Release Notes', 'Example docstrings' and 'Roadmap' sections.</li><li>Test coverage: 75%</li></ul> |
+| `0.2.0` | 2026-06-07 | Feature update | <ul><li>Implemented the `detect-lists` parameter, adding support for unordered and ordered (numbered) lists in docstrings. When enabled, list structures are detected automatically and each list item is formatted onto its own line.</li><li>Introduced a declarative golden-file test framework for formatter validation. Test cases are now generated from parametrized templates using Cartesian-product expansion, significantly reducing boilerplate and improving scalability for configuration coverage.</li><li>Expanded this `README.md` with the 'API Overview', 'Release Notes', 'Example docstrings' and 'Roadmap' sections.</li><li>Test coverage: 75%</li></ul> |
 
 ## Roadmap
 
