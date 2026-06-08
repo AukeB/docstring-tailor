@@ -73,61 +73,55 @@ style = "google"
 ```
 
 ## API Overview
-
 ### Command
-
 ```bash
 uv run docstring_tailor [PATHS ...] [OPTIONS]
 ```
-
 `PATHS` may contain one or more files and/or directories.
-
 Examples:
-
 ```bash
 uv run docstring_tailor my_file.py
 uv run docstring_tailor src/
 uv run docstring_tailor src/ tests/test_file.py
 ```
-
 If no paths are provided, `docstring_tailor` will attempt to locate and format files inside the `src` directory.
 
 ---
-
 ### Options
-
 | <div style="width:140px">Option</div> | <div style="width:50px">Type</div> | <div style="width:80px">Default</div> | Description |
 |---|---|---|---|
-| `--line-length`  | `int`  | 100      | Maximum number of characters allowed per line after formatting.                                                                       |
-| `--style`        | `str`  | google   | Docstring style to enforce. Currently only the Google docstring style is supported.                                                   |
-| `--detect-lists` | `bool` | true     | Detect unordered and ordered/numbered lists anywhere in a docstring and preserve each list element on its own line during formatting. |
+| `--line-length`      | `int`  | 100   | Maximum number of characters allowed per line after formatting. |
+| `--style`            | `str`  | google | Docstring style to enforce. Currently only the Google docstring style is supported. |
+| `--detect-lists`     | `bool` | true  | Detect unordered and ordered/numbered lists anywhere in a docstring and preserve each list element on its own line during formatting. |
+| `--exclude`          | `str`  | —     | A glob pattern for paths to exclude. Can be passed multiple times. Single-path patterns (e.g. `tests`, `*.pyi`) match by name anywhere in the tree. Relative patterns (e.g. `src/generated/*.py`) match against the path relative to the project root. |
+| `--version`, `-V`    | flag   | —     | Print the installed version and exit. |
+| `--help`             | flag   | —     | Show the help message and exit. |
 
 ### Examples
-
 `CLI`
-
 ```bash
 uv run docstring_tailor src/ --line-length 88
 uv run docstring_tailor my_file.py --style google
 uv run docstring_tailor --detect-lists
 uv run docstring_tailor --no-detect-lists
+uv run docstring_tailor src/ --exclude tests --exclude "src/generated/*.py"
+uv run docstring_tailor --version
+uv run docstring_tailor --help
 ```
-
 `pyproject.toml`
-
 ```toml
 [tool.docstring_tailor]
 line-length = 88
 style = "google"
 detect-lists = true
+exclude = ["tests", "src/generated/*.py"]
 ```
-
 `docstring_tailor.toml`
-
 ```toml
 line-length = 88
 style = "google"
 detect-lists = true
+exclude = ["tests", "src/generated/*.py"]
 ```
 
 ## Example docstrings
@@ -352,7 +346,7 @@ Steps:
 | `0.1.0` | 2026-05-31 | Initial release | First public release of `docstring-tailor`. Includes <ul><li>Automatic docstring wrapping for module, class and function docstring, for both one line and multi line docstrings, with a configurable `line-length` parameter.</li><li>Paragraph-aware formatting, differentiating between 'Args', 'Examples' or normal text sections.</li> <li> Docstring support for the Google `style` (Numpy, Sphinx, Epydoc not yet supported). </li><li>TOML-based configuration support.</li><li> Test coverage: 52% </ul> |
 | `0.1.1` | 2026-05-31 | Documentation update | Updated the `README.md` file with the 'Installation' and 'Quick Start' section. |
 | `0.2.0` | 2026-06-07 | Feature update | <ul><li>Implemented the `detect-lists` parameter, adding support for unordered and ordered (numbered) lists in docstrings. When enabled, list structures are detected automatically and each list item is formatted onto its own line.</li><li>Introduced a declarative golden-file test framework for formatter validation. Test cases are now generated from parametrized templates using Cartesian-product expansion, significantly reducing boilerplate and improving scalability for configuration coverage.</li><li>Expanded this `README.md` with the 'API Overview', 'Release Notes', 'Example docstrings' and 'Roadmap' sections.</li><li>Test coverage: 75%</li></ul> |
-| TBD | TBD | Feature update | <ul><li>Added the `-V`/`--version` command to the CLI.</li></ul> |
+| TBD | TBD | Feature update | <ul><li>Added the `-V`/`--version` command to the CLI.</li><li>Added the `--exclude` command to the CLI.</li></ul> |
 
 ## Roadmap
 

@@ -69,6 +69,18 @@ def main(
             help="Detect and preserve list formatting.",
         ),
     ] = None,
+    exclude: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--exclude",
+            help=(
+                "A glob pattern for paths to exclude. Can be passed multiple times. "
+                "Single-path patterns (e.g. 'tests', '*.pyi') match by name anywhere "
+                "in the tree. Relative patterns (e.g. 'src/generated/*.py') match "
+                "against the path relative to the project root."
+            ),
+        ),
+    ] = None,
     version: Annotated[
         Optional[bool],
         typer.Option(
@@ -90,6 +102,7 @@ def main(
         style (DocstringStyle | None): The docstring style to format to.
         line_length (int | None): The maximum line length to wrap docstrings to.
         detect_lists (bool | None): Whether to detect and preserve list formatting.
+        exclude (list[str] | None): Glob patterns for paths to exclude.
         version (bool | None): If passed, print the version and exit.
     """
     # Resolve configuration with priority: CLI argument > config file > built-in default.
@@ -106,6 +119,7 @@ def main(
         if detect_lists is not None
         else file_config.get("detect-lists", DETECT_LISTS_DEFAULT)
     )
+    resolved_exclude = exclude or file_config.get("exclude", [])
 
     if resolved_style not in SUPPORTED_STYLES:
         typer.echo(
@@ -115,7 +129,10 @@ def main(
         raise typer.Exit(code=1)
 
     validate_paths(paths=resolved_paths)
-    python_files = collect_python_files(paths=resolved_paths)
+    python_files = collect_python_files(
+        paths=resolved_paths,
+        exclude_patterns=resolved_exclude,
+    )
 
     for file_path in python_files:
         input_data = file_path.read_text(encoding=ENCODING)
