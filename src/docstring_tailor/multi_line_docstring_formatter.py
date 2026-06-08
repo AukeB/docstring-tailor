@@ -2,7 +2,6 @@
 
 import re
 import textwrap
-from collections import namedtuple
 
 from docstring_tailor.constants import (
     CODE_BLOCK_PREFIXES,
@@ -11,14 +10,10 @@ from docstring_tailor.constants import (
     GOOGLE_ITEM_SECTIONS,
     GOOGLE_PLAIN_SECTIONS,
     GOOGLE_SECTION_HEADERS,
+    Section,
 )
-from docstring_tailor.utils.utils_formatting import (
-    format_list,
-    format_paragraph,
-    is_list,
-)
-
-Section = namedtuple("Section", ["name", "body"])
+from docstring_tailor.utils.utils_formatting import format_list, format_paragraph
+from docstring_tailor.utils.utils_list_detection import is_list
 
 
 class MultiLineDocstringFormatter:

@@ -1,7 +1,5 @@
 """Main module"""
 
-import difflib
-from importlib import metadata
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -20,6 +18,7 @@ from docstring_tailor.cli_config import (
 )
 from docstring_tailor.constants import ENCODING
 from docstring_tailor.docstring_visitor import DocstringVisitor
+from docstring_tailor.utils.utils_cli import show_diff, version_callback
 from docstring_tailor.utils.utils_file_system import (
     collect_python_files,
     load_config,
@@ -27,54 +26,6 @@ from docstring_tailor.utils.utils_file_system import (
 )
 
 app = typer.Typer()
-
-
-def _version_callback(value: bool) -> None:
-    """Print the package version and exit.
-
-    Args:
-        value (bool): Whether the flag was passed.
-
-    Raises:
-        typer.Exit: Always raised after printing, to halt execution.
-    """
-    if value:
-        version = metadata.version("docstring-tailor")
-        typer.echo(version)
-        raise typer.Exit()
-
-
-def _show_diff(original: str, modified: str, path: Path) -> None:
-    """Prints a unified diff between the original and modified source to stdout.
-
-    Skips output entirely if the two sources are identical. Each line of the diff is coloured:
-    additions in green, removals in red, and header lines in bold, falling back to plain output on
-    terminals that don't support ANSI codes.
-
-    Args:
-        original (str): The source text before formatting.
-        modified (str): The source text after formatting.
-        path (Path): The file path, used as the diff header label.
-    """
-    if original == modified:
-        return
-
-    diff_lines = difflib.unified_diff(
-        original.splitlines(keepends=True),
-        modified.splitlines(keepends=True),
-        fromfile=f"{path} (original)",
-        tofile=f"{path} (formatted)",
-    )
-
-    for line in diff_lines:
-        if line.startswith("+++") or line.startswith("---"):
-            typer.echo(typer.style(line, bold=True), nl=False)
-        elif line.startswith("+"):
-            typer.echo(typer.style(line, fg=typer.colors.GREEN), nl=False)
-        elif line.startswith("-"):
-            typer.echo(typer.style(line, fg=typer.colors.RED), nl=False)
-        else:
-            typer.echo(line, nl=False)
 
 
 @app.command()
@@ -127,7 +78,7 @@ def main(
         typer.Option(
             "-V",
             "--version",
-            callback=_version_callback,
+            callback=version_callback,
             is_eager=True,
             help="Show the version and exit.",
         ),
@@ -188,7 +139,7 @@ def main(
         modified_code = modified_tree.code
 
         if diff:
-            _show_diff(original=input_data, modified=modified_code, path=file_path)
+            show_diff(original=input_data, modified=modified_code, path=file_path)
         else:
             file_path.write_text(modified_code, encoding=ENCODING)
 

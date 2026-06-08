@@ -1,5 +1,6 @@
 """Module for storing project constants."""
 
+from collections import namedtuple
 from pathlib import Path
 
 # Repository relative file paths.
@@ -58,3 +59,6 @@ CODE_BLOCK_PREFIXES = (
     FENCED_CODE_BLOCK_BACKTICKS,
     FENCED_CODE_BLOCK_TILDES,
 )
+
+# Named tuples
+Section = namedtuple("Section", ["name", "body"])
