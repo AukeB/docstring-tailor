@@ -1,5 +1,6 @@
 """Main module"""
 
+import difflib
 from importlib import metadata
 from pathlib import Path
 from typing import Annotated, Optional
@@ -43,15 +44,44 @@ def _version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
+def _show_diff(original: str, modified: str, path: Path) -> None:
+    """Prints a unified diff between the original and modified source to stdout.
+
+    Skips output entirely if the two sources are identical. Each line of the diff is coloured:
+    additions in green, removals in red, and header lines in bold, falling back to plain output on
+    terminals that don't support ANSI codes.
+
+    Args:
+        original (str): The source text before formatting.
+        modified (str): The source text after formatting.
+        path (Path): The file path, used as the diff header label.
+    """
+    if original == modified:
+        return
+
+    diff_lines = difflib.unified_diff(
+        original.splitlines(keepends=True),
+        modified.splitlines(keepends=True),
+        fromfile=f"{path} (original)",
+        tofile=f"{path} (formatted)",
+    )
+
+    for line in diff_lines:
+        if line.startswith("+++") or line.startswith("---"):
+            typer.echo(typer.style(line, bold=True), nl=False)
+        elif line.startswith("+"):
+            typer.echo(typer.style(line, fg=typer.colors.GREEN), nl=False)
+        elif line.startswith("-"):
+            typer.echo(typer.style(line, fg=typer.colors.RED), nl=False)
+        else:
+            typer.echo(line, nl=False)
+
+
 @app.command()
 def main(
     paths: Annotated[
         list[Path] | None,
         typer.Argument(help="Files or directories to process. Defaults to 'src/'."),
-    ] = None,
-    style: Annotated[
-        DocstringStyle | None,
-        typer.Option("--style", help="Docstring style to format to."),
     ] = None,
     line_length: Annotated[
         int | None,
@@ -61,6 +91,10 @@ def main(
             min=LINE_LENGTH_MIN,
             max=LINE_LENGTH_MAX,
         ),
+    ] = None,
+    style: Annotated[
+        DocstringStyle | None,
+        typer.Option("--style", help="Docstring style to format to."),
     ] = None,
     detect_lists: Annotated[
         bool | None,
@@ -81,6 +115,13 @@ def main(
             ),
         ),
     ] = None,
+    diff: Annotated[
+        bool,
+        typer.Option(
+            "--diff",
+            help="Show a diff of changes without modifying any files.",
+        ),
+    ] = False,
     version: Annotated[
         Optional[bool],
         typer.Option(
@@ -99,20 +140,21 @@ def main(
 
     Args:
         paths (list[Path] | None): Files or directories to process. Defaults to 'src/'.
-        style (DocstringStyle | None): The docstring style to format to.
         line_length (int | None): The maximum line length to wrap docstrings to.
+        style (DocstringStyle | None): The docstring style to format to.
         detect_lists (bool | None): Whether to detect and preserve list formatting.
+        diff (bool): If True, print a unified diff to stdout instead of writing files.
         exclude (list[str] | None): Glob patterns for paths to exclude.
         version (bool | None): If passed, print the version and exit.
     """
     # Resolve configuration with priority: CLI argument > config file > built-in default.
     file_config = load_config()
     resolved_paths = paths or [Path(p) for p in DEFAULT_PATHS]
-    resolved_style = style or DocstringStyle(
-        file_config.get("style", DEFAULT_STYLE.value)
-    )
     resolved_line_length = line_length or file_config.get(
         "line-length", LINE_LENGTH_DEFAULT
+    )
+    resolved_style = style or DocstringStyle(
+        file_config.get("style", DEFAULT_STYLE.value)
     )
     resolved_detect_lists = (
         detect_lists
@@ -142,7 +184,13 @@ def main(
                 line_length=resolved_line_length, detect_lists=resolved_detect_lists
             )
         )
-        file_path.write_text(modified_tree.code, encoding=ENCODING)
+
+        modified_code = modified_tree.code
+
+        if diff:
+            _show_diff(original=input_data, modified=modified_code, path=file_path)
+        else:
+            file_path.write_text(modified_code, encoding=ENCODING)
 
 
 if __name__ == "__main__":
