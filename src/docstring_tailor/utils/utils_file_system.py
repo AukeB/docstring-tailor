@@ -1,4 +1,4 @@
-"""Module containing various utility functions."""
+"""Module containing various utility functions related to interacting with local file system."""
 
 from pathlib import Path
 
