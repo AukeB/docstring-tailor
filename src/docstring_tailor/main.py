@@ -1,7 +1,8 @@
 """Main module"""
 
+from importlib import metadata
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Optional
 
 import libcst as cst
 import typer
@@ -25,6 +26,21 @@ from docstring_tailor.utils.utils_file_system import (
 )
 
 app = typer.Typer()
+
+
+def _version_callback(value: bool) -> None:
+    """Print the package version and exit.
+
+    Args:
+        value (bool): Whether the flag was passed.
+
+    Raises:
+        typer.Exit: Always raised after printing, to halt execution.
+    """
+    if value:
+        version = metadata.version("docstring-tailor")
+        typer.echo(version)
+        raise typer.Exit()
 
 
 @app.command()
@@ -53,6 +69,16 @@ def main(
             help="Detect and preserve list formatting.",
         ),
     ] = None,
+    version: Annotated[
+        Optional[bool],
+        typer.Option(
+            "-V",
+            "--version",
+            callback=_version_callback,
+            is_eager=True,
+            help="Show the version and exit.",
+        ),
+    ] = None,
 ) -> None:
     """Formats Python docstrings in the given files or directories to the specified style.
 
@@ -63,6 +89,8 @@ def main(
         paths (list[Path] | None): Files or directories to process. Defaults to 'src/'.
         style (DocstringStyle | None): The docstring style to format to.
         line_length (int | None): The maximum line length to wrap docstrings to.
+        detect_lists (bool | None): Whether to detect and preserve list formatting.
+        version (bool | None): If passed, print the version and exit.
     """
     # Resolve configuration with priority: CLI argument > config file > built-in default.
     file_config = load_config()
