@@ -4,9 +4,9 @@ import libcst as cst
 import pytest
 
 from docstring_tailor.docstring_visitor import DocstringVisitor
+from docstring_tailor.utils.utils_testing import generate_case_ids, read_fixture
 from tests.cases.config_model import Case
 from tests.cases.formatting_cases import CASES
-from docstring_tailor.utils.utils_testing import generate_case_ids, read_fixture
 
 
 @pytest.mark.parametrize("case", CASES, ids=generate_case_ids)
