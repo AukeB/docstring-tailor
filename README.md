@@ -32,7 +32,7 @@ Automatic formatting of Python docstrings according to PEP 257 and a predefined 
 
 <br>
 
-<img src="https://raw.githubusercontent.com/AukeB/docstring-tailor/main/assets/gif_images/docstring_slider.gif" alt="Demo" />
+<img src="https://github.com/user-attachments/assets/983ae257-472d-465e-9924-9d90bca10f0d" alt="Demo" />
 
 </details>
 
