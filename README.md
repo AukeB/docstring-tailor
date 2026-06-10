@@ -9,15 +9,32 @@ Automatic formatting of Python docstrings according to PEP 257 and a predefined 
 
 
 ## Table of Contents
-1. [Installation](#Installation)
-2. [Quick start](#quick_start)
-3. [API Overview](#api-overview)
+1. [Demo](#demo)
+2. [Installation](#Installation)
+3. [Quick start](#quick_start)
+4. [API Overview](#api-overview)
     - [Command](#command)
     - [Options](#options)
     - [Examples](#examples)
-4. [Example docstrings](#example-docstrings)
-5. [Release Notes](#release_notes)
-6. [Roadmap](#roadmap)
+5. [Example docstrings](#example-docstrings)
+6. [Release Notes](#release_notes)
+7. [Roadmap](#roadmap)
+
+## Demo
+
+<details>
+<summary><b>Show demo</b></summary>
+
+<br>
+
+- `docstring-tailor` formats docstrings to fit a given line length, while preserving its structure throughout — For exapmle blank lines, argument indentation, continuation line alignment, and code blocks in the Examples section all remain intact.
+- **Note**: The slider is not part of the package. It was created solely to illustrate how the output changes continuously as the line length varies.
+
+<br>
+
+![Alt text](assets/gif_images/docstring_slider.gif)
+
+
 
 ## Installation
 
@@ -354,7 +371,7 @@ Steps:
 | `0.1.0` | 2026-05-31 | Initial release | First public release of `docstring-tailor`. Includes <ul><li>Automatic docstring wrapping for module, class and function docstrings, for both one line and multi line docstrings, with a configurable `line-length` parameter.</li><li>Paragraph-aware formatting, differentiating between 'Args', 'Examples' or normal text sections.</li> <li> Docstring support for the Google `style` (Numpy, Sphinx, Epydoc not yet supported). </li><li>TOML-based configuration support.</li><li> Test coverage: 52% </ul> |
 | `0.1.1` | 2026-05-31 | Documentation update | Updated the `README.md` file with the 'Installation' and 'Quick Start' section. |
 | `0.2.0` | 2026-06-07 | Feature update | <ul><li>Implemented the `detect-lists` parameter, adding support for unordered and ordered (numbered) lists in docstrings. When enabled, list structures are detected automatically and each list item is formatted onto its own line.</li><li>Introduced a declarative golden-file test framework for formatter validation. Test cases are now generated from parametrized templates using Cartesian-product expansion, significantly reducing boilerplate and improving scalability for configuration coverage.</li><li>Expanded this `README.md` with the 'API Overview', 'Release Notes', 'Example docstrings' and 'Roadmap' sections.</li><li>Test coverage: 75%</li></ul> |
-| TBD | TBD | Feature update | <ul><li>Added the `-V`/`--version` command to the CLI.</li><li>Added the `--exclude` command to the CLI.</li><li>Added the `--diff` command to the CLI.</li></ul> |
+| TBD | TBD | Feature update | <ul><li>Added the `-V`/`--version` command to the CLI.</li><li>Added the `--exclude` command to the CLI.</li><li>Added the `--diff` command to the CLI.</li><li>Added the 'Demo' part to to the `README.md`.</ul> |
 
 ## Roadmap
 
