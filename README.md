@@ -34,7 +34,7 @@ Automatic formatting of Python docstrings according to PEP 257 and a predefined 
 
 ![Alt text](assets/gif_images/docstring_slider.gif)
 
-
+</details>
 
 ## Installation
 
