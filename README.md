@@ -1,6 +1,6 @@
 # Docstring Tailor 🪡
 
-Automatic formatting of Python docstrings according to PEP 257 and a predefined maximum number of characters per line.
+Formats Python docstrings to PEP 257 style with configurable line length.
 
 [![PyPI Version](https://img.shields.io/pypi/v/docstring-tailor?color=lightblue)](https://pypi.org/project/docstring-tailor/)
 [![License](https://img.shields.io/pypi/l/docstring-tailor?color=lightblue)](https://pypi.org/project/docstring-tailor/)
@@ -17,8 +17,9 @@ Automatic formatting of Python docstrings according to PEP 257 and a predefined 
     - [Options](#options)
     - [Examples](#examples)
 5. [Example docstrings](#example-docstrings)
-6. [Release Notes](#release_notes)
-7. [Roadmap](#roadmap)
+6. [Resources](#resources)
+7. [Release Notes](#release_notes)
+8. [Roadmap](#roadmap)
 
 ## Demo
 
@@ -367,6 +368,23 @@ Steps:
 
 - Personally, I like to use unordered and numbered lists sometimes in a docstring. Similar to what has been described before, **indentation** is used to detect new list elements. 
 
+## Resources
+
+### Core resources
+
+| <div style="width:70px">Resource</div> | <div style="width:100px">Description</div> | <div style="width:130px">Link</div>
+|---|---|---|
+| PEP 257 - Docstring Conventions | Documents the semantics and conventions associated with Python docstrings. | [Link](https://peps.python.org/pep-0257/) |
+| Google Python Style Guide | Lists *dos and don'ts* for Python programs. | [Link](https://google.github.io/styleguide/pyguide.html#s3.8-comments-and-docstrings) |
+| Numpy Style Guide | Describes the syntax and best practices for docstrings used with the numpydoc extension for Sphinx | [Link](https://numpydoc.readthedocs.io/en/latest/format.html) |
+
+### Additional resources
+
+| <div style="width:70px">Resource</div> | <div style="width:100px">Description</div> | <div style="width:130px">Link</div>
+|---|---|---|
+| PEP 8 - Style Guide for Python Code | Gives coding conventions for the Python code comprising the standard library in the main Python distribution.. | [Link](https://peps.python.org/pep-0008/) |
+
+
 ## Release Notes
 
 | <div style="width:70px">Version</div> | <div style="width:100px">Release date</div> | <div style="width:130px">Type</div> | Details |
@@ -374,7 +392,8 @@ Steps:
 | `0.1.0` | 2026-05-31 | Initial release | First public release of `docstring-tailor`. Includes <ul><li>Automatic docstring wrapping for module, class and function docstrings, for both one line and multi line docstrings, with a configurable `line-length` parameter.</li><li>Paragraph-aware formatting, differentiating between 'Args', 'Examples' or normal text sections.</li> <li> Docstring support for the Google `style` (Numpy, Sphinx, Epydoc not yet supported). </li><li>TOML-based configuration support.</li><li> Test coverage: 52% </ul> |
 | `0.1.1` | 2026-05-31 | Documentation update | Updated the `README.md` file with the 'Installation' and 'Quick Start' section. |
 | `0.2.0` | 2026-06-07 | Feature update | <ul><li>Implemented the `detect-lists` parameter, adding support for unordered and ordered (numbered) lists in docstrings. When enabled, list structures are detected automatically and each list item is formatted onto its own line.</li><li>Introduced a declarative golden-file test framework for formatter validation. Test cases are now generated from parametrized templates using Cartesian-product expansion, significantly reducing boilerplate and improving scalability for configuration coverage.</li><li>Expanded this `README.md` with the 'API Overview', 'Release Notes', 'Example docstrings' and 'Roadmap' sections.</li><li>Test coverage: 75%</li></ul> |
-| `0.2.1` | 2026-06-10 | Feature update | <ul><li>Added the `-V`/`--version` command to the CLI.</li><li>Added the `--exclude` command to the CLI.</li><li>Added the `--diff` command to the CLI.</li><li>Added the 'Demo' part to to the `README.md`.</ul> |
+| `0.2.1` | 2026-06-11 | Feature update | <ul><li>Added the `-V`/`--version` command to the CLI.</li><li>Added the `--exclude` command to the CLI.</li><li>Added the `--diff` command to the CLI.</li><li>Added the 'Demo' part to to the `README.md`.</ul> |
+| `0.2.2` | 2026-06-14 | Feature update | <ul><li>Implemented formatting for 'Numpy' type docstrings.</li><li>Code sections and Python REPL blocks now also can be created outside the 'Example(s)' section.</li><li>Fixed a bug when codeblock sections contain blank lines.</li><li>Fixed a bug when the docstring starts immediately with an (un)ordered list.</li></ul> |
 
 ## Roadmap
 

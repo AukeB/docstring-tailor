@@ -33,6 +33,45 @@ def format_paragraph(
     return formatted
 
 
+def format_code_block(text: str, line_separator: str) -> str:
+    """Formats a verbatim code block by stripping original indentation and re-indenting.
+
+    Preserves the content exactly as written, only adjusting the leading indentation to match the
+    target level. Blank lines within the block are preserved. Leading and trailing blank lines
+    introduced by splitting are removed.
+
+    Args:
+        text (str): The raw code block string.
+        line_separator (str): The string used to join re-indented lines.
+
+    Returns:
+        formatted_code_block (str): The re-indented code block string.
+    """
+    lines = text.split("\n")
+    non_empty_lines = [line for line in lines if line.strip()]
+
+    if not non_empty_lines:
+        return ""
+
+    base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
+
+    formatted_lines: list[str] = []
+    for line in lines:
+        if line.strip():
+            formatted_lines.append(line[base_indent:])
+        else:
+            formatted_lines.append("")
+
+    while formatted_lines and not formatted_lines[0]:
+        formatted_lines.pop(0)
+    while formatted_lines and not formatted_lines[-1]:
+        formatted_lines.pop()
+
+    formatted_code_block = line_separator.join(formatted_lines)
+
+    return formatted_code_block
+
+
 def format_list(text: str, wrap_width: int, line_separator: str) -> str:
     """Formats a list block, preserving each item on its own line.
 

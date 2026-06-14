@@ -1,7 +1,7 @@
 [project]
 name = "docstring-tailor"
-version = "0.2.1.dev6"
-description = "Automatic formatting of Python docstrings according to PEP 257"
+version = "0.2.2"
+description = "Formats Python docstrings to PEP 257 style with configurable line length."
 authors = [{ name = "Auke Bruinsma", email = "afbruinsma@gmail.com" }]
 license = { file = "LICENSE" }
 classifiers = [

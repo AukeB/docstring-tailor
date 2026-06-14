@@ -12,7 +12,11 @@ from docstring_tailor.constants import (
     GOOGLE_SECTION_HEADERS,
     Section,
 )
-from docstring_tailor.utils.utils_formatting import format_list, format_paragraph
+from docstring_tailor.utils.utils_formatting import (
+    format_code_block,
+    format_list,
+    format_paragraph,
+)
 from docstring_tailor.utils.utils_list_detection import is_list
 
 
@@ -79,10 +83,11 @@ class MultiLineDocstringFormatter:
     def _format_text_block(
         self, text: str, wrap_width: int, line_separator: str
     ) -> str:
-        """Formats a plain text block, dispatching to list formatting if a list is detected.
+        """Formats a text block, dispatching to the appropriate formatter based on content type.
 
-        If detect_lists is enabled and the text is identified as a list, delegates to format_list to
-        preserve each item on its own line. Otherwise wraps as a plain paragraph.
+        Checks in order: verbatim code block (fenced or REPL), list, plain paragraph. This ensures
+        code blocks and lists are preserved correctly anywhere they appear in a docstring, not just
+        inside dedicated sections.
 
         Args:
             text (str): The text block to format.
@@ -92,7 +97,13 @@ class MultiLineDocstringFormatter:
         Returns:
             formatted (str): The formatted text block.
         """
-        if self._detect_lists and is_list(text=text):
+        first_content_line = next(
+            (line.strip() for line in text.split("\n") if line.strip()), ""
+        )
+
+        if first_content_line.startswith(CODE_BLOCK_PREFIXES):
+            formatted = format_code_block(text=text, line_separator=line_separator)
+        elif self._detect_lists and is_list(text=text):
             formatted = format_list(
                 text=text,
                 wrap_width=wrap_width,
@@ -244,28 +255,19 @@ class MultiLineDocstringFormatter:
         self,
         section_name: str,
         section_body: str,
-        code_block_prefixes: tuple[str, str, str],
     ) -> str:
         """Formats a code-oriented section such as Examples, preserving code verbatim and wrapping
         plain text.
 
-        Splits the section body on double newlines into chunks. A chunk is treated as a code block
-        if its first non-empty line starts with ``code_block_prefixes``; otherwise it is treated as
-        plain text and formatted with ``_format_plain_paragraph``.
-
-        This distinction cannot be made perfectly — program output that follows a blank line is
-        indistinguishable from plain text — but the convention that explanatory text between code
-        blocks does not start with the configured code prefix covers all practical cases.
+        Splits the section body on double newlines into chunks and dispatches each to
+        _format_text_block, which handles code blocks, lists, and plain paragraphs uniformly.
 
         Args:
-            section_name (str): The section header name, e.g. ``'Examples'``.
+            section_name (str): The section header name, e.g. 'Examples'.
             section_body (str): The section content, excluding the header line.
-            code_block_prefixes (tuple[str, str, str]): Prefixes that identify the start of a code
-                block.
 
         Returns:
-            formatted_code_section (str): The formatted section string with verbatim code blocks and
-                wrapped plain text.
+            formatted_code_section (str): The formatted section string.
         """
         chunks = re.split(r"\n\s*\n", section_body)
         formatted_chunks: list[str] = []
@@ -274,20 +276,13 @@ class MultiLineDocstringFormatter:
             if not chunk.strip():
                 continue
 
-            first_content_line = next(
-                (line.strip() for line in chunk.split("\n") if line.strip()), ""
-            )
-
-            if first_content_line.startswith(code_block_prefixes):
-                formatted_chunks.append(self._format_code_chunk(chunk=chunk))
-            else:
-                formatted_chunks.append(
-                    self._format_text_block(
-                        text=chunk,
-                        wrap_width=self._wrap_width_indented,
-                        line_separator=self._line_separator_indented,
-                    )
+            formatted_chunks.append(
+                self._format_text_block(
+                    text=chunk,
+                    wrap_width=self._wrap_width_indented,
+                    line_separator=self._line_separator_indented,
                 )
+            )
 
         if not formatted_chunks:
             return section_name + ":"
@@ -323,7 +318,6 @@ class MultiLineDocstringFormatter:
             return self._format_code_section(
                 section_name=section_name,
                 section_body=section_body,
-                code_block_prefixes=CODE_BLOCK_PREFIXES,
             )
         else:
             raise ValueError(f"Unsupported section_name: {section_name}")
