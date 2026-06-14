@@ -25,14 +25,12 @@ Automatic formatting of Python docstrings according to PEP 257 and a predefined 
 <details>
 <summary><b>Show demo</b></summary>
 
-<br>
-
 - `docstring-tailor` formats docstrings to fit a given line length, while preserving its structure throughout — For exapmle blank lines, argument indentation, continuation line alignment, and code blocks in the Examples section all remain intact.
 - **Note**: The slider in the [Marimo notebook](https://marimo.io/) is not part of the package. It was created solely to illustrate how the output changes continuously as the line length varies.
 
 <br>
 
-<img src="https://i.imgur.com/2uG5HNh.gif" alt="Demo" />
+<img src="https://pypi-camo.freetls.fastly.net/2819f123854d08b1cf8d99be8760e67a47857a6e/68747470733a2f2f692e696d6775722e636f6d2f32754735484e682e676966" alt="Demo" />
 
 </details>
 
