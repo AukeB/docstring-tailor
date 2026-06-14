@@ -117,7 +117,6 @@ If no paths are provided, `docstring_tailor` will attempt to locate and format f
 |---|---|---|---|
 | `--line-length`      | `int`  | 100    | Maximum number of characters allowed per line after formatting. |
 | `--style`            | `str`  | google | Docstring style to enforce. Currently only the Google docstring style is supported. |
-| `--detect-lists`     | `bool` | true   | Detect unordered and ordered/numbered lists anywhere in a docstring and preserve each list element on its own line during formatting. |
 | `--exclude`          | `str`  | —      | A glob pattern for paths to exclude. Can be passed multiple times. Single-path patterns (e.g. `tests`, `*.pyi`) match by name anywhere in the tree. Relative patterns (e.g. `src/generated/*.py`) match against the path relative to the project root. |
 | `--diff`             | flag   | —      | Print a unified diff of changes to stdout instead of modifying files. No files are written when this flag is set. |
 | `--version`, `-V`    | flag   | —      | Print the installed version and exit. |
@@ -129,8 +128,6 @@ If no paths are provided, `docstring_tailor` will attempt to locate and format f
 ```bash
 uv run docstring_tailor src/ --line-length 88
 uv run docstring_tailor my_file.py --style google
-uv run docstring_tailor --detect-lists
-uv run docstring_tailor --no-detect-lists
 uv run docstring_tailor src/ --exclude tests --exclude "src/generated/*.py"
 uv run docstring_tailor src/ --diff
 uv run docstring_tailor --version
@@ -142,7 +139,6 @@ uv run docstring_tailor --help
 [tool.docstring_tailor]
 line-length = 88
 style = "google"
-detect-lists = true
 exclude = ["tests", "src/generated/*.py"]
 ```
 
@@ -150,7 +146,6 @@ exclude = ["tests", "src/generated/*.py"]
 ```toml
 line-length = 88
 style = "google"
-detect-lists = true
 exclude = ["tests", "src/generated/*.py"]
 ```
 
@@ -382,7 +377,7 @@ Steps:
 
 | <div style="width:70px">Resource</div> | <div style="width:100px">Description</div> | <div style="width:130px">Link</div>
 |---|---|---|
-| PEP 8 - Style Guide for Python Code | Gives coding conventions for the Python code comprising the standard library in the main Python distribution.. | [Link](https://peps.python.org/pep-0008/) |
+| PEP 8 - Style Guide for Python Code | Gives coding conventions for the Python code comprising the standard library in the main Python distribution. | [Link](https://peps.python.org/pep-0008/) |
 
 
 ## Release Notes
@@ -393,7 +388,7 @@ Steps:
 | `0.1.1` | 2026-05-31 | Documentation update | Updated the `README.md` file with the 'Installation' and 'Quick Start' section. |
 | `0.2.0` | 2026-06-07 | Feature update | <ul><li>Implemented the `detect-lists` parameter, adding support for unordered and ordered (numbered) lists in docstrings. When enabled, list structures are detected automatically and each list item is formatted onto its own line.</li><li>Introduced a declarative golden-file test framework for formatter validation. Test cases are now generated from parametrized templates using Cartesian-product expansion, significantly reducing boilerplate and improving scalability for configuration coverage.</li><li>Expanded this `README.md` with the 'API Overview', 'Release Notes', 'Example docstrings' and 'Roadmap' sections.</li><li>Test coverage: 75%</li></ul> |
 | `0.2.1` | 2026-06-11 | Feature update | <ul><li>Added the `-V`/`--version` command to the CLI.</li><li>Added the `--exclude` command to the CLI.</li><li>Added the `--diff` command to the CLI.</li><li>Added the 'Demo' part to to the `README.md`.</ul> |
-| `0.2.2` | TBD | Feature update | <ul><li>Implemented formatting for 'Numpy' type docstrings.</li><li>Code sections and Python REPL blocks now also can be created outside the 'Example(s)' section.</li><li>Fixed a bug when codeblock sections contain blank lines.</li><li>Fixed a bug when the docstring starts immediately with an (un)ordered list.</li></ul> |
+| `0.2.2` | TBD | Feature update | <ul><li>Implemented formatting for 'Numpy' type docstrings.</li><li>Code sections and Python REPL blocks now also can be created outside the 'Example(s)' section.</li><li>Fixed a bug when codeblock sections contain blank lines.</li><li>Fixed a bug when the docstring starts immediately with an (un)ordered list.</li><li>Removed `detect-lists` as CLI parameter, because the logic should always be applied if the docstring contains (un)ordered lists.</ul> |
 
 ## Roadmap
 

@@ -16,7 +16,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("all_docstrings_100.py"),
         ],
         output_file_path_template=Path("all_docstrings_{line_length}.py"),
-        shared_parameters={"detect_lists": True},
+        shared_parameters={},
         parameter_grid={"line_length": [60, 80, 100]},
     ),
     CaseTemplate(
@@ -27,14 +27,14 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("function_docstring_complex_100.py"),
         ],
         output_file_path_template=Path("function_docstring_complex_{line_length}.py"),
-        shared_parameters={"detect_lists": True},
+        shared_parameters={},
         parameter_grid={"line_length": [60, 80, 100]},
     ),
     CaseTemplate(
         fixture_directory_name=Path("module_docstring_blank_lines"),
         input_file_paths=Path("module_docstring_blank_lines.py"),
         output_file_path_template=Path("module_docstring_blank_lines_100.py"),
-        shared_parameters={"detect_lists": True, "line_length": 100},
+        shared_parameters={"line_length": 100},
         parameter_grid={},
     ),
     CaseTemplate(
@@ -44,7 +44,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("module_docstring_empty_blank_lines.py"),
         ],
         output_file_path_template=Path("module_docstring_empty.py"),
-        shared_parameters={"detect_lists": True, "line_length": 100},
+        shared_parameters={"line_length": 100},
         parameter_grid={},
     ),
     CaseTemplate(
@@ -54,7 +54,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("module_docstring_example_backticks_60.py"),
         ],
         output_file_path_template=Path("module_docstring_example_backticks_60.py"),
-        shared_parameters={"detect_lists": True, "line_length": 60},
+        shared_parameters={"line_length": 60},
         parameter_grid={},
     ),
     CaseTemplate(
@@ -64,7 +64,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("module_docstring_example_tildes_60.py"),
         ],
         output_file_path_template=Path("module_docstring_example_tildes_60.py"),
-        shared_parameters={"detect_lists": True, "line_length": 60},
+        shared_parameters={"line_length": 60},
         parameter_grid={},
     ),
     CaseTemplate(
@@ -78,11 +78,26 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         output_file_path_template=Path(
             "module_docstring_ordered_list_{line_length}.py"
         ),
-        shared_parameters={"detect_lists": True},
+        shared_parameters={},
         parameter_grid={
             "line_length": [60, 80, 100],
         },
     ),
+    CaseTemplate(
+        fixture_directory_name=Path("module_docstring_repl_and_codeblock"),
+        input_file_paths=[
+            Path("module_docstring_repl_and_codeblock_60.py"),
+            Path("module_docstring_repl_and_codeblock_80.py"),
+            Path("module_docstring_repl_and_codeblock_100.py"),
+        ],
+        output_file_path_template=Path(
+            "module_docstring_repl_and_codeblock_{line_length}.py"
+        ),
+        shared_parameters={},
+        parameter_grid={
+            "line_length": [60, 80, 100],
+        },
+    )
 ]
 
 CASES: list[Case] = list(

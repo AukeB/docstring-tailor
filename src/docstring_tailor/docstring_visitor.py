@@ -1,4 +1,4 @@
-"""Module providing functionality to format Python docstrings"""
+"""Obtains all docstrings in a python module."""
 
 import re
 
@@ -8,7 +8,7 @@ from docstring_tailor.constants import (
     DOCSTRING_DELIMITER,
     DOCSTRING_DELIMITER_LENGTH,
 )
-from docstring_tailor.multi_line_docstring_formatter import MultiLineDocstringFormatter
+from docstring_tailor.docstring_formatter import DocstringFormatter
 
 
 class DocstringVisitor(cst.CSTTransformer):
@@ -46,7 +46,7 @@ class DocstringVisitor(cst.CSTTransformer):
             module node on entry. Initialised to four spaces as a safety placeholder.
     """
 
-    def __init__(self, line_length: int, detect_lists: bool) -> None:
+    def __init__(self, line_length: int) -> None:
         """Initialises the DocstringVisitor.
 
         Sets up the indentation tracker used to correctly format multi-line docstrings at any
@@ -56,10 +56,8 @@ class DocstringVisitor(cst.CSTTransformer):
         Args:
             line_length (int): Maximum characters per line including indentation and triple double
                 quotes.
-            detect_lists (bool): Whether to detect and preserve list formatting. Defaults to True.
         """
         self._line_length = line_length
-        self._detect_lists = detect_lists
         self._current_indent = ""
         self._indent_unit = "    "
 
@@ -109,63 +107,11 @@ class DocstringVisitor(cst.CSTTransformer):
 
         return updated_node
 
-    def _build_multi_line_docstring(self, content: str) -> str:
-        """Builds a raw multi-line docstring from the stripped content.
-
-        Multi-line docstrings are significantly more complex than one-line docstrings — Taking the
-        'Google' docstring format as example, they contain multiple sections of different types
-        (plain paragraphs, item sections such as Args and Returns, and code sections such as
-        Examples) each requiring different formatting logic. This complexity is delegated entirely
-        to MultiLineDocstringFormatter, which handles section detection and formatting
-        independently.
-
-        Args:
-            content (str): The stripped docstring content, excluding the triple quote delimiters.
-
-        Returns:
-            multi_line_docstring (str): The formatted multi-line docstring including the triple
-                quote delimiters.
-        """
-        multi_line_docstring_formatter = MultiLineDocstringFormatter(
-            line_length=self._line_length,
-            current_indent=self._current_indent,
-            indent_unit=self._indent_unit,
-            detect_lists=self._detect_lists,
-        )
-
-        formatted_sections = multi_line_docstring_formatter.format(content=content)
-
-        multi_line_docstring = (
-            DOCSTRING_DELIMITER
-            + formatted_sections
-            + "\n"
-            + self._current_indent
-            + DOCSTRING_DELIMITER
-        )
-
-        return multi_line_docstring
-
-    def _build_one_line_docstring(self, content: str) -> str:
-        """Builds a raw one-line docstring from the normalized content.
-
-        Args:
-            content (str): The normalized stripped docstring content, excluding the triple quote
-                delimiters.
-
-        Returns:
-            one_line_docstring (str): The formatted one-line docstring including the triple quote
-                delimiters.
-        """
-        one_line_docstring = DOCSTRING_DELIMITER + content + DOCSTRING_DELIMITER
-
-        return one_line_docstring
-
     def _build_docstring(self, content: str) -> str:
         """Builds the formatted docstring from the stripped content.
 
-        Determines whether the content fits on one line and contains no deliberate paragraph breaks.
-        If both conditions are met, delegates to _build_one_line_docstring. Otherwise delegates to
-        _build_multi_line_docstring.
+        Delegates all formatting and one-line vs multi-line rendering decisions to
+        DocstringFormatter.
 
         Args:
             content (str): The stripped docstring content, excluding the triple quote delimiters.
@@ -173,19 +119,13 @@ class DocstringVisitor(cst.CSTTransformer):
         Returns:
             docstring (str): The formatted docstring including the triple quote delimiters.
         """
-        is_deliberately_multiline = bool(re.search(r"\n\s*\n", content))
-        normalized_content = re.sub(r"\s+", " ", content.strip())
-        fits_on_one_line = (
-            len(self._current_indent)
-            + len(normalized_content)
-            + 2 * DOCSTRING_DELIMITER_LENGTH
-            <= self._line_length
+        formatter = DocstringFormatter(
+            line_length=self._line_length,
+            current_indent=self._current_indent,
+            indent_unit=self._indent_unit,
         )
 
-        if fits_on_one_line and not is_deliberately_multiline:
-            docstring = self._build_one_line_docstring(content=normalized_content)
-        else:
-            docstring = self._build_multi_line_docstring(content=content)
+        docstring = formatter.format(content=content)
 
         return docstring
 

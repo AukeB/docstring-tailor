@@ -23,6 +23,3 @@ DEFAULT_STYLE = DocstringStyle.google
 LINE_LENGTH_MIN: int = 30
 LINE_LENGTH_MAX: int = 300
 LINE_LENGTH_DEFAULT: int = 100
-
-# Argument: '--detect-lists'
-DETECT_LISTS_DEFAULT: bool = True

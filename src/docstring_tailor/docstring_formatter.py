@@ -1,30 +1,40 @@
-"""Module for MultiLineDocstringFormatter."""
+"""Contains logic for formatting docstrings."""
 
 import re
 import textwrap
 
 from docstring_tailor.constants import (
     CODE_BLOCK_PREFIXES,
+    DOCSTRING_DELIMITER,
     DOCSTRING_DELIMITER_LENGTH,
+    FENCED_CODE_BLOCK_BACKTICKS,
+    FENCED_CODE_BLOCK_TILDES,
     GOOGLE_CODE_SECTIONS,
     GOOGLE_ITEM_SECTIONS,
     GOOGLE_PLAIN_SECTIONS,
     GOOGLE_SECTION_HEADERS,
     Section,
 )
-from docstring_tailor.utils.utils_formatting import format_list, format_paragraph
+from docstring_tailor.utils.utils_formatting import (
+    format_code_block,
+    format_list,
+    format_paragraph,
+)
 from docstring_tailor.utils.utils_list_detection import is_list
 
 
-class MultiLineDocstringFormatter:
-    """Formats the content sections of a docstring into the Google Docstring format.
+class DocstringFormatter:
+    """Formats docstring content into the Google Docstring format.
 
     The formatting pipeline starts in format(), which delegates to _split_content() to divide the
     docstring into a preamble and a list of named sections. The preamble — everything before the
-    first section header — is split on double newlines and each paragraph formatted independently.
-    Named sections are dispatched to a dedicated formatter based on their type: item sections (Args,
-    Returns, etc.), plain sections (Note, etc.), or code sections (Examples). Code sections are
-    preserved verbatim since they contain doctest-format code that must not be wrapped or modified.
+    first section header — is split on blank lines (respecting fenced code blocks) and each chunk
+    formatted independently. Named sections are dispatched to a dedicated formatter based on their
+    type: item sections (Args, Returns, etc.), plain sections (Note, etc.), or code sections
+    (Examples). Within any section or the preamble, content is dispatched by type: fenced code
+    blocks and REPL blocks are preserved verbatim, lists are formatted as lists, and plain prose is
+    wrapped. The final result is rendered as a one-line docstring if it fits within the line length
+    limit and contains no deliberate paragraph breaks, and as a multi-line docstring otherwise.
 
     Attributes:
         _line_length (int): Maximum characters per line including indentation and surrounding triple
@@ -52,7 +62,6 @@ class MultiLineDocstringFormatter:
         line_length: int,
         current_indent: str,
         indent_unit: str,
-        detect_lists: bool,
     ) -> None:
         """Initialises the MultiLineDocstringFormatter.
 
@@ -60,12 +69,10 @@ class MultiLineDocstringFormatter:
             line_length (int): Maximum characters per line including indentation.
             current_indent (str): The accumulated indentation string at the current nesting level.
             indent_unit (str): The indentation unit string used in the source file.
-            detect_lists (bool): Whether to detect and preserve list formatting.
         """
         self._line_length = line_length
         self._current_indent = current_indent
         self._indent_unit = indent_unit
-        self._detect_lists = detect_lists
 
         self._indent_length = len(self._indent_unit)
 
@@ -79,10 +86,11 @@ class MultiLineDocstringFormatter:
     def _format_text_block(
         self, text: str, wrap_width: int, line_separator: str
     ) -> str:
-        """Formats a plain text block, dispatching to list formatting if a list is detected.
+        """Formats a text block, dispatching to the appropriate formatter based on content type.
 
-        If detect_lists is enabled and the text is identified as a list, delegates to format_list to
-        preserve each item on its own line. Otherwise wraps as a plain paragraph.
+        Checks in order: verbatim code block (fenced or REPL), list, plain paragraph. This ensures
+        code blocks and lists are preserved correctly anywhere they appear in a docstring, not just
+        inside dedicated sections.
 
         Args:
             text (str): The text block to format.
@@ -92,7 +100,11 @@ class MultiLineDocstringFormatter:
         Returns:
             formatted (str): The formatted text block.
         """
-        if self._detect_lists and is_list(text=text):
+        first_content_line = self._first_content_line(text)
+
+        if first_content_line.startswith(CODE_BLOCK_PREFIXES):
+            formatted = format_code_block(text=text, line_separator=line_separator)
+        elif is_list(text=text):
             formatted = format_list(
                 text=text,
                 wrap_width=wrap_width,
@@ -203,91 +215,92 @@ class MultiLineDocstringFormatter:
 
         return formatted_item_section
 
-    def _format_code_chunk(self, chunk: str) -> str:
-        """Formats a single verbatim code block by stripping original indentation and re-indenting.
+    def _split_on_blank_lines(self, text: str) -> list[str]:
+        """Splits text into chunks on blank lines, respecting fenced code blocks.
 
-        Preserves the content exactly as written, only adjusting the leading indentation to match
-        the current nesting level. Blank lines within the block are preserved.
+        Blank lines inside a fenced block (delimited by ``` or ~~~) are not treated as chunk
+        boundaries. Blank lines outside fenced blocks produce a new chunk.
 
         Args:
-            chunk (str): A single code block string, delimited by double newlines in the caller.
+            text (str): The text to split.
 
         Returns:
-            formatted_code_chunk (str): The re-indented code block with no leading prefix on the
-                first line, since the prefix is added by the outer join in _format_code_section.
+            chunks (list[str]): Non-empty content chunks.
         """
-        lines = chunk.split("\n")
-        non_empty_lines = [line for line in lines if line.strip()]
+        lines = text.split("\n")
+        chunks: list[str] = []
+        current_lines: list[str] = []
+        inside_fence = False
+        fence_marker: str = ""
 
-        if not non_empty_lines:
-            return ""
-
-        base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
-
-        formatted_lines: list[str] = []
         for line in lines:
-            if line.strip():
-                formatted_lines.append(line[base_indent:])
+            stripped = line.strip()
+
+            if not inside_fence:
+                if stripped.startswith(
+                    FENCED_CODE_BLOCK_BACKTICKS
+                ) or stripped.startswith(FENCED_CODE_BLOCK_TILDES):
+                    fence_marker = stripped[:3]
+                    inside_fence = True
+                    current_lines.append(line)
+                elif not stripped:
+                    if current_lines:
+                        chunks.append("\n".join(current_lines))
+                        current_lines = []
+                else:
+                    current_lines.append(line)
             else:
-                formatted_lines.append("")
+                current_lines.append(line)
+                if stripped == fence_marker:
+                    inside_fence = False
 
-        while formatted_lines and not formatted_lines[0]:
-            formatted_lines.pop(0)
-        while formatted_lines and not formatted_lines[-1]:
-            formatted_lines.pop()
+        if current_lines:
+            chunks.append("\n".join(current_lines))
 
-        formatted_code_chunk = self._line_separator_indented.join(formatted_lines)
+        return [chunk for chunk in chunks if chunk.strip()]
 
-        return formatted_code_chunk
+    def _first_content_line(self, text: str) -> str:
+        """Returns the first non-empty stripped line from a text block.
+
+        Args:
+            text (str): The text to inspect.
+
+        Returns:
+            line (str): The first non-empty stripped line, or an empty string if none exists.
+        """
+        line = next((l.strip() for l in text.split("\n") if l.strip()), "")
+
+        return line
 
     def _format_code_section(
         self,
         section_name: str,
         section_body: str,
-        code_block_prefixes: tuple[str, str, str],
     ) -> str:
         """Formats a code-oriented section such as Examples, preserving code verbatim and wrapping
         plain text.
 
-        Splits the section body on double newlines into chunks. A chunk is treated as a code block
-        if its first non-empty line starts with ``code_block_prefixes``; otherwise it is treated as
-        plain text and formatted with ``_format_plain_paragraph``.
-
-        This distinction cannot be made perfectly — program output that follows a blank line is
-        indistinguishable from plain text — but the convention that explanatory text between code
-        blocks does not start with the configured code prefix covers all practical cases.
+        Splits the section body on double newlines into chunks and dispatches each to
+        _format_text_block, which handles code blocks, lists, and plain paragraphs uniformly.
 
         Args:
-            section_name (str): The section header name, e.g. ``'Examples'``.
+            section_name (str): The section header name, e.g. 'Examples'.
             section_body (str): The section content, excluding the header line.
-            code_block_prefixes (tuple[str, str, str]): Prefixes that identify the start of a code
-                block.
 
         Returns:
-            formatted_code_section (str): The formatted section string with verbatim code blocks and
-                wrapped plain text.
+            formatted_code_section (str): The formatted section string.
         """
-        chunks = re.split(r"\n\s*\n", section_body)
+        chunks = self._split_on_blank_lines(section_body)
         formatted_chunks: list[str] = []
 
         for chunk in chunks:
-            if not chunk.strip():
-                continue
-
-            first_content_line = next(
-                (line.strip() for line in chunk.split("\n") if line.strip()), ""
-            )
-
-            if first_content_line.startswith(code_block_prefixes):
-                formatted_chunks.append(self._format_code_chunk(chunk=chunk))
-            else:
-                formatted_chunks.append(
-                    self._format_text_block(
-                        text=chunk,
-                        wrap_width=self._wrap_width_indented,
-                        line_separator=self._line_separator_indented,
-                    )
+            formatted_chunks.append(
+                self._format_text_block(
+                    text=chunk,
+                    wrap_width=self._wrap_width_indented,
+                    line_separator=self._line_separator_indented,
                 )
+            )
 
         if not formatted_chunks:
             return section_name + ":"
@@ -323,7 +336,6 @@ class MultiLineDocstringFormatter:
             return self._format_code_section(
                 section_name=section_name,
                 section_body=section_body,
-                code_block_prefixes=CODE_BLOCK_PREFIXES,
             )
         else:
             raise ValueError(f"Unsupported section_name: {section_name}")
@@ -360,9 +372,10 @@ class MultiLineDocstringFormatter:
     def _format_preamble(self, preamble: str) -> str:
         """Formats the preamble — the content before the first named section header.
 
-        Splits on double newlines to separate paragraphs. The first paragraph is formatted with
-        _format_opening_paragraph to account for the triple quotes consuming space on the first
-        line. Subsequent paragraphs are formatted with _format_middle_paragraph at full line width.
+        Splits on blank lines to separate paragraphs, respecting fenced code blocks. The first
+        paragraph uses _format_opening_paragraph only if it is plain prose, since the triple-quote
+        offset is irrelevant for lists and code blocks. Subsequent paragraphs are dispatched to
+        _format_text_block.
 
         Args:
             preamble (str): The preamble content string.
@@ -370,13 +383,17 @@ class MultiLineDocstringFormatter:
         Returns:
             formatted_preamble (str): The formatted preamble string.
         """
-        paragraphs = re.split(r"\n\s*\n", preamble.strip())
+        paragraphs = self._split_on_blank_lines(preamble.strip())
         formatted_paragraphs: list[str] = []
 
         for i, paragraph in enumerate(paragraphs):
             if not paragraph.strip():
                 continue
-            if i == 0:
+
+            first_content_line = self._first_content_line(paragraph)
+            is_code = first_content_line.startswith(CODE_BLOCK_PREFIXES)
+
+            if i == 0 and not is_code and not is_list(text=paragraph):
                 formatted_paragraphs.append(
                     self._format_opening_paragraph(paragraph=paragraph)
                 )
@@ -444,19 +461,41 @@ class MultiLineDocstringFormatter:
 
         return preamble, sections
 
+    def _fits_on_one_line(self, formatted_sections: str) -> bool:
+        """Returns True if the formatted content can be rendered as a one-line docstring.
+
+        A docstring qualifies as one-line if it contains no deliberate paragraph breaks and its
+        total length — including indentation and both sets of triple quotes — fits within the
+        configured line length.
+
+        Args:
+            formatted_sections (str): The fully formatted docstring content.
+
+        Returns:
+            result (bool): True if the content fits on one line, False otherwise.
+        """
+        is_deliberately_multiline = "\n" in formatted_sections.strip()
+        normalized = re.sub(r"\s+", " ", formatted_sections.strip())
+        total_length = (
+            len(self._current_indent) + len(normalized) + 2 * DOCSTRING_DELIMITER_LENGTH
+        )
+        result = not is_deliberately_multiline and total_length <= self._wrap_width
+
+        return result
+
     def format(self, content: str) -> str:
         """Formats the full docstring content into the Google Docstring format.
 
-        Splits the content into a preamble and named sections by detecting section headers first, so
-        that double newlines inside sections such as Examples are not mistakenly treated as
-        paragraph breaks. Formats each part independently and rejoins with a blank line between
-        each.
+        Splits the content into a preamble and named sections, formats each part independently, then
+        renders as a one-line or multi-line docstring based on the result length and whether the
+        content contains deliberate paragraph breaks.
 
         Args:
             content (str): The stripped docstring content, excluding the triple quote delimiters.
 
         Returns:
-            formatted_sections (str): The fully formatted docstring content.
+            formatted_docstring (str): The fully formatted docstring including triple quote
+                delimiters.
         """
         preamble, sections = self._split_content(content=content)
 
@@ -474,4 +513,27 @@ class MultiLineDocstringFormatter:
 
         formatted_sections = self._paragraph_separator.join(formatted_parts)
 
-        return formatted_sections
+        first_content_line = self._first_content_line(formatted_sections)
+        is_list_marker = (
+            re.match(r"^[-*+]\s+|^\d+[.)]\s+", first_content_line) is not None
+        )
+        opens_with_block = (
+            first_content_line.startswith(CODE_BLOCK_PREFIXES) or is_list_marker
+        )
+
+        if opens_with_block:
+            formatted_sections = "\n" + self._current_indent + formatted_sections
+
+        if self._fits_on_one_line(formatted_sections):
+            normalized = re.sub(r"\s+", " ", formatted_sections.strip())
+            formatted_docstring = DOCSTRING_DELIMITER + normalized + DOCSTRING_DELIMITER
+        else:
+            formatted_docstring = (
+                DOCSTRING_DELIMITER
+                + formatted_sections
+                + "\n"
+                + self._current_indent
+                + DOCSTRING_DELIMITER
+            )
+
+        return formatted_docstring

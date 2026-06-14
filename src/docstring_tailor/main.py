@@ -9,7 +9,6 @@ import typer
 from docstring_tailor.cli_config import (
     DEFAULT_PATHS,
     DEFAULT_STYLE,
-    DETECT_LISTS_DEFAULT,
     LINE_LENGTH_DEFAULT,
     LINE_LENGTH_MAX,
     LINE_LENGTH_MIN,
@@ -46,13 +45,6 @@ def main(
     style: Annotated[
         DocstringStyle | None,
         typer.Option("--style", help="Docstring style to format to."),
-    ] = None,
-    detect_lists: Annotated[
-        bool | None,
-        typer.Option(
-            "--detect-lists/--no-detect-lists",
-            help="Detect and preserve list formatting.",
-        ),
     ] = None,
     exclude: Annotated[
         list[str] | None,
@@ -93,7 +85,6 @@ def main(
         paths (list[Path] | None): Files or directories to process. Defaults to 'src/'.
         line_length (int | None): The maximum line length to wrap docstrings to.
         style (DocstringStyle | None): The docstring style to format to.
-        detect_lists (bool | None): Whether to detect and preserve list formatting.
         diff (bool): If True, print a unified diff to stdout instead of writing files.
         exclude (list[str] | None): Glob patterns for paths to exclude.
         version (bool | None): If passed, print the version and exit.
@@ -106,11 +97,6 @@ def main(
     )
     resolved_style = style or DocstringStyle(
         file_config.get("style", DEFAULT_STYLE.value)
-    )
-    resolved_detect_lists = (
-        detect_lists
-        if detect_lists is not None
-        else file_config.get("detect-lists", DETECT_LISTS_DEFAULT)
     )
     resolved_exclude = exclude or file_config.get("exclude", [])
 
@@ -131,9 +117,7 @@ def main(
         input_data = file_path.read_text(encoding=ENCODING)
         input_tree = cst.parse_module(source=input_data)
         modified_tree = input_tree.visit(
-            DocstringVisitor(
-                line_length=resolved_line_length, detect_lists=resolved_detect_lists
-            )
+            DocstringVisitor(line_length=resolved_line_length)
         )
 
         modified_code = modified_tree.code
