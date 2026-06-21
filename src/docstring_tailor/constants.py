@@ -14,7 +14,24 @@ ENCODING: str = "utf-8"
 DOCSTRING_DELIMITER: str = '"""'
 DOCSTRING_DELIMITER_LENGTH: int = len(DOCSTRING_DELIMITER)
 
-# Google-style docstring section keywords.
+# Google-style docstring section keywords for parsing (new logic).
+GOOOGLE_NAMED_PARAGRAPH_SECTIONS = frozenset(
+    {
+        "Note",
+        "Notes",
+        "References",
+        "See Also",
+        "Warning",
+        "Warnings",
+    }
+)
+GOOOGLE_RAISES_SECTIONS = frozenset({"Raises"})
+GOOOGLE_PARAMETER_SECTIONS = frozenset(
+    {"Args", "Arguments", "Attributes", "Returns", "Yields"}
+)
+GOOOGLE_STRUCTURED_LIST_SECTIONS = GOOOGLE_RAISES_SECTIONS | GOOOGLE_PARAMETER_SECTIONS
+
+# Google-style docstring section keywords for formatting (will be deprecated).
 GOOGLE_PLAIN_SECTIONS = frozenset(
     {
         "Note",
@@ -23,7 +40,7 @@ GOOGLE_PLAIN_SECTIONS = frozenset(
         "See Also",
         "Warning",
         "Warnings",
-    }  # , "Example", "Examples"}
+    }
 )
 GOOGLE_ITEM_SECTIONS = frozenset(
     {"Args", "Arguments", "Attributes", "Raises", "Returns", "Yields"}

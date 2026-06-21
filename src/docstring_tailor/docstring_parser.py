@@ -2,13 +2,14 @@
 
 from docstring_tailor.constants import (
     DOCSTRING_DELIMITER_LENGTH,
-    GOOGLE_ITEM_SECTIONS,
-    GOOGLE_PLAIN_SECTIONS,
+    GOOOGLE_NAMED_PARAGRAPH_SECTIONS,
+    GOOOGLE_STRUCTURED_LIST_SECTIONS,
     PYTHON_REPL_PREFIX_START,
     RE_PATTERN_BLANK_LINES,
     RE_PATTERN_FENCE,
 )
-from docstring_tailor.ir_model import DocstringSection, SectionType
+from docstring_tailor.docstring_section_parser import StructuredListParser
+from docstring_tailor.ir_model import DocstringNode, DocstringSection, SectionType
 from docstring_tailor.utils.utils_list_detection import is_list
 
 
@@ -26,7 +27,26 @@ class DocstringParser:
         self,
     ) -> None:
         """Initialises the DocstringParser."""
-        pass
+        self._structured_list_parser = StructuredListParser()
+
+    def _parse_structured_lists(
+        self,
+        section: DocstringSection,
+    ) -> DocstringNode:
+        """Replaces a STRUCTURED_LIST section with a fully parsed ParsedStructuredList node.
+
+        Args:
+            section (DocstringSection): A single IR node.
+
+        Returns:
+            node (DocstringNode): Parsed node if STRUCTURED_LIST, otherwise unchanged.
+        """
+        if section.section_type is SectionType.STRUCTURED_LIST:
+            node = self._structured_list_parser.parse(section)
+        else:
+            node = section
+
+        return node
 
     def _relabel_unidentified_as_paragraph(
         self,
@@ -149,7 +169,7 @@ class DocstringParser:
 
             first_line = section.content.splitlines()[0].strip()
 
-            if first_line.rstrip(":") in GOOGLE_ITEM_SECTIONS:
+            if first_line.rstrip(":") in GOOOGLE_STRUCTURED_LIST_SECTIONS:
                 result.append(
                     DocstringSection(
                         section_type=SectionType.STRUCTURED_LIST,
@@ -185,7 +205,7 @@ class DocstringParser:
 
             first_line = section.content.splitlines()[0].strip()
 
-            if first_line.rstrip(":") in GOOGLE_PLAIN_SECTIONS:
+            if first_line.rstrip(":") in GOOOGLE_NAMED_PARAGRAPH_SECTIONS:
                 result.append(
                     DocstringSection(
                         section_type=SectionType.NAMED_PARAGRAPH,
@@ -316,13 +336,15 @@ class DocstringParser:
 
         return ir
 
-    def parse(self, content: str) -> list[DocstringSection]:
+    def parse(self, content: str) -> list[DocstringNode]:
         """Parses a raw docstring into a typed IR.
 
         1. Wraps content in an initial UNIDENTIFIED section.
         2. Extracts fenced code blocks.
         3. Splits remaining content on blank lines.
         4. Classifies all remaining UNIDENTIFIED sections.
+        5. Drills one level deeper for further classification and parsing of
+           identified sections.
 
         Args:
             content (str): Raw docstring string including triple-quote delimiters.
@@ -335,4 +357,17 @@ class DocstringParser:
         ir = self._split_on_blank_lines(ir)
         ir = self._categorize_remaining_sections(ir)
 
-        return ir
+        # Drill one level deeper for further classification and parsing.
+        result: list[DocstringNode] = []
+
+        for x in ir:
+            print(x)
+
+        for section in ir:
+            result.append(self._parse_structured_lists(section))
+
+        print("welfhowefjoweifjweo")
+        for x in result:
+            print(x)
+
+        return result
