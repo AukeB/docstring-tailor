@@ -372,6 +372,7 @@ Steps:
 | PEP 257 - Docstring Conventions | Documents the semantics and conventions associated with Python docstrings. | [Link](https://peps.python.org/pep-0257/) |
 | Google Python Style Guide | Lists *dos and don'ts* for Python programs. | [Link](https://google.github.io/styleguide/pyguide.html#s3.8-comments-and-docstrings) |
 | Numpy Style Guide | Describes the syntax and best practices for docstrings used with the numpydoc extension for Sphinx | [Link](https://numpydoc.readthedocs.io/en/latest/format.html) |
+| Types of indentation | Wikipedia article that defines different kinds of indentation | [Link](https://en.wikipedia.org/wiki/Indentation_(typesetting)) |
 
 ### Additional resources
 

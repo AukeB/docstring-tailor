@@ -497,7 +497,11 @@ class DocstringFormatter:
             formatted_docstring (str): The fully formatted docstring including triple quote
                 delimiters.
         """
-        preamble, sections = self._split_content(content=content)
+        content_without_triple_quotes = content[
+            DOCSTRING_DELIMITER_LENGTH:-DOCSTRING_DELIMITER_LENGTH
+        ].strip()
+
+        preamble, sections = self._split_content(content=content_without_triple_quotes)
 
         formatted_parts: list[str] = []
 

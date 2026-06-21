@@ -1,7 +1,5 @@
 """Obtains all docstrings in a python module."""
 
-import re
-
 import libcst as cst
 
 from docstring_tailor.constants import (
@@ -9,6 +7,7 @@ from docstring_tailor.constants import (
     DOCSTRING_DELIMITER_LENGTH,
 )
 from docstring_tailor.docstring_formatter import DocstringFormatter
+from docstring_tailor.docstring_parser import DocstringParser
 
 
 class DocstringVisitor(cst.CSTTransformer):
@@ -119,13 +118,20 @@ class DocstringVisitor(cst.CSTTransformer):
         Returns:
             docstring (str): The formatted docstring including the triple quote delimiters.
         """
-        formatter = DocstringFormatter(
+        docstring_parser = DocstringParser()
+        docstring_parser.parse(content=content)
+
+        import sys
+
+        sys.exit()
+
+        docstring_formatter = DocstringFormatter(
             line_length=self._line_length,
             current_indent=self._current_indent,
             indent_unit=self._indent_unit,
         )
 
-        docstring = formatter.format(content=content)
+        docstring = docstring_formatter.format(content=content)
 
         return docstring
 
@@ -148,17 +154,12 @@ class DocstringVisitor(cst.CSTTransformer):
         """
         # Extract
         raw_docstring = node.body[0].value.value  # type: ignore
-        raw_docstring_without_triple_quotes = raw_docstring[
-            DOCSTRING_DELIMITER_LENGTH:-DOCSTRING_DELIMITER_LENGTH
-        ].strip()
 
         # Transform
-        updated_docstring = self._build_docstring(
-            content=raw_docstring_without_triple_quotes
-        )
+        formatted_docstring = self._build_docstring(content=raw_docstring)
 
         # Update
-        updated_simple_string = cst.SimpleString(updated_docstring)
+        updated_simple_string = cst.SimpleString(formatted_docstring)
         updated_expression = node.body[0].with_changes(value=updated_simple_string)
         updated_node = node.with_changes(body=(updated_expression,))
 

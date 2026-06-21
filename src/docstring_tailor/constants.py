@@ -1,5 +1,6 @@
 """Module for storing project constants."""
 
+import re
 from collections import namedtuple
 from pathlib import Path
 
@@ -15,7 +16,14 @@ DOCSTRING_DELIMITER_LENGTH: int = len(DOCSTRING_DELIMITER)
 
 # Google-style docstring section keywords.
 GOOGLE_PLAIN_SECTIONS = frozenset(
-    {"Note", "Notes", "References", "See Also", "Todo", "Warning", "Warnings"}
+    {
+        "Note",
+        "Notes",
+        "References",
+        "See Also",
+        "Warning",
+        "Warnings",
+    }  # , "Example", "Examples"}
 )
 GOOGLE_ITEM_SECTIONS = frozenset(
     {"Args", "Arguments", "Attributes", "Raises", "Returns", "Yields"}
@@ -62,3 +70,9 @@ CODE_BLOCK_PREFIXES = (
 
 # Named tuples
 Section = namedtuple("Section", ["name", "body"])
+
+# Regular expression patterns
+RE_PATTERN_FENCE = re.compile(r"^\s*(```|~~~)", re.MULTILINE)
+RE_PATTERN_BLANK_LINES = re.compile(r"\n\s*\n")
+RE_PATTERN_UNORDERED_LIST_ITEM = re.compile(r"^\s*[-*+]\s+")
+RE_PATTERN_ORDERED_LIST_ITEM = re.compile(r"^\s*(\d+)[.)]\s+")

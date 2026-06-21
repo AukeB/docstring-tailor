@@ -1,6 +1,9 @@
 """Utility module with functions for list detection in docstrings."""
 
-import re
+from docstring_tailor.constants import (
+    RE_PATTERN_ORDERED_LIST_ITEM,
+    RE_PATTERN_UNORDERED_LIST_ITEM,
+)
 
 
 def _is_unordered_list(lines: list[str]) -> bool:
@@ -18,7 +21,6 @@ def _is_unordered_list(lines: list[str]) -> bool:
         return False
 
     base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
-    pattern = re.compile(r"^\s*[-*+]\s+")
     count = 0
 
     for line in lines:
@@ -26,7 +28,7 @@ def _is_unordered_list(lines: list[str]) -> bool:
             continue
 
         if len(line) - len(line.lstrip()) == base_indent:
-            if pattern.match(line):
+            if RE_PATTERN_UNORDERED_LIST_ITEM.match(line):
                 count += 1
                 if count >= 2:
                     return True
@@ -51,7 +53,6 @@ def _is_ordered_list(lines: list[str]) -> bool:
         return False
 
     base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
-    pattern = re.compile(r"^\s*(\d+)[.)]\s+")
     expected = 1
     count = 0
 
@@ -60,7 +61,7 @@ def _is_ordered_list(lines: list[str]) -> bool:
             continue
 
         if len(line) - len(line.lstrip()) == base_indent:
-            match = pattern.match(line)
+            match = RE_PATTERN_ORDERED_LIST_ITEM.match(line)
             if match and int(match.group(1)) == expected:
                 count += 1
                 expected += 1
