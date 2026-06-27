@@ -389,20 +389,32 @@ Steps:
 | `0.1.1` | 2026-05-31 | Documentation update | Updated the `README.md` file with the 'Installation' and 'Quick Start' section. |
 | `0.2.0` | 2026-06-07 | Feature update | <ul><li>Implemented the `detect-lists` parameter, adding support for unordered and ordered (numbered) lists in docstrings. When enabled, list structures are detected automatically and each list item is formatted onto its own line.</li><li>Introduced a declarative golden-file test framework for formatter validation. Test cases are now generated from parametrized templates using Cartesian-product expansion, significantly reducing boilerplate and improving scalability for configuration coverage.</li><li>Expanded this `README.md` with the 'API Overview', 'Release Notes', 'Example docstrings' and 'Roadmap' sections.</li><li>Test coverage: 75%</li></ul> |
 | `0.2.1` | 2026-06-11 | Feature update | <ul><li>Added the `-V`/`--version` command to the CLI.</li><li>Added the `--exclude` command to the CLI.</li><li>Added the `--diff` command to the CLI.</li><li>Added the 'Demo' part to to the `README.md`.</ul> |
-| `0.2.2` | TBD | Feature update | <ul><li>Implemented formatting for 'Numpy' type docstrings.</li><li>Code sections and Python REPL blocks now also can be created outside the 'Example(s)' section.</li><li>Fixed a bug when codeblock sections contain blank lines.</li><li>Fixed a bug when the docstring starts immediately with an (un)ordered list.</li><li>Removed `detect-lists` as CLI parameter, because the logic should always be applied if the docstring contains (un)ordered lists.</ul> |
-
+| `0.3.0` | TBD | Feature update | <ul><li>Introduced a new parsing module that converts raw docstrings into a style-agnostic intermediate representation (IR), laying the foundation for multi-style parsing and formatting.</li><li>Code sections and Python REPL blocks now also can be created outside the 'Example(s)' section.</li><li>Fixed a bug when codeblock sections contain blank lines.</li><li>Fixed a bug when the docstring starts immediately with an (un)ordered list.</li><li>Removed `detect-lists` as CLI parameter, because the logic should always be applied if the docstring contains (un)ordered lists.</ul> |
 ## Roadmap
 
 ### Must have
-
-- Support for all major docstrings styles (Google, Numpy, Sphinx, Epydoc).
-- Make sure the package can be used as a pre-commit hook.
+- Parsing module for all four major docstring formats (Google, NumPy, Sphinx, Epydoc),
+  establishing a style-agnostic intermediate representation (IR) that decouples the
+  parsed structure from any specific docstring style.
+- Formatting module for all four major docstring formats, driven entirely by the
+  style-agnostic IR, enabling consistent and predictable output regardless of input style.
 
 ### Nice to have
-
-- Add docstring linting functionality by converting the docstring into an AST (Abstract Syntax Tree).
-- Add docstring conversion functionality that allows you to change your docstring style. For example, conversion from the 'Google' docstring style to 'Numpy'. Passing the linting phase successfully would be a requirement for conversion.
+- Make sure the package can be used as a pre-commit hook.
+- Add docstring linting/syntax validation functionality, raising meaningful errors
+  for malformed docstrings (e.g. missing type annotations, incorrect indentation,
+  missing blank lines around lists). Passing linting would be a requirement for
+  conversion.
+- Add docstring conversion functionality that allows you to change your docstring
+  style. For example, conversion from the Google docstring style to NumPy. This is
+  enabled by the intermediate representation (IR) layer, which decouples parsing
+  from formatting.
+- LSP (Language Server Protocol) support, enabling real-time feedback on malformed
+  docstrings directly in editors like VS Code, PyCharm and Neovim. Built on top of
+  the linting layer and the existing parser, with `pygls` handling the protocol.
 
 ### Maybe later
-
-- Parameter that allows the user to format module, class and function docstrings independently.
+- Parameter that allows the user to format module, class and function docstrings
+  independently.
+- Position tracking in the IR (line/column numbers per node), which is a
+  prerequisite for precise LSP diagnostics and editor highlighting.

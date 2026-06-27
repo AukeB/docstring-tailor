@@ -9,8 +9,9 @@ from docstring_tailor.constants import (
     RE_PATTERN_FENCE,
 )
 from docstring_tailor.docstring_section_parser import StructuredListParser
-from docstring_tailor.ir_model import DocstringNode, DocstringSection, SectionType
+from docstring_tailor.ir_model import DocstringNode, DocstringSection, SectionType, ParsedNamedParagraph, ParsedSimpleList
 from docstring_tailor.utils.utils_list_detection import is_list
+from docstring_tailor.utils.utils_parsing import extract_items
 
 
 class DocstringParser:
@@ -23,26 +24,96 @@ class DocstringParser:
     4. Classify each chunk into its final section type.
     """
 
-    def __init__(
-        self,
-    ) -> None:
+    def __init__(self) -> None:
         """Initialises the DocstringParser."""
         self._structured_list_parser = StructuredListParser()
+    
+    def _parse_simple_list(
+        self,
+        section: DocstringSection,
+    ) -> ParsedSimpleList:
+        """Parses a SIMPLE_LIST section into a ParsedSimpleList node.
 
-    def _parse_structured_lists(
+        Args:
+            section (DocstringSection): A SIMPLE_LIST section to parse.
+
+        Returns:
+            parsed (ParsedSimpleList): Fully parsed simple list node.
+        """
+        items = extract_items(section.content)
+
+        parsed = ParsedSimpleList(
+            section_type=SectionType.SIMPLE_LIST,
+            items=items,
+        )
+
+        return parsed
+        
+    def _parse_named_paragraph(
         self,
         section: DocstringSection,
     ) -> DocstringNode:
-        """Replaces a STRUCTURED_LIST section with a fully parsed ParsedStructuredList node.
+        """Drills into a NAMED_PARAGRAPH section to detect nested code blocks, REPL, and lists.
+
+        Extracts the header keyword, wraps the body in a fresh UNIDENTIFIED section,
+        then runs the relevant detection passes and parses any simple lists found.
+
+        Args:
+            section (DocstringSection): A NAMED_PARAGRAPH section.
+
+        Returns:
+            parsed (ParsedNamedParagraph): Parsed named paragraph node with typed body.
+        """
+        lines = section.content.splitlines()
+        header = lines[0].strip().rstrip(":")
+        body_content = "\n".join(lines[1:])
+
+        body_ir: list[DocstringSection] = [
+            DocstringSection(
+                section_type=SectionType.UNIDENTIFIED,
+                content=body_content,
+            )
+        ]
+
+        body_ir = self._detect_code_block_sections(body_ir)
+        body_ir = self._split_on_blank_lines(body_ir)
+        body_ir = self._detect_code_repl_sections(body_ir)
+        body_ir = self._detect_simple_list_sections(body_ir)
+        body_ir = self._relabel_unidentified_as_paragraph(body_ir)
+
+        body: list[DocstringNode] = [
+            self._parse_simple_list(node) 
+            if node.section_type is SectionType.SIMPLE_LIST
+            else node
+            for node in body_ir
+        ]
+
+        parsed = ParsedNamedParagraph(
+            section_type=SectionType.NAMED_PARAGRAPH,
+            header=header,
+            body=body,
+        )
+
+        return parsed
+
+    def _parse_section(
+        self,
+        section: DocstringSection,
+    ) -> DocstringNode:
+        """Drills one level deeper into sections that require further parsing.
 
         Args:
             section (DocstringSection): A single IR node.
 
         Returns:
-            node (DocstringNode): Parsed node if STRUCTURED_LIST, otherwise unchanged.
+            node (DocstringNode): Parsed node if applicable, otherwise unchanged.
         """
         if section.section_type is SectionType.STRUCTURED_LIST:
             node = self._structured_list_parser.parse(section)
+        elif section.section_type is SectionType.NAMED_PARAGRAPH:
+            node = self._parse_named_paragraph(section)
+        elif section.section_type is SectionType.SIMPLE_LIST:
+            node = self._parse_simple_list(section)
         else:
             node = section
 
@@ -360,14 +431,7 @@ class DocstringParser:
         # Drill one level deeper for further classification and parsing.
         result: list[DocstringNode] = []
 
-        for x in ir:
-            print(x)
-
         for section in ir:
-            result.append(self._parse_structured_lists(section))
-
-        print("welfhowefjoweifjweo")
-        for x in result:
-            print(x)
+            result.append(self._parse_section(section))
 
         return result

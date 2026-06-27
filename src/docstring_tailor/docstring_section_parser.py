@@ -9,6 +9,8 @@ from docstring_tailor.ir_model import (
     StructuredListParameter,
 )
 
+from docstring_tailor.utils.utils_parsing import extract_items
+
 
 class StructuredListParser:
     """Parses a STRUCTURED_LIST docstring section into typed parameter or error entries.
@@ -20,46 +22,6 @@ class StructuredListParser:
     def __init__(self) -> None:
         """Initialises the StructuredListParser."""
         pass
-
-    def _extract_items(self, section: DocstringSection) -> list[str]:
-        """Extracts individual item strings from a structured list section.
-
-        Items are detected by indentation — lines at the base indentation level
-        start a new item, and continuation lines at a deeper indentation are
-        joined to the preceding item.
-
-        Args:
-            section (DocstringSection): A STRUCTURED_LIST section.
-
-        Returns:
-            items (list[str]): Each item as a single joined string.
-        """
-        lines = section.content.splitlines()
-
-        lines = lines[1:]
-        non_empty_lines = [line for line in lines if line.strip()]
-        base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
-
-        items: list[str] = []
-        current_item_lines: list[str] = []
-
-        for line in lines:
-            current_indent = len(line) - len(line.lstrip())
-
-            if current_indent == base_indent and current_item_lines:
-                first_line = current_item_lines[0].strip()
-                continuation = " ".join(l.strip() for l in current_item_lines[1:])
-                items.append(f"{first_line} {continuation}".strip())
-                current_item_lines = [line]
-            else:
-                current_item_lines.append(line)
-
-        if current_item_lines:
-            first_line = current_item_lines[0].strip()
-            continuation = " ".join(l.strip() for l in current_item_lines[1:])
-            items.append(f"{first_line} {continuation}".strip())
-
-        return items
 
     def _parse_parameter_section(self, item: str) -> StructuredListParameter:
         """Parses a single parameter item string into a StructuredListParameter.
@@ -128,7 +90,7 @@ class StructuredListParser:
             parsed (ParsedStructuredList): Fully parsed structured list node.
         """
         keyword = section.content.splitlines()[0].strip().rstrip(":")
-        items = self._extract_items(section)
+        items = extract_items(section.content, skip_first_line=True)
 
         if keyword in GOOOGLE_RAISES_SECTIONS:
             entries = [self._parse_error_section(item) for item in items]

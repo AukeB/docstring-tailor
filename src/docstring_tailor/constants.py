@@ -23,6 +23,8 @@ GOOOGLE_NAMED_PARAGRAPH_SECTIONS = frozenset(
         "See Also",
         "Warning",
         "Warnings",
+        "Example",
+        "Examples",
     }
 )
 GOOOGLE_RAISES_SECTIONS = frozenset({"Raises"})

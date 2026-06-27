@@ -40,6 +40,20 @@ class DocstringSection(DocstringNode):
 
 
 @dataclass
+class ParsedNamedParagraph(DocstringNode):
+    """Represents a fully parsed named paragraph section in the docstring IR.
+
+    Attributes:
+        section_type (SectionType): Always SectionType.NAMED_PARAGRAPH.
+        header (str): The section keyword, e.g. 'Note', 'Warning'.
+        body (list[DocstringNode]): Parsed sub-sections of the body content.
+    """
+
+    header: str
+    body: list[DocstringNode]
+
+
+@dataclass
 class StructuredListParameter:
     """Represents a single parsed parameter entry in a structured list section.
 
@@ -78,3 +92,15 @@ class ParsedStructuredList(DocstringNode):
     """
 
     entries: list[StructuredListParameter] | list[StructuredListError]
+
+
+@dataclass
+class ParsedSimpleList(DocstringNode):
+    """Represents a fully parsed simple list section in the docstring IR.
+
+    Attributes:
+        section_type (SectionType): Always SectionType.SIMPLE_LIST.
+        items (list[str]): The parsed list items as plain strings.
+    """
+
+    items: list[str]
