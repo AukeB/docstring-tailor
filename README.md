@@ -412,6 +412,7 @@ Steps:
 - LSP (Language Server Protocol) support, enabling real-time feedback on malformed
   docstrings directly in editors like VS Code, PyCharm and Neovim. Built on top of
   the linting layer and the existing parser, with `pygls` handling the protocol.
+- Make the package available as VSCode extension.
 
 ### Maybe later
 - Parameter that allows the user to format module, class and function docstrings
