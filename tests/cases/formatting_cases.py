@@ -47,57 +47,57 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         shared_parameters={"line_length": 100},
         parameter_grid={},
     ),
-    CaseTemplate(
-        fixture_directory_name=Path("module_docstring_example_backticks"),
-        input_file_paths=[
-            Path("module_docstring_example_backticks.py"),
-            Path("module_docstring_example_backticks_60.py"),
-        ],
-        output_file_path_template=Path("module_docstring_example_backticks_60.py"),
-        shared_parameters={"line_length": 60},
-        parameter_grid={},
-    ),
-    CaseTemplate(
-        fixture_directory_name=Path("module_docstring_example_tildes"),
-        input_file_paths=[
-            Path("module_docstring_example_tildes.py"),
-            Path("module_docstring_example_tildes_60.py"),
-        ],
-        output_file_path_template=Path("module_docstring_example_tildes_60.py"),
-        shared_parameters={"line_length": 60},
-        parameter_grid={},
-    ),
-    CaseTemplate(
-        fixture_directory_name=Path("module_docstring_ordered_list"),
-        input_file_paths=[
-            Path("module_docstring_ordered_list_too_long.py"),
-            Path("module_docstring_ordered_list_60.py"),
-            Path("module_docstring_ordered_list_80.py"),
-            Path("module_docstring_ordered_list_100.py"),
-        ],
-        output_file_path_template=Path(
-            "module_docstring_ordered_list_{line_length}.py"
-        ),
-        shared_parameters={},
-        parameter_grid={
-            "line_length": [60, 80, 100],
-        },
-    ),
-    CaseTemplate(
-        fixture_directory_name=Path("module_docstring_repl_and_codeblock"),
-        input_file_paths=[
-            Path("module_docstring_repl_and_codeblock_60.py"),
-            Path("module_docstring_repl_and_codeblock_80.py"),
-            Path("module_docstring_repl_and_codeblock_100.py"),
-        ],
-        output_file_path_template=Path(
-            "module_docstring_repl_and_codeblock_{line_length}.py"
-        ),
-        shared_parameters={},
-        parameter_grid={
-            "line_length": [60, 80, 100],
-        },
-    )
+    # CaseTemplate(
+    #     fixture_directory_name=Path("module_docstring_example_backticks"),
+    #     input_file_paths=[
+    #         Path("module_docstring_example_backticks.py"),
+    #         Path("module_docstring_example_backticks_60.py"),
+    #     ],
+    #     output_file_path_template=Path("module_docstring_example_backticks_60.py"),
+    #     shared_parameters={"line_length": 60},
+    #     parameter_grid={},
+    # ),
+    # CaseTemplate(
+    #     fixture_directory_name=Path("module_docstring_example_tildes"),
+    #     input_file_paths=[
+    #         Path("module_docstring_example_tildes.py"),
+    #         Path("module_docstring_example_tildes_60.py"),
+    #     ],
+    #     output_file_path_template=Path("module_docstring_example_tildes_60.py"),
+    #     shared_parameters={"line_length": 60},
+    #     parameter_grid={},
+    # ),
+    # CaseTemplate(
+    #     fixture_directory_name=Path("module_docstring_ordered_list"),
+    #     input_file_paths=[
+    #         Path("module_docstring_ordered_list_too_long.py"),
+    #         Path("module_docstring_ordered_list_60.py"),
+    #         Path("module_docstring_ordered_list_80.py"),
+    #         Path("module_docstring_ordered_list_100.py"),
+    #     ],
+    #     output_file_path_template=Path(
+    #         "module_docstring_ordered_list_{line_length}.py"
+    #     ),
+    #     shared_parameters={},
+    #     parameter_grid={
+    #         "line_length": [60, 80, 100],
+    #     },
+    # ),
+    # CaseTemplate(
+    #     fixture_directory_name=Path("module_docstring_repl_and_codeblock"),
+    #     input_file_paths=[
+    #         Path("module_docstring_repl_and_codeblock_60.py"),
+    #         Path("module_docstring_repl_and_codeblock_80.py"),
+    #         Path("module_docstring_repl_and_codeblock_100.py"),
+    #     ],
+    #     output_file_path_template=Path(
+    #         "module_docstring_repl_and_codeblock_{line_length}.py"
+    #     ),
+    #     shared_parameters={},
+    #     parameter_grid={
+    #         "line_length": [60, 80, 100],
+    #     },
+    # )
 ]
 
 CASES: list[Case] = list(

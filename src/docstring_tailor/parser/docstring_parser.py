@@ -1,17 +1,25 @@
 """Contains logic for parsing docstrings into a structured IR."""
 
-from docstring_tailor.constants import (
+from docstring_tailor.defaults.constants import (
     DOCSTRING_DELIMITER_LENGTH,
-    GOOOGLE_NAMED_PARAGRAPH_SECTIONS,
-    GOOOGLE_STRUCTURED_LIST_SECTIONS,
     PYTHON_REPL_PREFIX_START,
     RE_PATTERN_BLANK_LINES,
     RE_PATTERN_FENCE,
 )
-from docstring_tailor.docstring_section_parser import StructuredListParser
-from docstring_tailor.ir_model import DocstringNode, DocstringSection, SectionType, ParsedNamedParagraph, ParsedSimpleList
-from docstring_tailor.utils.utils_list_detection import is_list
-from docstring_tailor.utils.utils_parsing import extract_items
+from docstring_tailor.defaults.docstring_keywords import (
+    GOOGLE_NAMED_PARAGRAPH_SECTIONS,
+    GOOGLE_STRUCTURED_LIST_SECTIONS,
+)
+from docstring_tailor.defaults.ir_model import (
+    DocstringNode,
+    DocstringSection,
+    ParsedNamedParagraph,
+    ParsedSimpleList,
+    SectionType,
+)
+from docstring_tailor.parser.docstring_section_parser import StructuredListParser
+from docstring_tailor.utils.utils_list_detection import get_list_type, is_list
+from docstring_tailor.utils.utils_parsing import extract_items, strip_list_marker
 
 
 class DocstringParser:
@@ -27,7 +35,7 @@ class DocstringParser:
     def __init__(self) -> None:
         """Initialises the DocstringParser."""
         self._structured_list_parser = StructuredListParser()
-    
+
     def _parse_simple_list(
         self,
         section: DocstringSection,
@@ -40,15 +48,18 @@ class DocstringParser:
         Returns:
             parsed (ParsedSimpleList): Fully parsed simple list node.
         """
-        items = extract_items(section.content)
+        list_type = get_list_type(text=section.content)
+        items = extract_items(content=section.content)
+        stripped_items = [strip_list_marker(item) for item in items]
 
         parsed = ParsedSimpleList(
             section_type=SectionType.SIMPLE_LIST,
-            items=items,
+            list_type=list_type,
+            items=stripped_items,
         )
 
         return parsed
-        
+
     def _parse_named_paragraph(
         self,
         section: DocstringSection,
@@ -81,8 +92,8 @@ class DocstringParser:
         body_ir = self._detect_simple_list_sections(body_ir)
         body_ir = self._relabel_unidentified_as_paragraph(body_ir)
 
-        body: list[DocstringNode] = [
-            self._parse_simple_list(node) 
+        body: list[DocstringSection | ParsedSimpleList] = [
+            self._parse_simple_list(node)
             if node.section_type is SectionType.SIMPLE_LIST
             else node
             for node in body_ir
@@ -240,7 +251,7 @@ class DocstringParser:
 
             first_line = section.content.splitlines()[0].strip()
 
-            if first_line.rstrip(":") in GOOOGLE_STRUCTURED_LIST_SECTIONS:
+            if first_line.rstrip(":") in GOOGLE_STRUCTURED_LIST_SECTIONS:
                 result.append(
                     DocstringSection(
                         section_type=SectionType.STRUCTURED_LIST,
@@ -276,7 +287,7 @@ class DocstringParser:
 
             first_line = section.content.splitlines()[0].strip()
 
-            if first_line.rstrip(":") in GOOOGLE_NAMED_PARAGRAPH_SECTIONS:
+            if first_line.rstrip(":") in GOOGLE_NAMED_PARAGRAPH_SECTIONS:
                 result.append(
                     DocstringSection(
                         section_type=SectionType.NAMED_PARAGRAPH,

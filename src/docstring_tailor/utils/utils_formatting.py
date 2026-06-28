@@ -4,7 +4,7 @@ import re
 import textwrap
 
 
-def format_paragraph(
+def format_text(
     text: str,
     wrap_width: int,
     line_separator: str,
@@ -33,7 +33,7 @@ def format_paragraph(
     return formatted
 
 
-def format_code_block(text: str, line_separator: str) -> str:
+def format_code(text: str, line_separator: str) -> str:
     """Formats a verbatim code block by stripping original indentation and re-indenting.
 
     Preserves the content exactly as written, only adjusting the leading indentation to match the
@@ -70,56 +70,3 @@ def format_code_block(text: str, line_separator: str) -> str:
     formatted_code_block = line_separator.join(formatted_lines)
 
     return formatted_code_block
-
-
-def format_list(text: str, wrap_width: int, line_separator: str) -> str:
-    """Formats a list block, preserving each item on its own line.
-
-    Groups lines into individual items by detecting list markers at the base indentation level.
-    Continuation lines at a deeper indentation are joined to the current item. Each item is then
-    wrapped independently, with continuation lines aligned to the text following the marker.
-
-    Args:
-        text (str): The raw list text.
-        wrap_width (int): Maximum number of characters per line.
-        line_separator (str): The string used to join lines and items.
-
-    Returns:
-        formatted (str): The formatted list string.
-    """
-    lines = [line for line in text.split("\n") if line.strip()]
-
-    if not lines:
-        return ""
-
-    base_indent = min(len(line) - len(line.lstrip()) for line in lines)
-    item_start_pattern = re.compile(r"^\s*(?:[-*+]|\d+[.)]) ")
-
-    items: list[str] = []
-    current_item_lines: list[str] = []
-
-    for line in lines:
-        indent = len(line) - len(line.lstrip())
-        is_new_item = indent == base_indent and bool(item_start_pattern.match(line))
-
-        if is_new_item and current_item_lines:
-            items.append(" ".join(l.strip() for l in current_item_lines))
-            current_item_lines = [line.strip()]
-        else:
-            current_item_lines.append(line.strip())
-
-    if current_item_lines:
-        items.append(" ".join(l.strip() for l in current_item_lines))
-
-    formatted_items: list[str] = []
-    for item in items:
-        marker_match = re.match(r"^([-*+]\s+|\d+[.)]\s+)", item)
-        subsequent_indent = " " * len(marker_match.group(1)) if marker_match else ""
-        wrapped_lines = textwrap.wrap(
-            item, width=wrap_width, subsequent_indent=subsequent_indent
-        )
-        formatted_items.append(line_separator.join(wrapped_lines))
-
-    formatted = line_separator.join(formatted_items)
-
-    return formatted

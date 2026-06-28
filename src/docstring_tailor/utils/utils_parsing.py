@@ -1,5 +1,9 @@
 """Utility functions for parsing docstring section content."""
 
+import re
+
+from docstring_tailor.defaults.constants import RE_PATTERN_LIST_MARKER
+
 
 def extract_items(content: str, skip_first_line: bool = False) -> list[str]:
     """Extracts individual item strings from a section, using indentation to detect boundaries.
@@ -43,3 +47,17 @@ def extract_items(content: str, skip_first_line: bool = False) -> list[str]:
         items.append(f"{first_line} {continuation}".strip())
 
     return items
+
+
+def strip_list_marker(item: str) -> str:
+    """Strips the leading list marker from a list item string.
+
+    Args:
+        item (str): A single list item string including its marker.
+
+    Returns:
+        stripped (str): The item content with the marker removed.
+    """
+    stripped = re.sub(RE_PATTERN_LIST_MARKER, "", item)
+
+    return stripped

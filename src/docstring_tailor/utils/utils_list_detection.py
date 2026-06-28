@@ -1,9 +1,10 @@
 """Utility module with functions for list detection in docstrings."""
 
-from docstring_tailor.constants import (
+from docstring_tailor.defaults.constants import (
     RE_PATTERN_ORDERED_LIST_ITEM,
     RE_PATTERN_UNORDERED_LIST_ITEM,
 )
+from docstring_tailor.defaults.ir_model import SimpleListType
 
 
 def _is_unordered_list(lines: list[str]) -> bool:
@@ -87,3 +88,24 @@ def is_list(text: str) -> bool:
     result = _is_unordered_list(lines=lines) or _is_ordered_list(lines=lines)
 
     return result
+
+
+def get_list_type(text: str) -> SimpleListType:
+    """Returns whether a confirmed list is ordered or unordered.
+
+    Assumes the text is already confirmed to contain a list. Checks for
+    unordered markers first, falling back to ordered. Note that this
+    function intentionally repeats the detection scan already performed
+    by is_list, favouring single responsibility over avoiding redundant
+    computation.
+
+    Args:
+        text (str): The raw list text.
+
+    Returns:
+        list_type (SimpleListType): 'unordered' or 'ordered'.
+    """
+    lines = text.split("\n")
+    list_type: SimpleListType = "unordered" if _is_unordered_list(lines) else "ordered"
+
+    return list_type

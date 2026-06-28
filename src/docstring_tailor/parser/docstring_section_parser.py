@@ -1,14 +1,13 @@
 """Contains logic for parsing structured list sections of a docstring."""
 
-from docstring_tailor.constants import GOOOGLE_RAISES_SECTIONS
-from docstring_tailor.ir_model import (
+from docstring_tailor.defaults.docstring_keywords import GOOGLE_RAISES_SECTIONS
+from docstring_tailor.defaults.ir_model import (
     DocstringSection,
     ParsedStructuredList,
     SectionType,
     StructuredListError,
     StructuredListParameter,
 )
-
 from docstring_tailor.utils.utils_parsing import extract_items
 
 
@@ -92,13 +91,15 @@ class StructuredListParser:
         keyword = section.content.splitlines()[0].strip().rstrip(":")
         items = extract_items(section.content, skip_first_line=True)
 
-        if keyword in GOOOGLE_RAISES_SECTIONS:
-            entries = [self._parse_error_section(item) for item in items]
-        else:
-            entries = [self._parse_parameter_section(item) for item in items]
+        entries = (
+            [self._parse_error_section(item) for item in items]
+            if keyword in GOOGLE_RAISES_SECTIONS
+            else [self._parse_parameter_section(item) for item in items]
+        )
 
         parsed = ParsedStructuredList(
             section_type=SectionType.STRUCTURED_LIST,
+            keyword=keyword,
             entries=entries,
         )
 

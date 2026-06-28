@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from docstring_tailor.constants import DIR_PATH_TEST_FIXTURES
+from docstring_tailor.defaults.constants import DIR_PATH_TEST_FIXTURES
 from tests.cases.config_model import Case
 
 

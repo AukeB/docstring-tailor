@@ -2,16 +2,13 @@
 
 import libcst as cst
 
-from docstring_tailor.constants import (
-    DOCSTRING_DELIMITER,
-    DOCSTRING_DELIMITER_LENGTH,
-)
-from docstring_tailor.docstring_formatter import DocstringFormatter
-from docstring_tailor.docstring_parser import DocstringParser
+from docstring_tailor.defaults.constants import DOCSTRING_DELIMITER
+from docstring_tailor.parser.docstring_parser import DocstringParser
+from docstring_tailor.renderer.docstring_renderer import DocstringRenderer
 
 
 class DocstringVisitor(cst.CSTTransformer):
-    """A transformer for traversing and formatting docstrings.
+    """A transformer for traversing and rendering docstrings.
 
     Subclasses libcst's CSTTransformer, which implements the visitor pattern over a Concrete Syntax
     Tree (CST). When tree.visit(DocstringVisitor()) is called, libcst traverses every node in the
@@ -23,18 +20,16 @@ class DocstringVisitor(cst.CSTTransformer):
     node in the reconstructed tree.
 
     The visit_* methods in this class (visit_Module, visit_IndentedBlock) are used exclusively to
-    track indentation state as the tree is traversed, not to modify it. The leave_IndentedBlock is
-    also to track indentation. Modifications to the tree happen only in in the
-    leave_SimpleStatementLine method.
+    track indentation state as the tree is traversed, not to modify it. leave_IndentedBlock is
+    similarly used only for indentation tracking. Modifications to the tree happen only in
+    leave_SimpleStatementLine.
 
     Workflow: The entry point for all transformations is leave_SimpleStatementLine, called for every
     simple statement encountered. It delegates to _is_docstring to determine whether the statement
     is a docstring. If not, the node is returned unchanged via the super() call. If it is, the node
-    is passed to _format_docstring, which extracts the raw string content and passes it to
-    _build_docstring. From there, two paths are possible: if the content fits on one line and
-    contains no deliberate paragraph breaks, _build_one_line_docstring is called; otherwise
-    _build_multi_line_docstring is called, which delegates to the MultiLineDocstringFormatter class
-    for the more complex multi-line formatting logic.
+    is passed to _process_docstring_node, which extracts the raw string content and passes it to
+    _transform_docstring. There, the content is parsed into a typed IR by DocstringParser, then
+    rendered back into a formatted docstring string by DocstringRenderer.
 
     Attributes:
         _line_length (int): Maximum characters per line including indentation and triple double
@@ -43,14 +38,19 @@ class DocstringVisitor(cst.CSTTransformer):
             updated as the tree is traversed.
         _indent_unit (str): The indentation unit string used in the source file, captured from the
             module node on entry. Initialised to four spaces as a safety placeholder.
+        _parser (DocstringParser): Reusable parser instance, instantiated once since the parser
+            is stateless across docstrings.
     """
 
     def __init__(self, line_length: int) -> None:
         """Initialises the DocstringVisitor.
 
-        Sets up the indentation tracker used to correctly format multi-line docstrings at any
+        Sets up the indentation tracker used to correctly render multi-line docstrings at any
         nesting level. The initial value of _indent_unit is a four-space placeholder for safety, as
         it will always be overwritten by visit_Module before any docstring is processed.
+        DocstringParser is instantiated once here since it is stateless across docstrings.
+        DocstringRenderer is instantiated per docstring in _transform_docstring since it depends
+        on _current_indent, which changes as the tree is traversed.
 
         Args:
             line_length (int): Maximum characters per line including indentation and triple double
@@ -59,6 +59,7 @@ class DocstringVisitor(cst.CSTTransformer):
         self._line_length = line_length
         self._current_indent = ""
         self._indent_unit = "    "
+        self._parser = DocstringParser()
 
     def visit_Module(self, node: cst.Module) -> None:
         """Captures the default indentation unit from the module on first entry.
@@ -106,60 +107,51 @@ class DocstringVisitor(cst.CSTTransformer):
 
         return updated_node
 
-    def _build_docstring(self, content: str) -> str:
-        """Builds the formatted docstring from the stripped content.
-
-        Delegates all formatting and one-line vs multi-line rendering decisions to
-        DocstringFormatter.
+    def _transform_docstring(self, content: str) -> str:
+        """Parses and renders a raw docstring string into its formatted equivalent.
 
         Args:
-            content (str): The stripped docstring content, excluding the triple quote delimiters.
+            content (str): The raw docstring string including triple-quote delimiters.
 
         Returns:
-            docstring (str): The formatted docstring including the triple quote delimiters.
+            rendered (str): The fully rendered docstring string.
         """
-        docstring_parser = DocstringParser()
-        docstring_parser.parse(content=content)
 
-        import sys
+        ir = self._parser.parse(content=content)
 
-        sys.exit()
-
-        docstring_formatter = DocstringFormatter(
+        renderer = DocstringRenderer(
             line_length=self._line_length,
             current_indent=self._current_indent,
             indent_unit=self._indent_unit,
         )
 
-        docstring = docstring_formatter.format(content=content)
+        rendered = renderer.render(ir=ir)
 
-        return docstring
+        return rendered
 
-    def _format_docstring(
+    def _process_docstring_node(
         self, node: cst.SimpleStatementLine
     ) -> cst.SimpleStatementLine:
-        """Extracts, transforms, and reattaches the formatted docstring on the given node.
+        """Extracts, transforms, and reattaches the rendered docstring on the given CST node.
 
-        Extracts the raw string value from the CST node, strips the triple quote delimiters, and
-        passes the content to _build_docstring. The resulting formatted docstring is then wrapped
-        back into the appropriate CST node types and reattached to the statement. One-line
-        docstrings have the closing triple quotes on the same line; multi-line docstrings have them
-        on a new line.
+        Extracts the raw string value from the CST node and passes it to
+        _transform_docstring. The result is then wrapped back into the appropriate
+        CST node types and reattached to the statement.
 
         Args:
             node (cst.SimpleStatementLine): A CST node containing a docstring.
 
         Returns:
-            updated_node (cst.SimpleStatementLine): The updated node with the formatted docstring.
+            updated_node (cst.SimpleStatementLine): The updated node with the rendered docstring.
         """
         # Extract
         raw_docstring = node.body[0].value.value  # type: ignore
 
         # Transform
-        formatted_docstring = self._build_docstring(content=raw_docstring)
+        rendered_docstring = self._transform_docstring(content=raw_docstring)
 
-        # Update
-        updated_simple_string = cst.SimpleString(formatted_docstring)
+        # Reattach
+        updated_simple_string = cst.SimpleString(rendered_docstring)
         updated_expression = node.body[0].with_changes(value=updated_simple_string)
         updated_node = node.with_changes(body=(updated_expression,))
 
@@ -197,7 +189,7 @@ class DocstringVisitor(cst.CSTTransformer):
 
         Called automatically by libcst for every simple statement in the file. Acts as the entry
         point for all docstring transformations. If the statement is not a docstring, the node is
-        returned unchanged via the super() call. If it is, it is passed to _format_docstring for
+        returned unchanged via the super() call. If it is, it is passed to _process_docstring_node for
         formatting.
 
         Args:
@@ -208,6 +200,6 @@ class DocstringVisitor(cst.CSTTransformer):
             node (cst.BaseStatement): The final statement after transformation.
         """
         if self._is_docstring(node=updated_node):
-            updated_node = self._format_docstring(node=updated_node)
+            updated_node = self._process_docstring_node(node=updated_node)
 
         return super().leave_SimpleStatementLine(original_node, updated_node)
