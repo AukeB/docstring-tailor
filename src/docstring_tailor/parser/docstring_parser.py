@@ -13,13 +13,14 @@ from docstring_tailor.defaults.docstring_keywords import (
     GOOGLE_STRUCTURED_LIST_SECTIONS,
 )
 from docstring_tailor.defaults.ir_model import (
+    CodeBlock,
+    CodeBlockDelimiterType,
+    CodeREPL,
     DocstringNode,
-    DocstringSection,
-    FencedCodeBlockDelimiterType,
-    ParsedCodeBlock,
-    ParsedNamedParagraph,
-    ParsedSimpleList,
-    SectionType,
+    NamedParagraph,
+    Paragraph,
+    SimpleList,
+    Unidentified,
 )
 from docstring_tailor.parser.docstring_section_parser import StructuredListParser
 from docstring_tailor.utils.utils_list_detection import get_list_type, is_list
@@ -29,368 +30,307 @@ from docstring_tailor.utils.utils_parsing import extract_items, strip_list_marke
 class DocstringParser:
     """Parses a raw docstring string into a typed intermediate representation.
 
-    The parsing pipeline proceeds in stages:
+    The parsing pipeline proceeds in stages, applied via `_parse_body`:
 
-    1. Wrap the raw content in a single UNIDENTIFIED section.
+    1. Wrap the content in a single Unidentified node.
     2. Extract code blocks protected by fence delimiters.
-    3. Split remaining UNIDENTIFIED sections on blank lines.
-    4. Classify each chunk into its final section type.
+    3. Split remaining Unidentified nodes on blank lines.
+    4. Detect and eagerly parse, in order: named paragraphs, structured lists, REPL blocks, and
+       simple lists.
+    5. Relabel anything still Unidentified as a Paragraph.
+
+    `_parse_body` is applied recursively to the body of a NAMED_PARAGRAPH node (e.g. Note,
+    Warning), since that body is itself just docstring content. Named paragraphs and structured
+    lists are disallowed from that recursive call, since neither is permitted to nest inside a
+    named paragraph's body (a Note can't contain another Note or an Args section).
     """
 
     def __init__(self) -> None:
         """Initialises the DocstringParser."""
         self._structured_list_parser = StructuredListParser()
 
-    def _parse_simple_list(
-        self,
-        section: DocstringSection,
-    ) -> ParsedSimpleList:
-        """Parses a SIMPLE_LIST section into a ParsedSimpleList node.
+    def parse(self, content: str) -> list[DocstringNode]:
+        """Parses a raw docstring into a typed IR.
 
         Args:
-            section (DocstringSection): A SIMPLE_LIST section to parse.
+            content (str): Raw docstring string including triple-quote delimiters.
 
         Returns:
-            parsed (ParsedSimpleList): Fully parsed simple list node.
+            ir (list[DocstringNode]): Fully parsed and typed IR.
         """
-        list_type = get_list_type(text=section.content)
-        items = extract_items(content=section.content)
-        stripped_items = [strip_list_marker(item) for item in items]
+        stripped_content = content[
+            DOCSTRING_DELIMITER_LENGTH:-DOCSTRING_DELIMITER_LENGTH
+        ].strip()
 
-        parsed = ParsedSimpleList(
-            section_type=SectionType.SIMPLE_LIST,
-            list_type=list_type,
-            items=stripped_items,
+        ir = self._parse_body(
+            stripped_content,
+            allow_named_paragraph=True,
+            allow_structured_list=True,
         )
 
-        return parsed
+        return ir
 
-    def _parse_named_paragraph(
+    def _parse_body(
         self,
-        section: DocstringSection,
-    ) -> DocstringNode:
-        """Drills into a NAMED_PARAGRAPH section to detect nested code blocks, REPL, and lists.
+        content: str,
+        *,
+        allow_named_paragraph: bool,
+        allow_structured_list: bool,
+    ) -> list[DocstringNode]:
+        """Runs the full classification-and-parsing pipeline over a chunk of docstring content.
 
-        Extracts the header keyword, wraps the body in a fresh UNIDENTIFIED section, then runs the
-        relevant detection passes and parses any simple lists found.
+        Used both for the top-level docstring body and, recursively, for the body of a
+        NAMED_PARAGRAPH node. The two `allow_*` flags are required (no defaults) so every call
+        site must state explicitly whether nesting is permitted, rather than relying on a default
+        that could silently reintroduce nested Notes or nested Args sections.
 
         Args:
-            section (DocstringSection): A NAMED_PARAGRAPH section.
+            content (str): Raw text content to parse (no triple-quote delimiters).
+            allow_named_paragraph (bool): Whether to detect and parse NAMED_PARAGRAPH sections.
+            allow_structured_list (bool): Whether to detect and parse STRUCTURED_LIST sections.
 
         Returns:
-            parsed (ParsedNamedParagraph): Parsed named paragraph node with typed body.
+            ir (list[DocstringNode]): Fully parsed and typed IR for this chunk of content.
         """
-        lines = section.content.splitlines()
-        header = lines[0].strip().rstrip(":")
-        body_content = "\n".join(lines[1:])
+        nodes: list[DocstringNode] = [Unidentified(content=content)]
 
-        body_ir: list[DocstringSection] = [
-            DocstringSection(
-                section_type=SectionType.UNIDENTIFIED,
-                content=body_content,
+        nodes = self._detect_code_blocks(nodes)
+        nodes = self._split_on_blank_lines(nodes)
+
+        if allow_named_paragraph:
+            nodes = self._detect_named_paragraphs(nodes)
+
+        if allow_structured_list:
+            nodes = self._detect_structured_lists(nodes)
+
+        nodes = self._detect_code_repl(nodes)
+        nodes = self._detect_simple_lists(nodes)
+        nodes = self._relabel_unidentified_as_paragraph(nodes)
+
+        return nodes
+
+    def _detect_named_paragraphs(
+        self,
+        nodes: list[DocstringNode],
+    ) -> list[DocstringNode]:
+        """Identifies NAMED_PARAGRAPH nodes and eagerly parses their body via recursion.
+
+        A node is a named paragraph if its first line matches a keyword such as Note, Notes,
+        References, See Also, Warning, or Warnings. The remaining lines are re-parsed by calling
+        `_parse_body` recursively, with named paragraphs and structured lists disallowed for that
+        call so a Note cannot itself contain another Note or an Args section (matching Google
+        docstring convention).
+
+        Args:
+            nodes (list[DocstringNode]): Current IR.
+
+        Returns:
+            result (list[DocstringNode]): IR with NAMED_PARAGRAPH nodes detected and parsed.
+        """
+        result: list[DocstringNode] = []
+
+        for node in nodes:
+            if not isinstance(node, Unidentified):
+                result.append(node)
+                continue
+
+            lines = node.content.splitlines()
+            first_line = lines[0].strip()
+            header = first_line.rstrip(":")
+
+            if header not in GOOGLE_NAMED_PARAGRAPH_SECTIONS:
+                result.append(node)
+                continue
+
+            body_content = "\n".join(lines[1:])
+            body = self._parse_body(
+                body_content,
+                allow_named_paragraph=False,  # Notes don't nest inside Notes.
+                allow_structured_list=False,  # Args/Raises don't belong inside a Note.
             )
-        ]
 
-        body_ir = self._detect_code_block_sections(body_ir)
-        body_ir = self._split_on_blank_lines(body_ir)
-        body_ir = self._detect_code_repl_sections(body_ir)
-        body_ir = self._detect_simple_list_sections(body_ir)
-        body_ir = self._relabel_unidentified_as_paragraph(body_ir)
+            result.append(NamedParagraph(header=header, body=body))
 
-        body: list[DocstringSection | ParsedSimpleList] = [
-            self._parse_simple_list(node)
-            if node.section_type is SectionType.SIMPLE_LIST
-            else node
-            for node in body_ir
-        ]
+        return result
 
-        parsed = ParsedNamedParagraph(
-            section_type=SectionType.NAMED_PARAGRAPH,
-            header=header,
-            body=body,
-        )
-
-        return parsed
-
-    def _parse_section(
+    def _detect_structured_lists(
         self,
-        section: DocstringSection,
-    ) -> DocstringNode:
-        """Drills one level deeper into sections that require further parsing.
+        nodes: list[DocstringNode],
+    ) -> list[DocstringNode]:
+        """Identifies STRUCTURED_LIST nodes and eagerly parses them into StructuredList nodes.
+
+        A node is a structured list if its first line matches a Google-style keyword such as
+        Args, Returns, or Raises. Entry parsing is delegated to StructuredListParser.
 
         Args:
-            section (DocstringSection): A single IR node.
+            nodes (list[DocstringNode]): Current IR.
 
         Returns:
-            node (DocstringNode): Parsed node if applicable, otherwise unchanged.
+            result (list[DocstringNode]): IR with StructuredList nodes detected and parsed.
         """
-        if section.section_type is SectionType.STRUCTURED_LIST:
-            node = self._structured_list_parser.parse(section)
-        elif section.section_type is SectionType.NAMED_PARAGRAPH:
-            node = self._parse_named_paragraph(section)
-        elif section.section_type is SectionType.SIMPLE_LIST:
-            node = self._parse_simple_list(section)
-        else:
-            node = section
+        result: list[DocstringNode] = []
 
-        return node
+        for node in nodes:
+            if not isinstance(node, Unidentified):
+                result.append(node)
+                continue
+
+            first_line = node.content.splitlines()[0].strip()
+
+            if first_line.rstrip(":") in GOOGLE_STRUCTURED_LIST_SECTIONS:
+                result.append(self._structured_list_parser.parse(node.content))
+            else:
+                result.append(node)
+
+        return result
+
+    def _detect_code_repl(
+        self,
+        nodes: list[DocstringNode],
+    ) -> list[DocstringNode]:
+        """Identifies CODE_REPL nodes and parses them into CodeREPL nodes.
+
+        A node is CODE_REPL if its first line starts with the >>> prompt.
+
+        Args:
+            nodes (list[DocstringNode]): Current IR.
+
+        Returns:
+            result (list[DocstringNode]): IR with CodeREPL nodes detected and parsed.
+        """
+        result: list[DocstringNode] = []
+
+        for node in nodes:
+            if not isinstance(node, Unidentified):
+                result.append(node)
+                continue
+
+            first_line = node.content.splitlines()[0].strip()
+
+            if first_line.startswith(PYTHON_REPL_PREFIX_START):
+                result.append(CodeREPL(code=node.content))
+            else:
+                result.append(node)
+
+        return result
+
+    def _detect_simple_lists(
+        self,
+        nodes: list[DocstringNode],
+    ) -> list[DocstringNode]:
+        """Identifies SIMPLE_LIST nodes and eagerly parses them into SimpleList nodes.
+
+        A node is a simple list if the is_list utility detects at least two list markers at the
+        base indentation level.
+
+        Args:
+            nodes (list[DocstringNode]): Current IR.
+
+        Returns:
+            result (list[DocstringNode]): IR with SimpleList nodes detected and parsed.
+        """
+        result: list[DocstringNode] = []
+
+        for node in nodes:
+            if not isinstance(node, Unidentified):
+                result.append(node)
+                continue
+
+            if not is_list(node.content):
+                result.append(node)
+                continue
+
+            list_type = get_list_type(text=node.content)
+            items = extract_items(content=node.content)
+            stripped_items = [strip_list_marker(item) for item in items]
+
+            result.append(SimpleList(list_type=list_type, items=stripped_items))
+
+        return result
 
     def _relabel_unidentified_as_paragraph(
         self,
-        sections: list[DocstringSection],
-    ) -> list[DocstringSection]:
-        """Relabels any remaining UNIDENTIFIED sections as PARAGRAPH.
+        nodes: list[DocstringNode],
+    ) -> list[DocstringNode]:
+        """Relabels any remaining Unidentified nodes as Paragraph.
 
-        Acts as the final step in the classification pipeline, converting anything not yet
-        identified by a prior pass into plain paragraph text.
+        Acts as the final step in the pipeline, converting anything not identified by a prior
+        pass into plain paragraph text.
 
         Args:
-            sections (list[DocstringSection]): Current IR.
+            nodes (list[DocstringNode]): Current IR.
 
         Returns:
-            result (list[DocstringSection]): IR with no remaining UNIDENTIFIED sections.
+            result (list[DocstringNode]): IR with no remaining Unidentified nodes.
         """
         result = [
-            DocstringSection(
-                section_type=SectionType.PARAGRAPH, content=section.content
-            )
-            if section.section_type is SectionType.UNIDENTIFIED
-            else section
-            for section in sections
+            Paragraph(content=node.content) if isinstance(node, Unidentified) else node
+            for node in nodes
         ]
 
         return result
 
-    def _detect_simple_list_sections(
-        self,
-        sections: list[DocstringSection],
-    ) -> list[DocstringSection]:
-        """Identifies UNIDENTIFIED sections containing a bullet or numbered list.
-
-        A section is classified as SIMPLE_LIST if the is_list utility detects at least two list
-        markers at the base indentation level.
-
-        Args:
-            sections (list[DocstringSection]): Current IR.
-
-        Returns:
-            result (list[DocstringSection]): IR with SIMPLE_LIST sections tagged.
-        """
-        result: list[DocstringSection] = []
-
-        for section in sections:
-            if section.section_type is not SectionType.UNIDENTIFIED:
-                result.append(section)
-                continue
-
-            if is_list(section.content):
-                result.append(
-                    DocstringSection(
-                        section_type=SectionType.SIMPLE_LIST,
-                        content=section.content,
-                    )
-                )
-            else:
-                result.append(section)
-
-        return result
-
-    def _detect_code_repl_sections(
-        self,
-        sections: list[DocstringSection],
-    ) -> list[DocstringSection]:
-        """Identifies UNIDENTIFIED sections containing Python REPL content.
-
-        A section is classified as CODE_REPL if its first line starts with the >>> prompt.
-
-        Args:
-            sections (list[DocstringSection]): Current IR.
-
-        Returns:
-            result (list[DocstringSection]): IR with CODE_REPL sections tagged.
-        """
-        result: list[DocstringSection] = []
-
-        for section in sections:
-            if section.section_type is not SectionType.UNIDENTIFIED:
-                result.append(section)
-                continue
-
-            first_line = section.content.splitlines()[0].strip()
-
-            if first_line.startswith(PYTHON_REPL_PREFIX_START):
-                result.append(
-                    DocstringSection(
-                        section_type=SectionType.CODE_REPL,
-                        content=section.content,
-                    )
-                )
-            else:
-                result.append(section)
-
-        return result
-
-    def _detect_structured_list_sections(
-        self,
-        sections: list[DocstringSection],
-    ) -> list[DocstringSection]:
-        """Identifies UNIDENTIFIED sections whose first line matches a structured list keyword.
-
-        Structured list sections are headed by a Google-style keyword such as Args, Returns, or
-        Raises, followed by indented entries with name, type, and description components.
-
-        Args:
-            sections (list[DocstringSection]): Current IR.
-
-        Returns:
-            result (list[DocstringSection]): IR with STRUCTURED_LIST sections tagged.
-        """
-        result: list[DocstringSection] = []
-
-        for section in sections:
-            if section.section_type is not SectionType.UNIDENTIFIED:
-                result.append(section)
-                continue
-
-            first_line = section.content.splitlines()[0].strip()
-
-            if first_line.rstrip(":") in GOOGLE_STRUCTURED_LIST_SECTIONS:
-                result.append(
-                    DocstringSection(
-                        section_type=SectionType.STRUCTURED_LIST,
-                        content=section.content,
-                    )
-                )
-            else:
-                result.append(section)
-
-        return result
-
-    def _detect_named_paragraph_sections(
-        self,
-        sections: list[DocstringSection],
-    ) -> list[DocstringSection]:
-        """Identifies UNIDENTIFIED sections whose first line matches a named paragraph keyword.
-
-        Named paragraphs are headed by keywords such as Note, Notes, References, See Also, Warning,
-        or Warnings, followed by indented plain text content.
-
-        Args:
-            sections (list[DocstringSection]): Current IR.
-
-        Returns:
-            result (list[DocstringSection]): IR with NAMED_PARAGRAPH sections tagged.
-        """
-        result: list[DocstringSection] = []
-
-        for section in sections:
-            if section.section_type is not SectionType.UNIDENTIFIED:
-                result.append(section)
-                continue
-
-            first_line = section.content.splitlines()[0].strip()
-
-            if first_line.rstrip(":") in GOOGLE_NAMED_PARAGRAPH_SECTIONS:
-                result.append(
-                    DocstringSection(
-                        section_type=SectionType.NAMED_PARAGRAPH,
-                        content=section.content,
-                    )
-                )
-            else:
-                result.append(section)
-
-        return result
-
-    def _categorize_remaining_sections(
-        self,
-        sections: list[DocstringSection],
-    ) -> list[DocstringSection]:
-        """Runs all classifiers in order over the current IR.
-
-        Args:
-            sections (list[DocstringSection]): Current IR.
-
-        Returns:
-            sections (list[DocstringSection]): Fully categorized IR.
-        """
-        sections = self._detect_named_paragraph_sections(sections)
-        sections = self._detect_structured_list_sections(sections)
-        sections = self._detect_code_repl_sections(sections)
-        sections = self._detect_simple_list_sections(sections)
-        sections = self._relabel_unidentified_as_paragraph(sections)
-
-        return sections
-
     def _split_on_blank_lines(
         self,
-        sections: list[DocstringSection],
-    ) -> list[DocstringSection]:
-        """Splits each UNIDENTIFIED section on blank lines.
+        nodes: list[DocstringNode],
+    ) -> list[DocstringNode]:
+        """Splits each Unidentified node on blank lines.
 
         Args:
-            sections (list[DocstringSection]): Current IR.
+            nodes (list[DocstringNode]): Current IR.
 
         Returns:
-            result (list[DocstringSection]): New IR with UNIDENTIFIED sections split into smaller
-                UNIDENTIFIED chunks.
+            result (list[DocstringNode]): New IR with Unidentified nodes split into smaller
+                Unidentified chunks.
         """
-        result: list[DocstringSection] = []
+        result: list[DocstringNode] = []
 
-        for section in sections:
-            if section.section_type is not SectionType.UNIDENTIFIED:
-                result.append(section)
+        for node in nodes:
+            if not isinstance(node, Unidentified):
+                result.append(node)
                 continue
 
-            chunks = RE_PATTERN_BLANK_LINES.split(section.content)
+            chunks = RE_PATTERN_BLANK_LINES.split(node.content)
 
             for chunk in chunks:
                 if chunk.strip():
-                    result.append(
-                        DocstringSection(
-                            section_type=SectionType.UNIDENTIFIED,
-                            content=chunk.strip(),
-                        )
-                    )
+                    result.append(Unidentified(content=chunk.strip()))
 
         return result
 
-    def _detect_code_block_sections(
+    def _detect_code_blocks(
         self,
-        sections: list[DocstringSection],
-    ) -> list[DocstringSection]:
-        """Splits UNIDENTIFIED sections on code fences, tagging fenced blocks as CODE_BLOCK.
+        nodes: list[DocstringNode],
+    ) -> list[DocstringNode]:
+        """Splits Unidentified nodes on code fences, parsing fenced blocks into CodeBlock nodes.
 
-        Each UNIDENTIFIED section is split using a capturing re.split() on fence delimiters,
+        Each Unidentified node is split using a capturing re.split() on fence delimiters,
         retaining the delimiters as elements. Chunks are iterated with a boolean fence tracker to
-        assign the correct section type.
+        assign the correct node type.
 
         Args:
-            sections (list[DocstringSection]): Current IR.
+            nodes (list[DocstringNode]): Current IR.
 
         Returns:
-            result (list[DocstringSection | ParsedCodeBlock]): New IR with CODE_BLOCK sections
-                extracted.
+            result (list[DocstringNode]): New IR with CodeBlock nodes extracted.
         """
-        result: list[DocstringSection] = []
+        result: list[DocstringNode] = []
 
-        for section in sections:
-            if section.section_type is not SectionType.UNIDENTIFIED:
-                result.append(section)
+        for node in nodes:
+            if not isinstance(node, Unidentified):
+                result.append(node)
                 continue
 
-            chunks = RE_PATTERN_FENCE.split(section.content)
+            chunks = RE_PATTERN_FENCE.split(node.content)
             in_fence = False
+            fence_delimiter: CodeBlockDelimiterType = "```"
 
             for chunk in chunks:
                 fence_match = RE_PATTERN_FENCE.match(chunk)
 
                 if fence_match:
-                    fence_delimiter = (
-                        cast(FencedCodeBlockDelimiterType, fence_match.group(1))
-                        if not in_fence
-                        else fence_delimiter
-                    )
+                    if not in_fence:
+                        fence_delimiter = cast(CodeBlockDelimiterType, fence_match.group(1))
                     in_fence = not in_fence
                     continue
 
@@ -398,69 +338,8 @@ class DocstringParser:
                     continue
 
                 if in_fence:
-                    result.append(
-                        ParsedCodeBlock(
-                            section_type=SectionType.CODE_BLOCK,
-                            delimiter=fence_delimiter,
-                            content=chunk.strip(),
-                        )
-                    )
+                    result.append(CodeBlock(code=chunk.strip(), delimiter=fence_delimiter))
                 else:
-                    result.append(
-                        DocstringSection(
-                            section_type=SectionType.UNIDENTIFIED,
-                            content=chunk.strip(),
-                        )
-                    )
-
-        return result
-
-    def _build_initial_ir(self, content: str) -> list[DocstringSection]:
-        """Wraps the raw docstring body in a single UNIDENTIFIED section.
-
-        Args:
-            content (str): Raw docstring string including triple-quote delimiters.
-
-        Returns:
-            ir (list[DocstringSection]): Single-element IR ready for identification passes.
-        """
-        content_without_triple_quotes = content[
-            DOCSTRING_DELIMITER_LENGTH:-DOCSTRING_DELIMITER_LENGTH
-        ].strip()
-
-        ir = [
-            DocstringSection(
-                section_type=SectionType.UNIDENTIFIED,
-                content=content_without_triple_quotes,
-            )
-        ]
-
-        return ir
-
-    def parse(self, content: str) -> list[DocstringNode]:
-        """Parses a raw docstring into a typed IR.
-
-        1. Wraps content in an initial UNIDENTIFIED section.
-        2. Extracts fenced code blocks.
-        3. Splits remaining content on blank lines.
-        4. Classifies all remaining UNIDENTIFIED sections.
-        5. Drills one level deeper for further classification and parsing of identified sections.
-
-        Args:
-            content (str): Raw docstring string including triple-quote delimiters.
-
-        Returns:
-            ir (list[DocstringSection]): Fully parsed and typed IR.
-        """
-        ir = self._build_initial_ir(content)
-        ir = self._detect_code_block_sections(ir)
-        ir = self._split_on_blank_lines(ir)
-        ir = self._categorize_remaining_sections(ir)
-
-        # Drill one level deeper for further classification and parsing.
-        result: list[DocstringNode] = []
-
-        for section in ir:
-            result.append(self._parse_section(section))
+                    result.append(Unidentified(content=chunk.strip()))
 
         return result
