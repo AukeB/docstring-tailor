@@ -5,6 +5,7 @@ from enum import Enum, auto
 from typing import Literal
 
 SimpleListType = Literal["ordered", "unordered"]
+FencedCodeBlockDelimiterType = Literal["```", "~~~"]
 
 
 class SectionType(Enum):
@@ -12,11 +13,11 @@ class SectionType(Enum):
 
     UNIDENTIFIED = auto()
     PARAGRAPH = auto()
-    NAMED_PARAGRAPH = auto()
     CODE_BLOCK = auto()
     CODE_REPL = auto()
     STRUCTURED_LIST = auto()
     SIMPLE_LIST = auto()
+    NAMED_PARAGRAPH = auto()
 
 
 @dataclass
@@ -40,6 +41,20 @@ class DocstringSection(DocstringNode):
     """
 
     content: str
+
+
+@dataclass
+class ParsedCodeBlock(DocstringSection):
+    """Represents a fenced code block section in the docstring IR.
+
+    Attributes:
+        section_type (SectionType): Always SectionType.CODE_BLOCK.
+        content (str): The raw code content between the fence delimiters.
+        delimiter (FencedCodeBlockDelimiterType): The fence delimiter used to open and close the
+            code block.
+    """
+
+    delimiter: FencedCodeBlockDelimiterType
 
 
 @dataclass
@@ -75,9 +90,10 @@ class ParsedStructuredList(DocstringNode):
     """Represents a fully parsed structured list section in the docstring IR.
 
     Attributes:
+        section_type (SectionType): Always SectionType.STRUCTURED_LIST.
         keyword (str): The section keyword, e.g. 'Args', 'Returns', 'Raises'.
-        entries (list[StructuredListParameter] | list[StructuredListError]):
-            The parsed entries, typed according to the section keyword.
+        entries (list[StructuredListParameter] | list[StructuredListError]): The parsed entries,
+            typed according to the section keyword.
     """
 
     keyword: str
@@ -90,8 +106,8 @@ class ParsedSimpleList(DocstringNode):
 
     Attributes:
         section_type (SectionType): Always SectionType.SIMPLE_LIST.
-        list_type (SimpleListType): Variable that stores whether the simple list is an
-            ordered or unordered list.
+        list_type (SimpleListType): Variable that stores whether the simple list is an ordered or
+            unordered list.
         items (list[str]): The parsed list items as plain strings.
     """
 
@@ -110,4 +126,4 @@ class ParsedNamedParagraph(DocstringNode):
     """
 
     header: str
-    body: list[DocstringSection | ParsedSimpleList]
+    body: list[DocstringSection | ParsedSimpleList | ParsedCodeBlock]

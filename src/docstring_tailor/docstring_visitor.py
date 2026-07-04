@@ -38,8 +38,8 @@ class DocstringVisitor(cst.CSTTransformer):
             updated as the tree is traversed.
         _indent_unit (str): The indentation unit string used in the source file, captured from the
             module node on entry. Initialised to four spaces as a safety placeholder.
-        _parser (DocstringParser): Reusable parser instance, instantiated once since the parser
-            is stateless across docstrings.
+        _parser (DocstringParser): Reusable parser instance, instantiated once since the parser is
+            stateless across docstrings.
     """
 
     def __init__(self, line_length: int) -> None:
@@ -49,8 +49,8 @@ class DocstringVisitor(cst.CSTTransformer):
         nesting level. The initial value of _indent_unit is a four-space placeholder for safety, as
         it will always be overwritten by visit_Module before any docstring is processed.
         DocstringParser is instantiated once here since it is stateless across docstrings.
-        DocstringRenderer is instantiated per docstring in _transform_docstring since it depends
-        on _current_indent, which changes as the tree is traversed.
+        DocstringRenderer is instantiated per docstring in _transform_docstring since it depends on
+        _current_indent, which changes as the tree is traversed.
 
         Args:
             line_length (int): Maximum characters per line including indentation and triple double
@@ -134,9 +134,9 @@ class DocstringVisitor(cst.CSTTransformer):
     ) -> cst.SimpleStatementLine:
         """Extracts, transforms, and reattaches the rendered docstring on the given CST node.
 
-        Extracts the raw string value from the CST node and passes it to
-        _transform_docstring. The result is then wrapped back into the appropriate
-        CST node types and reattached to the statement.
+        Extracts the raw string value from the CST node and passes it to _transform_docstring. The
+        result is then wrapped back into the appropriate CST node types and reattached to the
+        statement.
 
         Args:
             node (cst.SimpleStatementLine): A CST node containing a docstring.
@@ -189,8 +189,8 @@ class DocstringVisitor(cst.CSTTransformer):
 
         Called automatically by libcst for every simple statement in the file. Acts as the entry
         point for all docstring transformations. If the statement is not a docstring, the node is
-        returned unchanged via the super() call. If it is, it is passed to _process_docstring_node for
-        formatting.
+        returned unchanged via the super() call. If it is, it is passed to _process_docstring_node
+        for formatting.
 
         Args:
             original_node (cst.SimpleStatementLine): The original CST node.

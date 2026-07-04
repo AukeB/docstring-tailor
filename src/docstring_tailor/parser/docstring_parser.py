@@ -1,5 +1,7 @@
 """Contains logic for parsing docstrings into a structured IR."""
 
+from typing import cast
+
 from docstring_tailor.defaults.constants import (
     DOCSTRING_DELIMITER_LENGTH,
     PYTHON_REPL_PREFIX_START,
@@ -13,6 +15,8 @@ from docstring_tailor.defaults.docstring_keywords import (
 from docstring_tailor.defaults.ir_model import (
     DocstringNode,
     DocstringSection,
+    FencedCodeBlockDelimiterType,
+    ParsedCodeBlock,
     ParsedNamedParagraph,
     ParsedSimpleList,
     SectionType,
@@ -26,6 +30,7 @@ class DocstringParser:
     """Parses a raw docstring string into a typed intermediate representation.
 
     The parsing pipeline proceeds in stages:
+
     1. Wrap the raw content in a single UNIDENTIFIED section.
     2. Extract code blocks protected by fence delimiters.
     3. Split remaining UNIDENTIFIED sections on blank lines.
@@ -66,8 +71,8 @@ class DocstringParser:
     ) -> DocstringNode:
         """Drills into a NAMED_PARAGRAPH section to detect nested code blocks, REPL, and lists.
 
-        Extracts the header keyword, wraps the body in a fresh UNIDENTIFIED section,
-        then runs the relevant detection passes and parses any simple lists found.
+        Extracts the header keyword, wraps the body in a fresh UNIDENTIFIED section, then runs the
+        relevant detection passes and parses any simple lists found.
 
         Args:
             section (DocstringSection): A NAMED_PARAGRAPH section.
@@ -136,8 +141,8 @@ class DocstringParser:
     ) -> list[DocstringSection]:
         """Relabels any remaining UNIDENTIFIED sections as PARAGRAPH.
 
-        Acts as the final step in the classification pipeline, converting
-        anything not yet identified by a prior pass into plain paragraph text.
+        Acts as the final step in the classification pipeline, converting anything not yet
+        identified by a prior pass into plain paragraph text.
 
         Args:
             sections (list[DocstringSection]): Current IR.
@@ -162,8 +167,8 @@ class DocstringParser:
     ) -> list[DocstringSection]:
         """Identifies UNIDENTIFIED sections containing a bullet or numbered list.
 
-        A section is classified as SIMPLE_LIST if the is_list utility detects
-        at least two list markers at the base indentation level.
+        A section is classified as SIMPLE_LIST if the is_list utility detects at least two list
+        markers at the base indentation level.
 
         Args:
             sections (list[DocstringSection]): Current IR.
@@ -196,8 +201,7 @@ class DocstringParser:
     ) -> list[DocstringSection]:
         """Identifies UNIDENTIFIED sections containing Python REPL content.
 
-        A section is classified as CODE_REPL if its first line starts with
-        the >>> prompt.
+        A section is classified as CODE_REPL if its first line starts with the >>> prompt.
 
         Args:
             sections (list[DocstringSection]): Current IR.
@@ -232,9 +236,8 @@ class DocstringParser:
     ) -> list[DocstringSection]:
         """Identifies UNIDENTIFIED sections whose first line matches a structured list keyword.
 
-        Structured list sections are headed by a Google-style keyword such as
-        Args, Returns, or Raises, followed by indented entries with name, type,
-        and description components.
+        Structured list sections are headed by a Google-style keyword such as Args, Returns, or
+        Raises, followed by indented entries with name, type, and description components.
 
         Args:
             sections (list[DocstringSection]): Current IR.
@@ -269,8 +272,8 @@ class DocstringParser:
     ) -> list[DocstringSection]:
         """Identifies UNIDENTIFIED sections whose first line matches a named paragraph keyword.
 
-        Named paragraphs are headed by keywords such as Note, Notes, References,
-        See Also, Warning, or Warnings, followed by indented plain text content.
+        Named paragraphs are headed by keywords such as Note, Notes, References, See Also, Warning,
+        or Warnings, followed by indented plain text content.
 
         Args:
             sections (list[DocstringSection]): Current IR.
@@ -329,8 +332,8 @@ class DocstringParser:
             sections (list[DocstringSection]): Current IR.
 
         Returns:
-            result (list[DocstringSection]): New IR with UNIDENTIFIED sections
-                split into smaller UNIDENTIFIED chunks.
+            result (list[DocstringSection]): New IR with UNIDENTIFIED sections split into smaller
+                UNIDENTIFIED chunks.
         """
         result: list[DocstringSection] = []
 
@@ -358,15 +361,16 @@ class DocstringParser:
     ) -> list[DocstringSection]:
         """Splits UNIDENTIFIED sections on code fences, tagging fenced blocks as CODE_BLOCK.
 
-        Each UNIDENTIFIED section is split using a capturing re.split() on fence
-        delimiters, retaining the delimiters as elements. Chunks are iterated with
-        a boolean fence tracker to assign the correct section type.
+        Each UNIDENTIFIED section is split using a capturing re.split() on fence delimiters,
+        retaining the delimiters as elements. Chunks are iterated with a boolean fence tracker to
+        assign the correct section type.
 
         Args:
             sections (list[DocstringSection]): Current IR.
 
         Returns:
-            result (list[DocstringSection]): New IR with CODE_BLOCK sections extracted.
+            result (list[DocstringSection | ParsedCodeBlock]): New IR with CODE_BLOCK sections
+                extracted.
         """
         result: list[DocstringSection] = []
 
@@ -379,17 +383,32 @@ class DocstringParser:
             in_fence = False
 
             for chunk in chunks:
-                if RE_PATTERN_FENCE.fullmatch(chunk):
+                fence_match = RE_PATTERN_FENCE.match(chunk)
+
+                if fence_match:
+                    fence_delimiter = (
+                        cast(FencedCodeBlockDelimiterType, fence_match.group(1))
+                        if not in_fence
+                        else fence_delimiter
+                    )
                     in_fence = not in_fence
                     continue
 
-                if chunk.strip():
-                    section_type = (
-                        SectionType.CODE_BLOCK if in_fence else SectionType.UNIDENTIFIED
+                if not chunk.strip():
+                    continue
+
+                if in_fence:
+                    result.append(
+                        ParsedCodeBlock(
+                            section_type=SectionType.CODE_BLOCK,
+                            delimiter=fence_delimiter,
+                            content=chunk.strip(),
+                        )
                     )
+                else:
                     result.append(
                         DocstringSection(
-                            section_type=section_type,
+                            section_type=SectionType.UNIDENTIFIED,
                             content=chunk.strip(),
                         )
                     )
@@ -425,8 +444,7 @@ class DocstringParser:
         2. Extracts fenced code blocks.
         3. Splits remaining content on blank lines.
         4. Classifies all remaining UNIDENTIFIED sections.
-        5. Drills one level deeper for further classification and parsing of
-           identified sections.
+        5. Drills one level deeper for further classification and parsing of identified sections.
 
         Args:
             content (str): Raw docstring string including triple-quote delimiters.

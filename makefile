@@ -21,6 +21,7 @@ pytest:
 		--cov=$(PROJECT_NAME) \
 		--cov-report=term-missing
 	@echo "🧪 Successfully executed pytest."
+	make clean
 
 # Remove caches and temporary files
 clean:
@@ -44,10 +45,8 @@ git:
 
 # Run full workflow: format, type-check, test, clean, commit
 all:
-	uv run src/docstring_tailor/main.py
 	make ruff
 	make ty
 	make pytest
-	make clean
 	make git
 	@echo "⚡ Successfully executed all tasks."

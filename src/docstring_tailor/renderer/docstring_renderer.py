@@ -6,10 +6,13 @@ import textwrap
 from docstring_tailor.defaults.constants import (
     DOCSTRING_DELIMITER,
     DOCSTRING_DELIMITER_LENGTH,
+    RE_PATTERN_LIST_MARKER,
 )
+from docstring_tailor.defaults.docstring_keywords import GOOGLE_ALL_SECTION_KEYWORDS
 from docstring_tailor.defaults.ir_model import (
     DocstringNode,
     DocstringSection,
+    ParsedCodeBlock,
     ParsedNamedParagraph,
     ParsedSimpleList,
     ParsedStructuredList,
@@ -87,33 +90,98 @@ class DocstringRenderer:
 
         return result
 
+    def _opens_with_block(self, rendered_content: str) -> bool:
+        """Determines whether rendered content starts with a structural block marker.
+
+        A block is considered to start if the first non-empty line:
+
+        - starts with a code fence (```, ~~~) or REPL marker (>>>), OR
+        - matches a list marker regex, OR
+        - starts with any known Google section keyword.
+        """
+        first_line = next(
+            (l.strip() for l in rendered_content.split("\n") if l.strip()), ""
+        )
+
+        if not first_line:
+            return False
+
+        return (
+            first_line.startswith(("```", "~~~", ">>>"))
+            or re.match(RE_PATTERN_LIST_MARKER, first_line) is not None
+            or any(
+                first_line.startswith(keyword)
+                for keyword in GOOGLE_ALL_SECTION_KEYWORDS
+            )
+        )
+
+    def _render_opening_paragraph(self, paragraph: str) -> str:
+        """Renders the first paragraph, accounting for the opening triple quotes offset.
+
+        Args:
+            paragraph (str): The first plain text paragraph.
+
+        Returns:
+            rendered_paragraph (str): The wrapped paragraph string.
+        """
+        normalized = re.sub(r"\s+", " ", paragraph.strip())
+        lines = textwrap.wrap(
+            normalized,
+            width=self._wrap_width,
+            initial_indent=" " * DOCSTRING_DELIMITER_LENGTH,
+            subsequent_indent="",
+        )
+
+        if lines:
+            lines[0] = lines[0][DOCSTRING_DELIMITER_LENGTH:]
+
+        rendered_paragraph = self._line_separator.join(lines)
+
+        return rendered_paragraph
+
     def _render_named_paragraph_chunk(
-        self, node: DocstringSection | ParsedSimpleList
+        self, node: DocstringSection | ParsedSimpleList | ParsedCodeBlock
     ) -> str:
         """Renders a single node from within a named paragraph body.
 
         Args:
-            node (DocstringSection): A node from ParsedNamedParagraph.body.
+            node (DocstringSection | ParsedSimpleList | ParsedCodeBlock): A node
+                from ParsedNamedParagraph.body.
 
         Returns:
             rendered (str): The rendered node string.
         """
-        if isinstance(node, ParsedSimpleList):
+        if isinstance(node, ParsedCodeBlock):
+            rendered_content = format_code(
+                text=node.content,
+                line_separator=self._line_separator_indented,
+            )
+            indented = self._current_indent + self._indent_unit
+            rendered = (
+                node.delimiter
+                + "\n"
+                + indented
+                + rendered_content
+                + "\n"
+                + indented
+                + node.delimiter
+            )
+        elif isinstance(node, ParsedSimpleList):
             rendered = self._render_simple_list(node)
-        elif isinstance(node, DocstringSection) and node.section_type in [
-            SectionType.CODE_BLOCK,
-            SectionType.CODE_REPL,
-        ]:
-            rendered = format_code(
-                text=node.content,
-                line_separator=self._line_separator_indented,
-            )
+        elif isinstance(node, DocstringSection):
+            if node.section_type is SectionType.CODE_REPL:
+                rendered = format_code(
+                    text=node.content,
+                    line_separator=self._line_separator_indented,
+                )
+            else:
+                rendered = format_text(
+                    text=node.content,
+                    wrap_width=self._wrap_width_indented,
+                    line_separator=self._line_separator_indented,
+                )
         else:
-            rendered = format_text(
-                text=node.content,
-                wrap_width=self._wrap_width_indented,
-                line_separator=self._line_separator_indented,
-            )
+            raise ValueError
 
         return rendered
 
@@ -216,42 +284,52 @@ class DocstringRenderer:
 
         return rendered
 
-    def _render_opening_paragraph(self, paragraph: str) -> str:
-        """Renders the first paragraph, accounting for the opening triple quotes offset.
+    def _render_code_block(self, section: ParsedCodeBlock) -> str:
+        """Renders a CODE_BLOCK section, wrapping content in its original fence delimiter.
 
         Args:
-            paragraph (str): The first plain text paragraph.
+            section (ParsedCodeBlock): A parsed code block node.
 
         Returns:
-            rendered_paragraph (str): The wrapped paragraph string.
+            rendered (str): The re-indented code block string including fence delimiters.
         """
-        normalized = re.sub(r"\s+", " ", paragraph.strip())
-        lines = textwrap.wrap(
-            normalized,
-            width=self._wrap_width,
-            initial_indent=" " * DOCSTRING_DELIMITER_LENGTH,
-            subsequent_indent="",
+        rendered_content = format_code(
+            text=section.content,
+            line_separator=self._line_separator,
         )
 
-        if lines:
-            lines[0] = lines[0][DOCSTRING_DELIMITER_LENGTH:]
+        rendered = (
+            section.delimiter
+            + "\n"
+            + self._current_indent
+            + rendered_content
+            + "\n"
+            + self._current_indent
+            + section.delimiter
+        )
 
-        rendered_paragraph = self._line_separator.join(lines)
-
-        return rendered_paragraph
+        return rendered
 
     def _render_node(self, node: DocstringNode, is_first: bool = False) -> str:
         """Dispatches a single IR node to the appropriate renderer.
 
         Args:
-            node (DocstringSection): Any IR node.
+            node (DocstringNode): Any IR node.
             is_first (bool): Whether this is the first node in the IR, used
                 to apply the opening paragraph offset.
 
         Returns:
             rendered (str): The rendered node string.
         """
-        if isinstance(node, DocstringSection):
+        if isinstance(node, ParsedCodeBlock):
+            rendered = self._render_code_block(node)
+        elif isinstance(node, ParsedStructuredList):
+            rendered = self._render_structured_list(node)
+        elif isinstance(node, ParsedSimpleList):
+            rendered = self._render_simple_list(node)
+        elif isinstance(node, ParsedNamedParagraph):
+            rendered = self._render_named_paragraph(node)
+        elif isinstance(node, DocstringSection):
             if node.section_type is SectionType.PARAGRAPH:
                 if is_first:
                     rendered = self._render_opening_paragraph(paragraph=node.content)
@@ -261,17 +339,13 @@ class DocstringRenderer:
                         wrap_width=self._wrap_width,
                         line_separator=self._line_separator,
                     )
-            elif node.section_type in [SectionType.CODE_BLOCK, SectionType.CODE_REPL]:
+            elif node.section_type is SectionType.CODE_REPL:
                 rendered = format_code(
                     text=node.content,
                     line_separator=self._line_separator,
                 )
-        elif isinstance(node, ParsedStructuredList):
-            rendered = self._render_structured_list(node)
-        elif isinstance(node, ParsedSimpleList):
-            rendered = self._render_simple_list(node)
-        elif isinstance(node, ParsedNamedParagraph):
-            rendered = self._render_named_paragraph(node)
+            else:
+                raise ValueError
         else:
             raise ValueError
 
@@ -298,19 +372,11 @@ class DocstringRenderer:
 
         rendered_content = self._paragraph_separator.join(rendered_parts)
 
-        first_line = next(
-            (l.strip() for l in rendered_content.split("\n") if l.strip()), ""
-        )
-        opens_with_block = (
-            first_line.startswith(("```", "~~~"))
-            or re.match(r"^[-*+]\s+|^\d+[.)]\s+", first_line) is not None
-        )
-
-        if opens_with_block:
+        if self._opens_with_block(rendered_content):
             rendered_content = "\n" + self._current_indent + rendered_content
 
         if self._fits_on_one_line(rendered_content):
-            normalized = re.sub(r"\s+", " ", rendered_content.strip())
+            normalized = re.sub(r"\s+", " ", rendered_content.strip()) or " "
             rendered_docstring = DOCSTRING_DELIMITER + normalized + DOCSTRING_DELIMITER
         else:
             rendered_docstring = (

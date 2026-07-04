@@ -14,8 +14,8 @@ from docstring_tailor.utils.utils_parsing import extract_items
 class StructuredListParser:
     """Parses a STRUCTURED_LIST docstring section into typed parameter or error entries.
 
-    Determines whether the section is a Raises section or a parameter section
-    based on the keyword on the first line, then parses each item accordingly.
+    Determines whether the section is a Raises section or a parameter section based on the keyword
+    on the first line, then parses each item accordingly.
     """
 
     def __init__(self) -> None:
@@ -25,8 +25,8 @@ class StructuredListParser:
     def _parse_parameter_section(self, item: str) -> StructuredListParameter:
         """Parses a single parameter item string into a StructuredListParameter.
 
-        Splits on the first ':' to separate the name/type from the description,
-        then searches backwards from that ':' for the last ')' to extract the type.
+        Splits on the first ':' to separate the name/type from the description, then searches
+        backwards from that ':' for the last ')' to extract the type.
 
         Args:
             item (str): A single joined item string.
@@ -79,8 +79,8 @@ class StructuredListParser:
     def parse(self, section: DocstringSection) -> ParsedStructuredList:
         """Parses a STRUCTURED_LIST section into a ParsedStructuredList node.
 
-        Determines the section type from the keyword on the first line, then
-        delegates to the appropriate item parser.
+        Determines the section type from the keyword on the first line, then delegates to the
+        appropriate item parser.
 
         Args:
             section (DocstringSection): A STRUCTURED_LIST section to parse.

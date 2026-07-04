@@ -8,7 +8,8 @@ from docstring_tailor.defaults.ir_model import SimpleListType
 
 
 def _is_unordered_list(lines: list[str]) -> bool:
-    """Returns True if at least two consecutive list items starting with an unordered marker are
+    """
+    Returns True if at least two consecutive list items starting with an unordered marker are
     found, ignoring continuation lines from wrapped items.
 
     Args:
@@ -40,7 +41,8 @@ def _is_unordered_list(lines: list[str]) -> bool:
 
 
 def _is_ordered_list(lines: list[str]) -> bool:
-    """Returns True if at least two consecutive sequentially numbered list items are found, ignoring
+    """
+    Returns True if at least two consecutive sequentially numbered list items are found, ignoring
     continuation lines from wrapped items.
 
     Args:
@@ -76,7 +78,8 @@ def _is_ordered_list(lines: list[str]) -> bool:
 
 
 def is_list(text: str) -> bool:
-    """Returns True if the text block contains an unordered or ordered list.
+    """
+    Returns True if the text block contains an unordered or ordered list.
 
     Args:
         text (str): The text block to check.
@@ -91,12 +94,12 @@ def is_list(text: str) -> bool:
 
 
 def get_list_type(text: str) -> SimpleListType:
-    """Returns whether a confirmed list is ordered or unordered.
+    """
+    Returns whether a confirmed list is ordered or unordered.
 
-    Assumes the text is already confirmed to contain a list. Checks for
-    unordered markers first, falling back to ordered. Note that this
-    function intentionally repeats the detection scan already performed
-    by is_list, favouring single responsibility over avoiding redundant
+    Assumes the text is already confirmed to contain a list. Checks for unordered markers first,
+    falling back to ordered. Note that this function intentionally repeats the detection scan
+    already performed by is_list, favouring single responsibility over avoiding redundant
     computation.
 
     Args:
