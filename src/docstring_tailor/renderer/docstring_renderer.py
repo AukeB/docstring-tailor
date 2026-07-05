@@ -10,13 +10,13 @@ from docstring_tailor.defaults.constants import (
 )
 from docstring_tailor.defaults.docstring_keywords import GOOGLE_ALL_SECTION_KEYWORDS
 from docstring_tailor.defaults.ir_model import (
+    CodeBlock,
+    CodeREPL,
     DocstringNode,
-    DocstringSection,
-    ParsedCodeBlock,
-    ParsedNamedParagraph,
-    ParsedSimpleList,
-    ParsedStructuredList,
-    SectionType,
+    NamedParagraph,
+    Paragraph,
+    SimpleList,
+    StructuredList,
     StructuredListParameter,
 )
 from docstring_tailor.utils.utils_formatting import (
@@ -29,7 +29,7 @@ class DocstringRenderer:
     """Renders a parsed docstring IR into the Google docstring format.
 
     Receives a list of typed DocstringNode objects from the parser and
-    renders each according to its section type. The final result is
+    renders each according to its concrete type. The final result is
     rendered as a one-line docstring if it fits within the line length
     limit and contains no deliberate paragraph breaks, and as a
     multi-line docstring otherwise.
@@ -139,21 +139,21 @@ class DocstringRenderer:
 
         return rendered_paragraph
 
-    def _render_named_paragraph_chunk(
-        self, node: DocstringSection | ParsedSimpleList | ParsedCodeBlock
-    ) -> str:
+    def _render_named_paragraph_chunk(self, node: DocstringNode) -> str:
         """Renders a single node from within a named paragraph body.
 
         Args:
-            node (DocstringSection | ParsedSimpleList | ParsedCodeBlock): A node
-                from ParsedNamedParagraph.body.
+            node (DocstringNode): A node from NamedParagraph.body. In practice always one
+                of CodeBlock, CodeREPL, SimpleList, or Paragraph -- StructuredList and
+                NamedParagraph never appear here, since neither is permitted to nest inside a
+                named paragraph's body.
 
         Returns:
             rendered (str): The rendered node string.
         """
-        if isinstance(node, ParsedCodeBlock):
+        if isinstance(node, CodeBlock):
             rendered_content = format_code(
-                text=node.content,
+                text=node.code,
                 line_separator=self._line_separator_indented,
             )
             indented = self._current_indent + self._indent_unit
@@ -166,30 +166,33 @@ class DocstringRenderer:
                 + indented
                 + node.delimiter
             )
-        elif isinstance(node, ParsedSimpleList):
-            rendered = self._render_simple_list(node)
-        elif isinstance(node, DocstringSection):
-            if node.section_type is SectionType.CODE_REPL:
-                rendered = format_code(
-                    text=node.content,
-                    line_separator=self._line_separator_indented,
-                )
-            else:
-                rendered = format_text(
-                    text=node.content,
-                    wrap_width=self._wrap_width_indented,
-                    line_separator=self._line_separator_indented,
-                )
+        elif isinstance(node, SimpleList):
+            rendered = self._render_simple_list(
+                node,
+                wrap_width=self._wrap_width_indented,
+                line_separator=self._line_separator_indented,
+            )
+        elif isinstance(node, CodeREPL):
+            rendered = format_code(
+                text=node.code,
+                line_separator=self._line_separator_indented,
+            )
+        elif isinstance(node, Paragraph):
+            rendered = format_text(
+                text=node.content,
+                wrap_width=self._wrap_width_indented,
+                line_separator=self._line_separator_indented,
+            )
         else:
             raise ValueError
 
         return rendered
 
-    def _render_named_paragraph(self, section: ParsedNamedParagraph) -> str:
+    def _render_named_paragraph(self, section: NamedParagraph) -> str:
         """Renders a NAMED_PARAGRAPH section, rendering each body node independently.
 
         Args:
-            section (ParsedNamedParagraph): A parsed named paragraph node.
+            section (NamedParagraph): A parsed named paragraph node.
 
         Returns:
             rendered (str): The rendered named paragraph string.
@@ -208,7 +211,13 @@ class DocstringRenderer:
 
         return rendered
 
-    def _render_simple_list(self, section: ParsedSimpleList) -> str:
+    def _render_simple_list(
+        self,
+        section: SimpleList,
+        *,
+        wrap_width: int,
+        line_separator: str,
+    ) -> str:
         """Renders a SIMPLE_LIST section by rendering each parsed item independently.
 
         Each item is wrapped using format_text with a subsequent indent derived
@@ -216,44 +225,57 @@ class DocstringRenderer:
         ('- '). For ordered lists it is derived from the total number of items,
         since longer lists produce wider markers (e.g. '10. ' vs '1. ').
 
+        `wrap_width` and `line_separator` are required, with no default, so every call site
+        must state explicitly which indentation level the list sits at. A SimpleList rendered
+        at the top level uses `self._wrap_width`/`self._line_separator`; one nested inside a
+        NamedParagraph body sits one level deeper and needs
+        `self._wrap_width_indented`/`self._line_separator_indented`. A default here would risk
+        silently reintroducing the bug this fixes: a nested list's first item is indented
+        correctly by the NamedParagraph's own chunk separator, but every other item is joined
+        using whatever `line_separator` this method falls back to -- so if that fallback were
+        the shallower top-level one, only the first item would look right.
+
         Args:
-            section (ParsedSimpleList): A parsed simple list node.
+            section (SimpleList): A parsed simple list node.
+            wrap_width (int): Maximum content width for wrapping each item.
+            line_separator (str): Separator inserted between wrapped lines and between items.
 
         Returns:
             rendered (str): The rendered list string.
         """
         if section.list_type == "unordered":
-            subsequent_indent = " " * 2
-            markers = [f"- {item}" for item in section.items]
+            marker_width = len("- ")
+            formatted_items = [f"- {item}" for item in section.items]
         else:
-            marker_width = len(str(len(section.items))) + 2
-            subsequent_indent = " " * marker_width
-            markers = [
+            marker_width = len(str(len(section.items))) + len(". ")
+            formatted_items = [
                 f"{index + 1}. {item}" for index, item in enumerate(section.items)
             ]
+
+        subsequent_indent = " " * marker_width
 
         rendered_items = [
             format_text(
                 text=item,
-                wrap_width=self._wrap_width,
-                line_separator=self._line_separator,
+                wrap_width=wrap_width,
+                line_separator=line_separator,
                 subsequent_indent=subsequent_indent,
             )
-            for item in markers
+            for item in formatted_items
         ]
 
-        rendered = self._line_separator.join(rendered_items)
+        rendered = line_separator.join(rendered_items)
 
         return rendered
 
-    def _render_structured_list(self, section: ParsedStructuredList) -> str:
+    def _render_structured_list(self, section: StructuredList) -> str:
         """Renders a STRUCTURED_LIST section by rendering each entry and reassembling.
 
         Dispatches each entry to the appropriate item text format based on its
         type, then wraps the result in the section header.
 
         Args:
-            section (ParsedStructuredList): A parsed structured list node.
+            section (StructuredList): A parsed structured list node.
 
         Returns:
             rendered (str): The rendered structured list string.
@@ -284,17 +306,17 @@ class DocstringRenderer:
 
         return rendered
 
-    def _render_code_block(self, section: ParsedCodeBlock) -> str:
+    def _render_code_block(self, section: CodeBlock) -> str:
         """Renders a CODE_BLOCK section, wrapping content in its original fence delimiter.
 
         Args:
-            section (ParsedCodeBlock): A parsed code block node.
+            section (CodeBlock): A parsed code block node.
 
         Returns:
             rendered (str): The re-indented code block string including fence delimiters.
         """
         rendered_content = format_code(
-            text=section.content,
+            text=section.code,
             line_separator=self._line_separator,
         )
 
@@ -321,31 +343,32 @@ class DocstringRenderer:
         Returns:
             rendered (str): The rendered node string.
         """
-        if isinstance(node, ParsedCodeBlock):
+        if isinstance(node, CodeBlock):
             rendered = self._render_code_block(node)
-        elif isinstance(node, ParsedStructuredList):
+        elif isinstance(node, StructuredList):
             rendered = self._render_structured_list(node)
-        elif isinstance(node, ParsedSimpleList):
-            rendered = self._render_simple_list(node)
-        elif isinstance(node, ParsedNamedParagraph):
+        elif isinstance(node, SimpleList):
+            rendered = self._render_simple_list(
+                node,
+                wrap_width=self._wrap_width,
+                line_separator=self._line_separator,
+            )
+        elif isinstance(node, NamedParagraph):
             rendered = self._render_named_paragraph(node)
-        elif isinstance(node, DocstringSection):
-            if node.section_type is SectionType.PARAGRAPH:
-                if is_first:
-                    rendered = self._render_opening_paragraph(paragraph=node.content)
-                else:
-                    rendered = format_text(
-                        text=node.content,
-                        wrap_width=self._wrap_width,
-                        line_separator=self._line_separator,
-                    )
-            elif node.section_type is SectionType.CODE_REPL:
-                rendered = format_code(
+        elif isinstance(node, CodeREPL):
+            rendered = format_code(
+                text=node.code,
+                line_separator=self._line_separator,
+            )
+        elif isinstance(node, Paragraph):
+            if is_first:
+                rendered = self._render_opening_paragraph(paragraph=node.content)
+            else:
+                rendered = format_text(
                     text=node.content,
+                    wrap_width=self._wrap_width,
                     line_separator=self._line_separator,
                 )
-            else:
-                raise ValueError
         else:
             raise ValueError
 

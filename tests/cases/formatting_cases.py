@@ -97,6 +97,36 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         shared_parameters={},
         parameter_grid={"line_length": [60, 80, 100]}
     ),
+    CaseTemplate(
+        fixture_directory_name=Path("module_docstring_named_paragraph_paragraph"),
+        input_file_paths=[
+            Path("module_docstring_named_paragraph_paragraph_wrong_input.py"),
+            Path("module_docstring_named_paragraph_paragraph_{line_length}.py"),
+        ],
+        output_file_path_template=Path("module_docstring_named_paragraph_paragraph_{line_length}.py"),
+        shared_parameters={},
+        parameter_grid={"line_length": [60, 80, 100]}
+    ),
+    CaseTemplate(
+        fixture_directory_name=Path("module_docstring_named_paragraph_code_block"),
+        input_file_paths=[
+            Path("module_docstring_named_paragraph_code_block_blank_lines.py"),
+            Path("module_docstring_named_paragraph_code_block_{line_length}.py"),
+        ],
+        output_file_path_template=Path("module_docstring_named_paragraph_code_block_{line_length}.py"),
+        shared_parameters={},
+        parameter_grid={"line_length": [80]}
+    ),
+    CaseTemplate(
+        fixture_directory_name=Path("module_docstring_named_paragraph_code_repl"),
+        input_file_paths=[
+            Path("module_docstring_named_paragraph_code_repl_blank_lines.py"),
+            Path("module_docstring_named_paragraph_code_repl_{line_length}.py"),
+        ],
+        output_file_path_template=Path("module_docstring_named_paragraph_code_repl_{line_length}.py"),
+        shared_parameters={},
+        parameter_grid={"line_length": [80]}
+    ),
     # CaseTemplate(
     #     fixture_directory_name=Path("function_docstring_complex"),
     #     input_file_paths=[

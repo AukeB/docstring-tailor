@@ -1,4 +1,5 @@
 def generate_windowed_stats(
+    self,
     data: list[float],
     window_size: int,
     step: int = 1,

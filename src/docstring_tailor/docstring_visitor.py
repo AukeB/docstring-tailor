@@ -119,6 +119,8 @@ class DocstringVisitor(cst.CSTTransformer):
 
         ir = self._parser.parse(content=content)
 
+        print(ir)
+
         renderer = DocstringRenderer(
             line_length=self._line_length,
             current_indent=self._current_indent,

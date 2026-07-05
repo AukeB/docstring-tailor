@@ -2,9 +2,7 @@
 
 from docstring_tailor.defaults.docstring_keywords import GOOGLE_RAISES_SECTIONS
 from docstring_tailor.defaults.ir_model import (
-    DocstringSection,
-    ParsedStructuredList,
-    SectionType,
+    StructuredList,
     StructuredListError,
     StructuredListParameter,
 )
@@ -12,7 +10,7 @@ from docstring_tailor.utils.utils_parsing import extract_items
 
 
 class StructuredListParser:
-    """Parses a STRUCTURED_LIST docstring section into typed parameter or error entries.
+    """Parses raw structured-list section content into a StructuredList node.
 
     Determines whether the section is a Raises section or a parameter section based on the keyword
     on the first line, then parses each item accordingly.
@@ -22,7 +20,7 @@ class StructuredListParser:
         """Initialises the StructuredListParser."""
         pass
 
-    def _parse_parameter_section(self, item: str) -> StructuredListParameter:
+    def _parse_parameter_item(self, item: str) -> StructuredListParameter:
         """Parses a single parameter item string into a StructuredListParameter.
 
         Splits on the first ':' to separate the name/type from the description, then searches
@@ -54,7 +52,7 @@ class StructuredListParser:
 
         return parameter
 
-    def _parse_error_section(self, item: str) -> StructuredListError:
+    def _parse_error_item(self, item: str) -> StructuredListError:
         """Parses a single error item string into a StructuredListError.
 
         Splits on the first ':' to separate the error type from the description.
@@ -76,31 +74,31 @@ class StructuredListParser:
 
         return error
 
-    def parse(self, section: DocstringSection) -> ParsedStructuredList:
-        """Parses a STRUCTURED_LIST section into a ParsedStructuredList node.
+    def parse(self, content: str) -> StructuredList:
+        """Parses raw structured-list section content into a StructuredList node.
 
         Determines the section type from the keyword on the first line, then delegates to the
         appropriate item parser.
 
         Args:
-            section (DocstringSection): A STRUCTURED_LIST section to parse.
+            content (str): The raw text of a structured-list section, including its keyword
+                header line (e.g. 'Args:\\n    x (int): ...').
 
         Returns:
-            parsed (ParsedStructuredList): Fully parsed structured list node.
+            structured_list (StructuredList): Fully parsed structured list node.
         """
-        keyword = section.content.splitlines()[0].strip().rstrip(":")
-        items = extract_items(section.content, skip_first_line=True)
+        keyword = content.splitlines()[0].strip().rstrip(":")
+        items = extract_items(content, skip_first_line=True)
 
         entries = (
-            [self._parse_error_section(item) for item in items]
+            [self._parse_error_item(item) for item in items]
             if keyword in GOOGLE_RAISES_SECTIONS
-            else [self._parse_parameter_section(item) for item in items]
+            else [self._parse_parameter_item(item) for item in items]
         )
 
-        parsed = ParsedStructuredList(
-            section_type=SectionType.STRUCTURED_LIST,
+        structured_list = StructuredList(
             keyword=keyword,
             entries=entries,
         )
 
-        return parsed
+        return structured_list
