@@ -1,8 +1,18 @@
-"""Contains the intermediate representation model for parsed docstrings."""
+"""Intermediate representation (IR) model for parsed docstrings.
+
+Section types:
+- Paragraph: A block of plain prose used for general descriptions or explanatory text.
+- CodeBlock: A fenced block containing source code or other preformatted text.
+- CodeREPL: An interactive interpreter session containing prompts and output.
+- StructuredList: A semantic list with typed entries used for API documentation such as Args, Returns, Attributes, or Raises.
+- SimpleList: An ordered or unordered list of plain text items used for general enumerations.
+- NamedParagraph: A titled section containing nested Paragraph, CodeBlock, CodeREPL,
+    and SimpleList sections, but not other NamedParagraph or StructuredList sections to prevent
+    unlimited recursion and to remain consistent with PEP 257.
+"""
 
 from dataclasses import dataclass
 from typing import Literal
-
 
 SimpleListType = Literal["ordered", "unordered"]
 CodeBlockDelimiterType = Literal["```", "~~~"]
@@ -13,14 +23,9 @@ class DocstringNode:
 
 
 @dataclass
-class Unidentified(DocstringNode):
-    """Represents a section of unclassified or raw docstring content."""
-    content: str
-
-
-@dataclass
 class Paragraph(DocstringNode):
     """Represents a single typed chunk of raw text in the docstring IR."""
+
     content: str
 
 
@@ -32,6 +37,7 @@ class CodeBlock(DocstringNode):
         code: The raw code content between the fence delimiters.
         delimiter: The fence delimiter used to open and close the code block.
     """
+
     code: str
     delimiter: CodeBlockDelimiterType
 
@@ -39,6 +45,7 @@ class CodeBlock(DocstringNode):
 @dataclass
 class CodeREPL(DocstringNode):
     """Represents an interactive REPL-style code section in the docstring IR."""
+
     code: str
 
 
@@ -51,6 +58,7 @@ class StructuredListParameter:
         type: The annotated type of the variable.
         description: The description of the variable.
     """
+
     name: str
     type: str
     description: str
@@ -64,6 +72,7 @@ class StructuredListError:
         error_type: The exception type being raised.
         description: The description of when the error is raised.
     """
+
     error_type: str
     description: str
 
@@ -76,8 +85,9 @@ class StructuredList(DocstringNode):
         keyword: The section keyword, e.g. 'Args', 'Returns', 'Raises'.
         entries: The parsed entries, typed according to the section keyword.
     """
+
     keyword: str
-    entries: list[StructuredListParameter | StructuredListError]
+    entries: list[StructuredListParameter] | list[StructuredListError]
 
 
 @dataclass
@@ -88,6 +98,7 @@ class SimpleList(DocstringNode):
         list_type: Variable that stores whether the simple list is an ordered or unordered list.
         items: The parsed list items as plain strings.
     """
+
     list_type: SimpleListType
     items: list[str]
 
@@ -100,5 +111,6 @@ class NamedParagraph(DocstringNode):
         header: The section keyword, e.g. 'Note', 'Warning'.
         body: Parsed sub-sections of the body content.
     """
+
     header: str
     body: list[DocstringNode]

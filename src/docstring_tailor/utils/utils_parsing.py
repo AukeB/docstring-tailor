@@ -46,18 +46,6 @@ def extract_items(content: str, skip_first_line: bool = False) -> list[str]:
         continuation = " ".join(l.strip() for l in current_item_lines[1:])
         items.append(f"{first_line} {continuation}".strip())
 
+    items = [re.sub(RE_PATTERN_LIST_MARKER, "", item) for item in items]
+
     return items
-
-
-def strip_list_marker(item: str) -> str:
-    """Strips the leading list marker from a list item string.
-
-    Args:
-        item (str): A single list item string including its marker.
-
-    Returns:
-        stripped (str): The item content with the marker removed.
-    """
-    stripped = re.sub(RE_PATTERN_LIST_MARKER, "", item)
-
-    return stripped

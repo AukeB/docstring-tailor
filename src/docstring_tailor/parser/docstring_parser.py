@@ -1,5 +1,6 @@
 """Contains logic for parsing docstrings into a structured IR."""
 
+from textwrap import dedent
 from typing import cast
 
 from docstring_tailor.defaults.constants import (
@@ -20,37 +21,298 @@ from docstring_tailor.defaults.ir_model import (
     NamedParagraph,
     Paragraph,
     SimpleList,
-    Unidentified,
 )
-from docstring_tailor.parser.docstring_section_parser import StructuredListParser
+from docstring_tailor.parser.docstring_structured_list_parser import (
+    StructuredListParser,
+)
 from docstring_tailor.utils.utils_list_detection import get_list_type, is_list
-from docstring_tailor.utils.utils_parsing import extract_items, strip_list_marker
+from docstring_tailor.utils.utils_parsing import extract_items
 
 
 class DocstringParser:
     """Parses a raw docstring string into a typed intermediate representation.
 
-    The parsing pipeline proceeds in stages, applied via `_parse_body`:
+    The parsing pipeline operates in two phases:
 
-    1. Wrap the content in a single Unidentified node.
-    2. Extract code blocks protected by fence delimiters.
-    3. Split remaining Unidentified nodes on blank lines.
-    4. Detect and eagerly parse, in order: named paragraphs, structured lists, REPL blocks, and
-       simple lists.
-    5. Relabel anything still Unidentified as a Paragraph.
-
-    `_parse_body` is applied recursively to the body of a NAMED_PARAGRAPH node (e.g. Note,
-    Warning), since that body is itself just docstring content. Named paragraphs and structured
-    lists are disallowed from that recursive call, since neither is permitted to nest inside a
-    named paragraph's body (a Note can't contain another Note or an Args section).
+    1. Indentation-based top-level scanning — identifies keyword-headed sections
+       (NamedParagraph, StructuredList) by tracking base indentation, without relying
+       on blank lines. This sidesteps the chicken-and-egg problem where named paragraphs
+       need blank-line detection to be found, but themselves contain blank lines.
+    2. Flat content parsing — applies fence detection, blank-line splitting, and
+       type classification to non-keyword content, and recursively to named paragraph
+       bodies after dedenting.
     """
 
     def __init__(self) -> None:
         """Initialises the DocstringParser."""
         self._structured_list_parser = StructuredListParser()
 
+    def _parse_simple_list(self, content: str) -> SimpleList:
+        """Parses raw list content into a SimpleList node.
+
+        Args:
+            content (str): Raw list text including markers.
+
+        Returns:
+            simple_list (SimpleList): Parsed simple list with markers stripped from items.
+        """
+        list_type = get_list_type(text=content)
+        items = extract_items(content=content)
+
+        simple_list = SimpleList(list_type=list_type, items=items)
+
+        return simple_list
+
+    def _classify_paragraph(self, content: str) -> DocstringNode:
+        """Classifies a single blank-line-delimited chunk into its concrete IR type.
+
+        Checks for REPL and list patterns before falling back to plain Paragraph.
+
+        Args:
+            content (str): A single stripped paragraph chunk.
+
+        Returns:
+            node (DocstringNode): A CodeREPL, SimpleList, or Paragraph node.
+        """
+        first_line = content.splitlines()[0].strip()
+
+        if first_line.startswith(PYTHON_REPL_PREFIX_START):
+            return CodeREPL(code=content)
+
+        if is_list(content):
+            return self._parse_simple_list(content)
+
+        return Paragraph(content=content)
+
+    def _extract_code_blocks(self, content: str) -> list[CodeBlock | str]:
+        """Splits content on code fences, preserving fence structure.
+
+        Uses a capturing re.split() so fence delimiter lines are retained as
+        elements. Iterates the result with a boolean fence tracker to emit
+        CodeBlock nodes for fenced regions and plain strings for everything else.
+
+        Args:
+            content (str): Raw content that may contain fenced code blocks.
+
+        Returns:
+            chunks (list[CodeBlock | str]): CodeBlock nodes and plain string segments
+                in document order.
+        """
+        raw_chunks = RE_PATTERN_FENCE.split(content)
+        result: list[CodeBlock | str] = []
+        in_fence = False
+        fence_delimiter: CodeBlockDelimiterType = "```"
+
+        for chunk in raw_chunks:
+            fence_match = RE_PATTERN_FENCE.match(chunk)
+
+            if fence_match:
+                fence_delimiter = (
+                    cast(CodeBlockDelimiterType, fence_match.group(1))
+                    if not in_fence
+                    else fence_delimiter
+                )
+                in_fence = not in_fence
+                continue
+
+            if not chunk.strip():
+                continue
+
+            if in_fence:
+                result.append(CodeBlock(code=chunk.strip(), delimiter=fence_delimiter))
+            else:
+                result.append(chunk)
+
+        return result
+
+    def _parse_flat_content(self, content: str) -> list[DocstringNode]:
+        """Parses flat content (no keyword-headed sections) into typed IR nodes.
+
+        Extracts code blocks first to protect them from blank-line splitting, then
+        splits remaining plain strings on blank lines and classifies each chunk.
+
+        Args:
+            content (str): Raw flat content, already dedented if from a named paragraph body.
+
+        Returns:
+            nodes (list[DocstringNode]): Parsed IR nodes in document order.
+        """
+        chunks = self._extract_code_blocks(content)
+        nodes: list[DocstringNode] = []
+
+        for chunk in chunks:
+            if isinstance(chunk, CodeBlock):
+                nodes.append(chunk)
+                continue
+
+            for paragraph in RE_PATTERN_BLANK_LINES.split(chunk):
+                if paragraph.strip():
+                    nodes.append(self._classify_paragraph(paragraph.strip()))
+
+        return nodes
+
+    def _parse_named_paragraph_body(self, content: str) -> list[DocstringNode]:
+        """Dedents and parses the indented body of a named paragraph section.
+
+        Strips the shared base indentation from all body lines before delegating
+        to _parse_flat_content, so that code fences and list markers appear at
+        column zero relative to the body.
+
+        Args:
+            content (str): Raw body lines joined as a string, with original indentation intact.
+
+        Returns:
+            body (list[DocstringNode]): Parsed body nodes.
+        """
+        lines = content.splitlines()
+        non_empty_lines = [line for line in lines if line.strip()]
+
+        if not non_empty_lines:
+            return []
+
+        base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
+        dedented = "\n".join(
+            line[base_indent:] if line.strip() else "" for line in lines
+        )
+
+        body = self._parse_flat_content(dedented)
+
+        return body
+
+    def _parse_named_paragraph(self, content: str) -> NamedParagraph:
+        """Parses a named paragraph section into a NamedParagraph node.
+
+        Splits off the keyword header line and delegates the body to
+        _parse_named_paragraph_body.
+
+        Args:
+            content (str): Raw section content including the keyword header line.
+
+        Returns:
+            named_paragraph (NamedParagraph): Fully parsed node with typed body.
+        """
+        lines = content.splitlines()
+        header = lines[0].strip().rstrip(":")
+        body_content = "\n".join(lines[1:])
+        body = self._parse_named_paragraph_body(body_content)
+
+        named_paragraph = NamedParagraph(header=header, body=body)
+
+        return named_paragraph
+
+    def _parse_keyword_section(self, content: str) -> DocstringNode:
+        """Dispatches a keyword-headed section to the appropriate parser.
+
+        Args:
+            content (str): Raw section content including the keyword header line.
+
+        Returns:
+            node (DocstringNode): A StructuredList or NamedParagraph node.
+        """
+        keyword = content.splitlines()[0].strip().rstrip(":")
+
+        if keyword in GOOGLE_STRUCTURED_LIST_SECTIONS:
+            node = self._structured_list_parser.parse(content)
+        else:
+            node = self._parse_named_paragraph(content)
+
+        return node
+
+    def _scan_top_level_segments(
+        self,
+        lines: list[str],
+        base_indent: int,
+    ) -> list[tuple[bool, str]]:
+        """Groups lines into keyword-section and plain-text segments using indentation only.
+
+        A keyword line at base indentation starts a new keyword segment. All subsequent
+        lines more indented than base belong to that segment's body, regardless of any
+        blank lines within. A non-keyword line returning to base indentation ends the
+        keyword segment and starts a new plain segment.
+
+        Args:
+            lines (list[str]): All lines of the content to scan.
+            base_indent (int): The indentation level of top-level content lines.
+
+        Returns:
+            segments (list[tuple[bool, str]]): Each entry is (is_keyword_section, content)
+                where content is the raw joined lines for that segment.
+        """
+        segments: list[tuple[bool, str]] = []
+        current_lines: list[str] = []
+        current_is_keyword = False
+        blank_buffer: list[str] = []
+
+        for line in lines:
+            if not line.strip():
+                blank_buffer.append(line)
+                continue
+
+            indent = len(line) - len(line.lstrip())
+            keyword = line.strip().rstrip(":")
+            is_base = indent == base_indent
+            is_keyword_line = is_base and (
+                keyword in GOOGLE_NAMED_PARAGRAPH_SECTIONS
+                or keyword in GOOGLE_STRUCTURED_LIST_SECTIONS
+            )
+
+            if is_keyword_line:
+                if current_lines:
+                    segments.append((current_is_keyword, "\n".join(current_lines)))
+                current_lines = [line]
+                current_is_keyword = True
+                blank_buffer = []
+            elif is_base and current_is_keyword:
+                segments.append((True, "\n".join(current_lines)))
+                current_lines = [line]
+                current_is_keyword = False
+                blank_buffer = []
+            else:
+                current_lines.extend(blank_buffer)
+                blank_buffer = []
+                current_lines.append(line)
+
+        if current_lines:
+            segments.append((current_is_keyword, "\n".join(current_lines)))
+
+        return segments
+
+    def _parse_top_level(self, content: str) -> list[DocstringNode]:
+        """Parses top-level docstring content using indentation-based segment scanning.
+
+        1. Determines base indentation from non-empty lines.
+        2. Scans lines into keyword-section and plain-text segments.
+        3. Dispatches each segment to the appropriate parser.
+
+        Args:
+            content (str): Raw docstring body with triple-quote delimiters stripped.
+
+        Returns:
+            nodes (list[DocstringNode]): Fully parsed IR.
+        """
+        lines = content.splitlines()
+        non_empty_lines = [line for line in lines if line.strip()]
+
+        if not non_empty_lines:
+            return []
+
+        base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
+        segments = self._scan_top_level_segments(lines, base_indent)
+
+        nodes: list[DocstringNode] = []
+
+        for is_keyword, segment_content in segments:
+            if is_keyword:
+                nodes.append(self._parse_keyword_section(segment_content))
+            else:
+                nodes.extend(self._parse_flat_content(segment_content))
+
+        return nodes
+
     def parse(self, content: str) -> list[DocstringNode]:
-        """Parses a raw docstring into a typed IR.
+        """Parses a raw docstring string into a typed IR.
+
+        Strips triple-quote delimiters and delegates to _parse_top_level.
 
         Args:
             content (str): Raw docstring string including triple-quote delimiters.
@@ -58,288 +320,10 @@ class DocstringParser:
         Returns:
             ir (list[DocstringNode]): Fully parsed and typed IR.
         """
-        stripped_content = content[
+        docstring_body = content[
             DOCSTRING_DELIMITER_LENGTH:-DOCSTRING_DELIMITER_LENGTH
         ].strip()
 
-        ir = self._parse_body(
-            stripped_content,
-            allow_named_paragraph=True,
-            allow_structured_list=True,
-        )
+        ir = self._parse_top_level(docstring_body)
 
         return ir
-
-    def _parse_body(
-        self,
-        content: str,
-        *,
-        allow_named_paragraph: bool,
-        allow_structured_list: bool,
-    ) -> list[DocstringNode]:
-        """Runs the full classification-and-parsing pipeline over a chunk of docstring content.
-
-        Used both for the top-level docstring body and, recursively, for the body of a
-        NAMED_PARAGRAPH node. The two `allow_*` flags are required (no defaults) so every call
-        site must state explicitly whether nesting is permitted, rather than relying on a default
-        that could silently reintroduce nested Notes or nested Args sections.
-
-        Args:
-            content (str): Raw text content to parse (no triple-quote delimiters).
-            allow_named_paragraph (bool): Whether to detect and parse NAMED_PARAGRAPH sections.
-            allow_structured_list (bool): Whether to detect and parse STRUCTURED_LIST sections.
-
-        Returns:
-            ir (list[DocstringNode]): Fully parsed and typed IR for this chunk of content.
-        """
-        nodes: list[DocstringNode] = [Unidentified(content=content)]
-
-        nodes = self._detect_code_blocks(nodes)
-        nodes = self._split_on_blank_lines(nodes)
-
-        if allow_named_paragraph:
-            nodes = self._detect_named_paragraphs(nodes)
-
-        if allow_structured_list:
-            nodes = self._detect_structured_lists(nodes)
-
-        nodes = self._detect_code_repl(nodes)
-        nodes = self._detect_simple_lists(nodes)
-        nodes = self._relabel_unidentified_as_paragraph(nodes)
-
-        return nodes
-
-    def _detect_named_paragraphs(
-        self,
-        nodes: list[DocstringNode],
-    ) -> list[DocstringNode]:
-        """Identifies NAMED_PARAGRAPH nodes and eagerly parses their body via recursion.
-
-        A node is a named paragraph if its first line matches a keyword such as Note, Notes,
-        References, See Also, Warning, or Warnings. The remaining lines are re-parsed by calling
-        `_parse_body` recursively, with named paragraphs and structured lists disallowed for that
-        call so a Note cannot itself contain another Note or an Args section (matching Google
-        docstring convention).
-
-        Args:
-            nodes (list[DocstringNode]): Current IR.
-
-        Returns:
-            result (list[DocstringNode]): IR with NAMED_PARAGRAPH nodes detected and parsed.
-        """
-        result: list[DocstringNode] = []
-
-        for node in nodes:
-            if not isinstance(node, Unidentified):
-                result.append(node)
-                continue
-
-            lines = node.content.splitlines()
-            first_line = lines[0].strip()
-            header = first_line.rstrip(":")
-
-            if header not in GOOGLE_NAMED_PARAGRAPH_SECTIONS:
-                result.append(node)
-                continue
-
-            body_content = "\n".join(lines[1:])
-            body = self._parse_body(
-                body_content,
-                allow_named_paragraph=False,  # Notes don't nest inside Notes.
-                allow_structured_list=False,  # Args/Raises don't belong inside a Note.
-            )
-
-            result.append(NamedParagraph(header=header, body=body))
-
-        return result
-
-    def _detect_structured_lists(
-        self,
-        nodes: list[DocstringNode],
-    ) -> list[DocstringNode]:
-        """Identifies STRUCTURED_LIST nodes and eagerly parses them into StructuredList nodes.
-
-        A node is a structured list if its first line matches a Google-style keyword such as
-        Args, Returns, or Raises. Entry parsing is delegated to StructuredListParser.
-
-        Args:
-            nodes (list[DocstringNode]): Current IR.
-
-        Returns:
-            result (list[DocstringNode]): IR with StructuredList nodes detected and parsed.
-        """
-        result: list[DocstringNode] = []
-
-        for node in nodes:
-            if not isinstance(node, Unidentified):
-                result.append(node)
-                continue
-
-            first_line = node.content.splitlines()[0].strip()
-
-            if first_line.rstrip(":") in GOOGLE_STRUCTURED_LIST_SECTIONS:
-                result.append(self._structured_list_parser.parse(node.content))
-            else:
-                result.append(node)
-
-        return result
-
-    def _detect_code_repl(
-        self,
-        nodes: list[DocstringNode],
-    ) -> list[DocstringNode]:
-        """Identifies CODE_REPL nodes and parses them into CodeREPL nodes.
-
-        A node is CODE_REPL if its first line starts with the >>> prompt.
-
-        Args:
-            nodes (list[DocstringNode]): Current IR.
-
-        Returns:
-            result (list[DocstringNode]): IR with CodeREPL nodes detected and parsed.
-        """
-        result: list[DocstringNode] = []
-
-        for node in nodes:
-            if not isinstance(node, Unidentified):
-                result.append(node)
-                continue
-
-            first_line = node.content.splitlines()[0].strip()
-
-            if first_line.startswith(PYTHON_REPL_PREFIX_START):
-                result.append(CodeREPL(code=node.content))
-            else:
-                result.append(node)
-
-        return result
-
-    def _detect_simple_lists(
-        self,
-        nodes: list[DocstringNode],
-    ) -> list[DocstringNode]:
-        """Identifies SIMPLE_LIST nodes and eagerly parses them into SimpleList nodes.
-
-        A node is a simple list if the is_list utility detects at least two list markers at the
-        base indentation level.
-
-        Args:
-            nodes (list[DocstringNode]): Current IR.
-
-        Returns:
-            result (list[DocstringNode]): IR with SimpleList nodes detected and parsed.
-        """
-        result: list[DocstringNode] = []
-
-        for node in nodes:
-            if not isinstance(node, Unidentified):
-                result.append(node)
-                continue
-
-            if not is_list(node.content):
-                result.append(node)
-                continue
-
-            list_type = get_list_type(text=node.content)
-            items = extract_items(content=node.content)
-            stripped_items = [strip_list_marker(item) for item in items]
-
-            result.append(SimpleList(list_type=list_type, items=stripped_items))
-
-        return result
-
-    def _relabel_unidentified_as_paragraph(
-        self,
-        nodes: list[DocstringNode],
-    ) -> list[DocstringNode]:
-        """Relabels any remaining Unidentified nodes as Paragraph.
-
-        Acts as the final step in the pipeline, converting anything not identified by a prior
-        pass into plain paragraph text.
-
-        Args:
-            nodes (list[DocstringNode]): Current IR.
-
-        Returns:
-            result (list[DocstringNode]): IR with no remaining Unidentified nodes.
-        """
-        result = [
-            Paragraph(content=node.content) if isinstance(node, Unidentified) else node
-            for node in nodes
-        ]
-
-        return result
-
-    def _split_on_blank_lines(
-        self,
-        nodes: list[DocstringNode],
-    ) -> list[DocstringNode]:
-        """Splits each Unidentified node on blank lines.
-
-        Args:
-            nodes (list[DocstringNode]): Current IR.
-
-        Returns:
-            result (list[DocstringNode]): New IR with Unidentified nodes split into smaller
-                Unidentified chunks.
-        """
-        result: list[DocstringNode] = []
-
-        for node in nodes:
-            if not isinstance(node, Unidentified):
-                result.append(node)
-                continue
-
-            chunks = RE_PATTERN_BLANK_LINES.split(node.content)
-
-            for chunk in chunks:
-                if chunk.strip():
-                    result.append(Unidentified(content=chunk.strip()))
-
-        return result
-
-    def _detect_code_blocks(
-        self,
-        nodes: list[DocstringNode],
-    ) -> list[DocstringNode]:
-        """Splits Unidentified nodes on code fences, parsing fenced blocks into CodeBlock nodes.
-
-        Each Unidentified node is split using a capturing re.split() on fence delimiters,
-        retaining the delimiters as elements. Chunks are iterated with a boolean fence tracker to
-        assign the correct node type.
-
-        Args:
-            nodes (list[DocstringNode]): Current IR.
-
-        Returns:
-            result (list[DocstringNode]): New IR with CodeBlock nodes extracted.
-        """
-        result: list[DocstringNode] = []
-
-        for node in nodes:
-            if not isinstance(node, Unidentified):
-                result.append(node)
-                continue
-
-            chunks = RE_PATTERN_FENCE.split(node.content)
-            in_fence = False
-            fence_delimiter: CodeBlockDelimiterType = "```"
-
-            for chunk in chunks:
-                fence_match = RE_PATTERN_FENCE.match(chunk)
-
-                if fence_match:
-                    if not in_fence:
-                        fence_delimiter = cast(CodeBlockDelimiterType, fence_match.group(1))
-                    in_fence = not in_fence
-                    continue
-
-                if not chunk.strip():
-                    continue
-
-                if in_fence:
-                    result.append(CodeBlock(code=chunk.strip(), delimiter=fence_delimiter))
-                else:
-                    result.append(Unidentified(content=chunk.strip()))
-
-        return result
