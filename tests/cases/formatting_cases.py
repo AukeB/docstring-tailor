@@ -127,17 +127,17 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         shared_parameters={},
         parameter_grid={"line_length": [80]}
     ),
-    # CaseTemplate(
-    #     fixture_directory_name=Path("function_docstring_complex"),
-    #     input_file_paths=[
-    #         Path("function_docstring_complex_60.py"),
-    #         Path("function_docstring_complex_80.py"),
-    #         Path("function_docstring_complex_100.py"),
-    #     ],
-    #     output_file_path_template=Path("function_docstring_complex_{line_length}.py"),
-    #     shared_parameters={},
-    #     parameter_grid={"line_length": [60, 80, 100]},
-    # ),
+    CaseTemplate(
+        fixture_directory_name=Path("function_docstring_complex"),
+        input_file_paths=[
+            Path("function_docstring_complex_60.py"),
+            Path("function_docstring_complex_80.py"),
+            Path("function_docstring_complex_100.py"),
+        ],
+        output_file_path_template=Path("function_docstring_complex_{line_length}.py"),
+        shared_parameters={},
+        parameter_grid={"line_length": [60, 80, 100]},
+    ),
 ]
 
 CASES: list[Case] = list(

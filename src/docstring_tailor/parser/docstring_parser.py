@@ -1,6 +1,6 @@
 """Contains logic for parsing docstrings into a structured IR."""
 
-from textwrap import dedent
+from inspect import cleandoc
 from typing import cast
 
 from docstring_tailor.defaults.constants import (
@@ -320,9 +320,9 @@ class DocstringParser:
         Returns:
             ir (list[DocstringNode]): Fully parsed and typed IR.
         """
-        docstring_body = content[
-            DOCSTRING_DELIMITER_LENGTH:-DOCSTRING_DELIMITER_LENGTH
-        ].strip()
+        docstring_body = cleandoc(
+            content[DOCSTRING_DELIMITER_LENGTH:-DOCSTRING_DELIMITER_LENGTH]
+        )
 
         ir = self._parse_top_level(docstring_body)
 
