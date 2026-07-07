@@ -4,10 +4,11 @@ from inspect import cleandoc
 from typing import cast
 
 from docstring_tailor.defaults.constants import (
+    CODE_REPL_PROMPT,
     DOCSTRING_DELIMITER_LENGTH,
-    PYTHON_REPL_PREFIX_START,
     RE_PATTERN_BLANK_LINES,
-    RE_PATTERN_FENCE,
+    RE_PATTERN_CODE_BLOCK_DELIMITER,
+    STRUCTURED_LIST_DESCRIPTION_SEPARATOR,
 )
 from docstring_tailor.defaults.docstring_keywords import (
     GOOGLE_NAMED_PARAGRAPH_SECTIONS,
@@ -80,7 +81,7 @@ class DocstringParser:
         """
         first_line = content.splitlines()[0].strip()
 
-        if first_line.startswith(PYTHON_REPL_PREFIX_START):
+        if first_line.startswith(CODE_REPL_PROMPT):
             return CodeREPL(code=content)
 
         if is_list(content):
@@ -103,19 +104,18 @@ class DocstringParser:
             chunks (list[CodeBlock | str]): CodeBlock nodes and plain string
                 segments in document order.
         """
-        raw_chunks = RE_PATTERN_FENCE.split(content)
+        raw_chunks = RE_PATTERN_CODE_BLOCK_DELIMITER.split(content)
         result: list[CodeBlock | str] = []
         in_fence = False
-        fence_delimiter: CodeBlockDelimiterType = "```"
 
         for chunk in raw_chunks:
-            fence_match = RE_PATTERN_FENCE.match(chunk)
+            fence_match = RE_PATTERN_CODE_BLOCK_DELIMITER.match(chunk)
 
             if fence_match:
-                fence_delimiter = (
+                code_block_delimiter = (
                     cast(CodeBlockDelimiterType, fence_match.group(1))
                     if not in_fence
-                    else fence_delimiter
+                    else code_block_delimiter
                 )
                 in_fence = not in_fence
                 continue
@@ -124,7 +124,9 @@ class DocstringParser:
                 continue
 
             if in_fence:
-                result.append(CodeBlock(code=chunk.strip(), delimiter=fence_delimiter))
+                result.append(
+                    CodeBlock(code=chunk.strip(), delimiter=code_block_delimiter)
+                )
             else:
                 result.append(chunk)
 

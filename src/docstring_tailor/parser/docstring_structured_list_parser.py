@@ -1,5 +1,10 @@
 """Contains logic for parsing structured list sections of a docstring."""
 
+from docstring_tailor.defaults.constants import (
+    PARAMETER_TYPE_ANNOTATION_CLOSE,
+    PARAMETER_TYPE_ANNOTATION_OPEN,
+    STRUCTURED_LIST_DESCRIPTION_SEPARATOR,
+)
 from docstring_tailor.defaults.docstring_keywords import GOOGLE_RAISES_SECTIONS
 from docstring_tailor.defaults.ir_model import (
     StructuredList,
@@ -33,12 +38,14 @@ class StructuredListParser:
         Returns:
             parameter (StructuredListParameter): The parsed parameter entry.
         """
-        colon_index = item.index(":")
+        colon_index = item.index(STRUCTURED_LIST_DESCRIPTION_SEPARATOR)
         name_and_type = item[:colon_index]
         description = item[colon_index + 1 :].strip()
 
-        opening_parenthesis_index = name_and_type.index("(")
-        closing_parenthesis_index = name_and_type.rindex(")")
+        opening_parenthesis_index = name_and_type.index(PARAMETER_TYPE_ANNOTATION_OPEN)
+        closing_parenthesis_index = name_and_type.rindex(
+            PARAMETER_TYPE_ANNOTATION_CLOSE
+        )
 
         name = name_and_type[:opening_parenthesis_index].strip()
         variable_type = name_and_type[
