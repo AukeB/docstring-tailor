@@ -25,9 +25,10 @@ def version_callback(value: bool) -> None:
 def show_diff(original: str, modified: str, path: Path) -> None:
     """Prints a unified diff between the original and modified source to stdout.
 
-    Skips output entirely if the two sources are identical. Each line of the diff is coloured:
-    additions in green, removals in red, and header lines in bold, falling back to plain output on
-    terminals that don't support ANSI codes.
+    Skips output entirely if the two sources are identical. Each line of the
+    diff is coloured: additions in green, removals in red, and header lines in
+    bold, falling back to plain output on terminals that don't support ANSI
+    codes.
 
     Args:
         original (str): The source text before formatting.

@@ -35,12 +35,13 @@ class DocstringParser:
     The parsing pipeline operates in two phases:
 
     1. Indentation-based top-level scanning — identifies keyword-headed sections
-       (NamedParagraph, StructuredList) by tracking base indentation, without relying
-       on blank lines. This sidesteps the chicken-and-egg problem where named paragraphs
-       need blank-line detection to be found, but themselves contain blank lines.
+       (NamedParagraph, StructuredList) by tracking base indentation, without
+       relying on blank lines. This sidesteps the chicken-and-egg problem where
+       named paragraphs need blank-line detection to be found, but themselves
+       contain blank lines.
     2. Flat content parsing — applies fence detection, blank-line splitting, and
-       type classification to non-keyword content, and recursively to named paragraph
-       bodies after dedenting.
+       type classification to non-keyword content, and recursively to named
+       paragraph bodies after dedenting.
     """
 
     def __init__(self) -> None:
@@ -54,7 +55,8 @@ class DocstringParser:
             content (str): Raw list text including markers.
 
         Returns:
-            simple_list (SimpleList): Parsed simple list with markers stripped from items.
+            simple_list (SimpleList): Parsed simple list with markers stripped
+                from items.
         """
         list_type = get_list_type(text=content)
         items = extract_items(content=content)
@@ -64,9 +66,11 @@ class DocstringParser:
         return simple_list
 
     def _classify_paragraph(self, content: str) -> DocstringNode:
-        """Classifies a single blank-line-delimited chunk into its concrete IR type.
+        """Classifies a single blank-line-delimited chunk into its concrete IR
+        type.
 
-        Checks for REPL and list patterns before falling back to plain Paragraph.
+        Checks for REPL and list patterns before falling back to plain
+        Paragraph.
 
         Args:
             content (str): A single stripped paragraph chunk.
@@ -89,14 +93,15 @@ class DocstringParser:
 
         Uses a capturing re.split() so fence delimiter lines are retained as
         elements. Iterates the result with a boolean fence tracker to emit
-        CodeBlock nodes for fenced regions and plain strings for everything else.
+        CodeBlock nodes for fenced regions and plain strings for everything
+        else.
 
         Args:
             content (str): Raw content that may contain fenced code blocks.
 
         Returns:
-            chunks (list[CodeBlock | str]): CodeBlock nodes and plain string segments
-                in document order.
+            chunks (list[CodeBlock | str]): CodeBlock nodes and plain string
+                segments in document order.
         """
         raw_chunks = RE_PATTERN_FENCE.split(content)
         result: list[CodeBlock | str] = []
@@ -128,11 +133,13 @@ class DocstringParser:
     def _parse_flat_content(self, content: str) -> list[DocstringNode]:
         """Parses flat content (no keyword-headed sections) into typed IR nodes.
 
-        Extracts code blocks first to protect them from blank-line splitting, then
-        splits remaining plain strings on blank lines and classifies each chunk.
+        Extracts code blocks first to protect them from blank-line splitting,
+        then splits remaining plain strings on blank lines and classifies each
+        chunk.
 
         Args:
-            content (str): Raw flat content, already dedented if from a named paragraph body.
+            content (str): Raw flat content, already dedented if from a named
+                paragraph body.
 
         Returns:
             nodes (list[DocstringNode]): Parsed IR nodes in document order.
@@ -159,7 +166,8 @@ class DocstringParser:
         column zero relative to the body.
 
         Args:
-            content (str): Raw body lines joined as a string, with original indentation intact.
+            content (str): Raw body lines joined as a string, with original
+                indentation intact.
 
         Returns:
             body (list[DocstringNode]): Parsed body nodes.
@@ -186,7 +194,8 @@ class DocstringParser:
         _parse_named_paragraph_body.
 
         Args:
-            content (str): Raw section content including the keyword header line.
+            content (str): Raw section content including the keyword header
+                line.
 
         Returns:
             named_paragraph (NamedParagraph): Fully parsed node with typed body.
@@ -204,7 +213,8 @@ class DocstringParser:
         """Dispatches a keyword-headed section to the appropriate parser.
 
         Args:
-            content (str): Raw section content including the keyword header line.
+            content (str): Raw section content including the keyword header
+                line.
 
         Returns:
             node (DocstringNode): A StructuredList or NamedParagraph node.
@@ -223,20 +233,23 @@ class DocstringParser:
         lines: list[str],
         base_indent: int,
     ) -> list[tuple[bool, str]]:
-        """Groups lines into keyword-section and plain-text segments using indentation only.
+        """Groups lines into keyword-section and plain-text segments using
+        indentation only.
 
-        A keyword line at base indentation starts a new keyword segment. All subsequent
-        lines more indented than base belong to that segment's body, regardless of any
-        blank lines within. A non-keyword line returning to base indentation ends the
-        keyword segment and starts a new plain segment.
+        A keyword line at base indentation starts a new keyword segment. All
+        subsequent lines more indented than base belong to that segment's body,
+        regardless of any blank lines within. A non-keyword line returning to
+        base indentation ends the keyword segment and starts a new plain
+        segment.
 
         Args:
             lines (list[str]): All lines of the content to scan.
             base_indent (int): The indentation level of top-level content lines.
 
         Returns:
-            segments (list[tuple[bool, str]]): Each entry is (is_keyword_section, content)
-                where content is the raw joined lines for that segment.
+            segments (list[tuple[bool, str]]): Each entry is
+                (is_keyword_section, content) where content is the raw joined
+                lines for that segment.
         """
         segments: list[tuple[bool, str]] = []
         current_lines: list[str] = []
@@ -278,14 +291,16 @@ class DocstringParser:
         return segments
 
     def _parse_top_level(self, content: str) -> list[DocstringNode]:
-        """Parses top-level docstring content using indentation-based segment scanning.
+        """Parses top-level docstring content using indentation-based segment
+        scanning.
 
         1. Determines base indentation from non-empty lines.
         2. Scans lines into keyword-section and plain-text segments.
         3. Dispatches each segment to the appropriate parser.
 
         Args:
-            content (str): Raw docstring body with triple-quote delimiters stripped.
+            content (str): Raw docstring body with triple-quote delimiters
+                stripped.
 
         Returns:
             nodes (list[DocstringNode]): Fully parsed IR.
@@ -315,7 +330,8 @@ class DocstringParser:
         Strips triple-quote delimiters and delegates to _parse_top_level.
 
         Args:
-            content (str): Raw docstring string including triple-quote delimiters.
+            content (str): Raw docstring string including triple-quote
+                delimiters.
 
         Returns:
             ir (list[DocstringNode]): Fully parsed and typed IR.

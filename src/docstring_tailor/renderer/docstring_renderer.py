@@ -6,9 +6,7 @@ import textwrap
 from docstring_tailor.defaults.constants import (
     DOCSTRING_DELIMITER,
     DOCSTRING_DELIMITER_LENGTH,
-    RE_PATTERN_LIST_MARKER,
 )
-from docstring_tailor.defaults.docstring_keywords import GOOGLE_ALL_SECTION_KEYWORDS
 from docstring_tailor.defaults.ir_model import (
     CodeBlock,
     CodeREPL,
@@ -28,21 +26,25 @@ from docstring_tailor.utils.utils_formatting import (
 class DocstringRenderer:
     """Renders a parsed docstring IR into the Google docstring format.
 
-    Receives a list of typed DocstringNode objects from the parser and
-    renders each according to its concrete type. The final result is
-    rendered as a one-line docstring if it fits within the line length
-    limit and contains no deliberate paragraph breaks, and as a
-    multi-line docstring otherwise.
+    Receives a list of typed DocstringNode objects from the parser and renders
+    each according to its concrete type. The final result is rendered as a one-
+    line docstring when the IR is empty or consists of a single Paragraph node
+    that fits within the line length limit, and as a multi-line docstring
+    otherwise.
 
     Attributes:
         _line_length (int): Maximum characters per line including indentation.
-        _current_indent (str): The accumulated indentation string at the current nesting level.
+        _current_indent (str): The accumulated indentation string at the current
+            nesting level.
         _indent_unit (str): The indentation unit string used in the source file.
         _indent_length (int): Length of _indent_unit.
-        _paragraph_separator (str): Separator inserted between rendered paragraphs.
+        _paragraph_separator (str): Separator inserted between rendered
+            paragraphs.
         _line_separator (str): Separator inserted between rendered lines.
-        _line_separator_indented (str): Line separator followed by one additional indentation level.
-        _wrap_width (int): Maximum content width after accounting for current indentation.
+        _line_separator_indented (str): Line separator followed by one
+            additional indentation level.
+        _wrap_width (int): Maximum content width after accounting for current
+            indentation.
         _wrap_width_indented (int): Maximum content width for indented content.
     """
 
@@ -55,9 +57,12 @@ class DocstringRenderer:
         """Initialises the DocstringRenderer.
 
         Args:
-            line_length (int): Maximum characters per line including indentation.
-            current_indent (str): The accumulated indentation string at the current nesting level.
-            indent_unit (str): The indentation unit string used in the source file.
+            line_length (int): Maximum characters per line including
+                indentation.
+            current_indent (str): The accumulated indentation string at the
+                current nesting level.
+            indent_unit (str): The indentation unit string used in the source
+                file.
         """
         self._line_length = line_length
         self._current_indent = current_indent
@@ -72,51 +77,74 @@ class DocstringRenderer:
         self._wrap_width: int = self._line_length - len(self._current_indent)
         self._wrap_width_indented: int = self._wrap_width - self._indent_length
 
-    def _fits_on_one_line(self, rendered_content: str) -> bool:
-        """Returns True if the rendered content can be output as a one-line docstring.
+    def _render_one_line(self, ir: list[DocstringNode]) -> str | None:
+        """Renders the IR as a one-line docstring, if it qualifies.
+
+        A docstring can only be rendered on one line when it is empty, or when
+        it is a single Paragraph node with no other structure. Every other IR
+        shape always renders to at least two physical lines once its own
+        delimiters or markers are accounted for, so those cases are rejected
+        immediately without attempting a render.
+
+        1. Determines the raw content: empty string, or the sole Paragraph's
+           text.
+        2. Normalizes internal whitespace to single spaces.
+        3. Rejects the one-line rendering if the delimited content exceeds the
+           wrap width.
 
         Args:
-            rendered_content (str): The fully rendered docstring content.
+            ir (list[DocstringNode]): Fully parsed and typed IR from
+                DocstringParser.
 
         Returns:
-            result (bool): True if the content fits on one line, False otherwise.
+            one_line (str | None): The rendered one-line docstring including
+                triple-quote delimiters, or None if the IR does not qualify or
+                is too long to fit.
         """
-        is_deliberately_multiline = "\n" in rendered_content.strip()
-        normalized = re.sub(r"\s+", " ", rendered_content.strip())
+        if not ir:
+            content = ""
+        elif len(ir) == 1 and isinstance(ir[0], Paragraph):
+            content = ir[0].content
+        else:
+            return None
+
+        normalized = re.sub(r"\s+", " ", content.strip()) or " "
         total_length = (
             len(self._current_indent) + len(normalized) + 2 * DOCSTRING_DELIMITER_LENGTH
         )
-        result = not is_deliberately_multiline and total_length <= self._wrap_width
+
+        if total_length > self._wrap_width:
+            return None
+
+        one_line = DOCSTRING_DELIMITER + normalized + DOCSTRING_DELIMITER
+
+        return one_line
+
+    def _opens_with_block(self, ir: list[DocstringNode]) -> bool:
+        """Determines whether the rendered docstring must start with a leading
+        newline.
+
+        A structural block -- CodeBlock, CodeREPL, SimpleList, StructuredList,
+        or NamedParagraph -- cannot follow the opening triple quotes on the same
+        line. The first node's type alone determines this, so no rendered text
+        needs inspecting for fence markers, REPL prompts, list markers, or
+        section keywords.
+
+        Args:
+            ir (list[DocstringNode]): Fully parsed and typed IR from
+                DocstringParser.
+
+        Returns:
+            result (bool): True if a leading newline must be inserted before the
+                first node.
+        """
+        result = bool(ir) and not isinstance(ir[0], Paragraph)
 
         return result
 
-    def _opens_with_block(self, rendered_content: str) -> bool:
-        """Determines whether rendered content starts with a structural block marker.
-
-        A block is considered to start if the first non-empty line:
-
-        - starts with a code fence (```, ~~~) or REPL marker (>>>), OR
-        - matches a list marker regex, OR
-        - starts with any known Google section keyword.
-        """
-        first_line = next(
-            (l.strip() for l in rendered_content.split("\n") if l.strip()), ""
-        )
-
-        if not first_line:
-            return False
-
-        return (
-            first_line.startswith(("```", "~~~", ">>>"))
-            or re.match(RE_PATTERN_LIST_MARKER, first_line) is not None
-            or any(
-                first_line.startswith(keyword)
-                for keyword in GOOGLE_ALL_SECTION_KEYWORDS
-            )
-        )
-
     def _render_opening_paragraph(self, paragraph: str) -> str:
-        """Renders the first paragraph, accounting for the opening triple quotes offset.
+        """Renders the first paragraph, accounting for the opening triple quotes
+        offset.
 
         Args:
             paragraph (str): The first plain text paragraph.
@@ -143,13 +171,16 @@ class DocstringRenderer:
         """Renders a single node from within a named paragraph body.
 
         Args:
-            node (DocstringNode): A node from NamedParagraph.body. In practice always one
-                of CodeBlock, CodeREPL, SimpleList, or Paragraph -- StructuredList and
-                NamedParagraph never appear here, since neither is permitted to nest inside a
-                named paragraph's body.
+            node (DocstringNode): A node from NamedParagraph.body. In practice
+                always one of CodeBlock, CodeREPL, SimpleList, or Paragraph --
+                StructuredList and NamedParagraph never appear here, since
+                neither is permitted to nest inside a named paragraph's body.
 
         Returns:
             rendered (str): The rendered node string.
+
+        Raises:
+            ValueError: If the node is not a recognized DocstringNode subtype.
         """
         if isinstance(node, CodeBlock):
             rendered_content = format_code(
@@ -189,7 +220,8 @@ class DocstringRenderer:
         return rendered
 
     def _render_named_paragraph(self, section: NamedParagraph) -> str:
-        """Renders a NAMED_PARAGRAPH section, rendering each body node independently.
+        """Renders a NAMED_PARAGRAPH section, rendering each body node
+        independently.
 
         Args:
             section (NamedParagraph): A parsed named paragraph node.
@@ -218,27 +250,31 @@ class DocstringRenderer:
         wrap_width: int,
         line_separator: str,
     ) -> str:
-        """Renders a SIMPLE_LIST section by rendering each parsed item independently.
+        """Renders a SIMPLE_LIST section by rendering each parsed item
+        independently.
 
         Each item is wrapped using format_text with a subsequent indent derived
         from the list marker width. For unordered lists this is always 2 spaces
         ('- '). For ordered lists it is derived from the total number of items,
         since longer lists produce wider markers (e.g. '10. ' vs '1. ').
 
-        `wrap_width` and `line_separator` are required, with no default, so every call site
-        must state explicitly which indentation level the list sits at. A SimpleList rendered
-        at the top level uses `self._wrap_width`/`self._line_separator`; one nested inside a
+        `wrap_width` and `line_separator` are required, with no default, so
+        every call site must state explicitly which indentation level the list
+        sits at. A SimpleList rendered at the top level uses
+        `self._wrap_width`/`self._line_separator`; one nested inside a
         NamedParagraph body sits one level deeper and needs
-        `self._wrap_width_indented`/`self._line_separator_indented`. A default here would risk
-        silently reintroducing the bug this fixes: a nested list's first item is indented
-        correctly by the NamedParagraph's own chunk separator, but every other item is joined
-        using whatever `line_separator` this method falls back to -- so if that fallback were
+        `self._wrap_width_indented`/`self._line_separator_indented`. A default
+        here would risk silently reintroducing the bug this fixes: a nested
+        list's first item is indented correctly by the NamedParagraph's own
+        chunk separator, but every other item is joined using whatever
+        `line_separator` this method falls back to -- so if that fallback were
         the shallower top-level one, only the first item would look right.
 
         Args:
             section (SimpleList): A parsed simple list node.
             wrap_width (int): Maximum content width for wrapping each item.
-            line_separator (str): Separator inserted between wrapped lines and between items.
+            line_separator (str): Separator inserted between wrapped lines and
+                between items.
 
         Returns:
             rendered (str): The rendered list string.
@@ -269,7 +305,8 @@ class DocstringRenderer:
         return rendered
 
     def _render_structured_list(self, section: StructuredList) -> str:
-        """Renders a STRUCTURED_LIST section by rendering each entry and reassembling.
+        """Renders a STRUCTURED_LIST section by rendering each entry and
+        reassembling.
 
         Dispatches each entry to the appropriate item text format based on its
         type, then wraps the result in the section header.
@@ -307,13 +344,15 @@ class DocstringRenderer:
         return rendered
 
     def _render_code_block(self, section: CodeBlock) -> str:
-        """Renders a CODE_BLOCK section, wrapping content in its original fence delimiter.
+        """Renders a CODE_BLOCK section, wrapping content in its original fence
+        delimiter.
 
         Args:
             section (CodeBlock): A parsed code block node.
 
         Returns:
-            rendered (str): The re-indented code block string including fence delimiters.
+            rendered (str): The re-indented code block string including fence
+                delimiters.
         """
         rendered_content = format_code(
             text=section.code,
@@ -332,16 +371,17 @@ class DocstringRenderer:
 
         return rendered
 
-    def _render_node(self, node: DocstringNode, is_first: bool = False) -> str:
+    def _render_node(self, node: DocstringNode) -> str:
         """Dispatches a single IR node to the appropriate renderer.
 
         Args:
             node (DocstringNode): Any IR node.
-            is_first (bool): Whether this is the first node in the IR, used
-                to apply the opening paragraph offset.
 
         Returns:
             rendered (str): The rendered node string.
+
+        Raises:
+            ValueError: If the node is not a recognized DocstringNode subtype.
         """
         if isinstance(node, CodeBlock):
             rendered = self._render_code_block(node)
@@ -361,53 +401,76 @@ class DocstringRenderer:
                 line_separator=self._line_separator,
             )
         elif isinstance(node, Paragraph):
-            if is_first:
-                rendered = self._render_opening_paragraph(paragraph=node.content)
-            else:
-                rendered = format_text(
-                    text=node.content,
-                    wrap_width=self._wrap_width,
-                    line_separator=self._line_separator,
-                )
+            rendered = format_text(
+                text=node.content,
+                wrap_width=self._wrap_width,
+                line_separator=self._line_separator,
+            )
         else:
             raise ValueError
 
         return rendered
 
-    def render(self, ir: list[DocstringNode]) -> str:
-        """Renders a parsed docstring IR into a Google-style docstring string.
+    def _render_nodes(self, ir: list[DocstringNode]) -> list[str]:
+        """Renders each IR node to its multi-line string form.
 
-        Renders each IR node independently, joins them with paragraph separators,
-        then wraps the result in triple quotes as either a one-line or multi-line
-        docstring.
+        The first node is given special treatment when it is a Paragraph, since
+        the opening triple quotes consume space on the first physical line that
+        the wrapping must account for -- a concern of document position, not of
+        the Paragraph type itself, so it is handled here rather than inside
+        _render_node.
 
         Args:
-            ir (list[DocstringNode]): Fully parsed and typed IR from DocstringParser.
+            ir (list[DocstringNode]): Fully parsed and typed IR from
+                DocstringParser.
 
         Returns:
-            rendered_docstring (str): The fully rendered docstring string.
+            rendered_parts (list[str]): Each node rendered to its string form,
+                in order.
         """
         rendered_parts: list[str] = []
 
         for index, node in enumerate(ir):
-            is_first = index == 0
-            rendered_parts.append(self._render_node(node=node, is_first=is_first))
+            if index == 0 and isinstance(node, Paragraph):
+                rendered_parts.append(self._render_opening_paragraph(node.content))
+            else:
+                rendered_parts.append(self._render_node(node))
 
+        return rendered_parts
+
+    def render(self, ir: list[DocstringNode]) -> str:
+        """Renders a parsed docstring IR into a Google-style docstring string.
+
+        Attempts a one-line rendering first, since that is only ever possible
+        for an empty IR or a single Paragraph node short enough to fit within
+        the wrap width. Every other IR shape renders each node independently,
+        joins them with paragraph separators, and wraps the result in triple
+        quotes as a multi-line docstring.
+
+        Args:
+            ir (list[DocstringNode]): Fully parsed and typed IR from
+                DocstringParser.
+
+        Returns:
+            rendered_docstring (str): The fully rendered docstring string.
+        """
+        one_line = self._render_one_line(ir)
+
+        if one_line is not None:
+            return one_line
+
+        rendered_parts = self._render_nodes(ir)
         rendered_content = self._paragraph_separator.join(rendered_parts)
 
-        if self._opens_with_block(rendered_content):
+        if self._opens_with_block(ir):
             rendered_content = "\n" + self._current_indent + rendered_content
 
-        if self._fits_on_one_line(rendered_content):
-            normalized = re.sub(r"\s+", " ", rendered_content.strip()) or " "
-            rendered_docstring = DOCSTRING_DELIMITER + normalized + DOCSTRING_DELIMITER
-        else:
-            rendered_docstring = (
-                DOCSTRING_DELIMITER
-                + rendered_content
-                + "\n"
-                + self._current_indent
-                + DOCSTRING_DELIMITER
-            )
+        rendered_docstring = (
+            DOCSTRING_DELIMITER
+            + rendered_content
+            + "\n"
+            + self._current_indent
+            + DOCSTRING_DELIMITER
+        )
 
         return rendered_docstring

@@ -12,14 +12,16 @@ def format_text(
 ) -> str:
     """Normalises whitespace and wraps text to a given width.
 
-    Strips leading and trailing whitespace, collapses all internal whitespace sequences to a single
-    space, wraps to wrap_width, and joins the resulting lines with line_separator.
+    Strips leading and trailing whitespace, collapses all internal whitespace
+    sequences to a single space, wraps to wrap_width, and joins the resulting
+    lines with line_separator.
 
     Args:
         text (str): The raw text to wrap.
         wrap_width (int): Maximum number of characters per line.
         line_separator (str): The string used to join wrapped lines.
-        subsequent_indent (str): String prepended to all lines except the first. Defaults to ''.
+        subsequent_indent (str): String prepended to all lines except the first.
+            Defaults to ''.
 
     Returns:
         formatted (str): The wrapped and joined paragraph string.
@@ -34,11 +36,13 @@ def format_text(
 
 
 def format_code(text: str, line_separator: str) -> str:
-    """Formats a verbatim code block by stripping original indentation and re-indenting.
+    """Formats a verbatim code block by stripping original indentation and re-
+    indenting.
 
-    Preserves the content exactly as written, only adjusting the leading indentation to match the
-    target level. Blank lines within the block are preserved. Leading and trailing blank lines
-    introduced by splitting are removed.
+    Preserves the content exactly as written, only adjusting the leading
+    indentation to match the target level. Blank lines within the block are
+    preserved. Leading and trailing blank lines introduced by splitting are
+    removed.
 
     Args:
         text (str): The raw code block string.

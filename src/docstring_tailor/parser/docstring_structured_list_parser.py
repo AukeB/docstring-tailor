@@ -12,8 +12,8 @@ from docstring_tailor.utils.utils_parsing import extract_items
 class StructuredListParser:
     """Parses raw structured-list section content into a StructuredList node.
 
-    Determines whether the section is a Raises section or a parameter section based on the keyword
-    on the first line, then parses each item accordingly.
+    Determines whether the section is a Raises section or a parameter section
+    based on the keyword on the first line, then parses each item accordingly.
     """
 
     def __init__(self) -> None:
@@ -23,8 +23,9 @@ class StructuredListParser:
     def _parse_parameter_item(self, item: str) -> StructuredListParameter:
         """Parses a single parameter item string into a StructuredListParameter.
 
-        Splits on the first ':' to separate the name/type from the description, then searches
-        backwards from that ':' for the last ')' to extract the type.
+        Splits on the first ':' to separate the name/type from the description,
+        then searches backwards from that ':' for the last ')' to extract the
+        type.
 
         Args:
             item (str): A single joined item string.
@@ -75,14 +76,15 @@ class StructuredListParser:
         return error
 
     def parse(self, content: str) -> StructuredList:
-        """Parses raw structured-list section content into a StructuredList node.
+        """Parses raw structured-list section content into a StructuredList
+        node.
 
-        Determines the section type from the keyword on the first line, then delegates to the
-        appropriate item parser.
+        Determines the section type from the keyword on the first line, then
+        delegates to the appropriate item parser.
 
         Args:
-            content (str): The raw text of a structured-list section, including its keyword
-                header line (e.g. 'Args:\\n    x (int): ...').
+            content (str): The raw text of a structured-list section, including
+                its keyword header line (e.g. 'Args:\\n x (int): ...').
 
         Returns:
             structured_list (StructuredList): Fully parsed structured list node.

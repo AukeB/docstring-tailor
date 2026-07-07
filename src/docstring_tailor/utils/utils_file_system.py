@@ -1,4 +1,6 @@
-"""Module containing various utility functions related to interacting with local file system."""
+"""Module containing various utility functions related to interacting with local
+file system.
+"""
 
 from pathlib import Path
 
@@ -8,9 +10,9 @@ import typer
 def load_config() -> dict:
     """Loads configuration from docstring_tailor.toml or pyproject.toml.
 
-    Walks up from the current directory. docstring_tailor.toml takes priority over pyproject.toml if
-    both exist at the same level. Stops at the first file found containing docstring_tailor
-    configuration.
+    Walks up from the current directory. docstring_tailor.toml takes priority
+    over pyproject.toml if both exist at the same level. Stops at the first file
+    found containing docstring_tailor configuration.
 
     Returns:
         config (dict): Configuration settings, or an empty dict if none found.
@@ -37,18 +39,19 @@ def load_config() -> dict:
 def _is_excluded(path: Path, exclude_patterns: list[str], project_root: Path) -> bool:
     """Checks whether a path matches any of the provided exclusion patterns.
 
-    Supports two pattern types, mirroring Ruff's exclude behaviour:
-    - Single-path patterns (e.g. '.mypy_cache', 'foo.py', 'foo_*.py') are matched against every
-      component of the path, so they exclude by name anywhere in the tree.
-    - Relative patterns containing a separator (e.g. 'directory/foo.py', 'directory/*.py') are
-      matched against the path relative to the project root, so they only exclude at that specific
-      location.
+    - Supports two pattern types, mirroring Ruff's exclude behaviour:
+    - Single-path patterns (e.g. '.mypy_cache', 'foo.py', 'foo_*.py') are
+      matched against every component of the path, so they exclude by name
+      anywhere in the tree.
+    - Relative patterns containing a separator (e.g. 'directory/foo.py',
+      'directory/*.py') are matched against the path relative to the project
+      root, so they only exclude at that specific location.
 
     Args:
         path (Path): The absolute path to test.
         exclude_patterns (list[str]): Glob patterns provided via --exclude.
-        project_root (Path): The directory against which relative patterns are resolved (typically
-            cwd or the directory containing pyproject.toml).
+        project_root (Path): The directory against which relative patterns are
+            resolved (typically cwd or the directory containing pyproject.toml).
 
     Returns:
         excluded (bool): True if the path matches at least one pattern.
@@ -76,8 +79,8 @@ def collect_python_files(
 ) -> list[Path]:
     """Collects all Python files from a list of file and/or directory paths.
 
-    Directories are searched recursively. Files are included directly. Any path matching one of the
-    provided exclusion patterns is silently skipped.
+    Directories are searched recursively. Files are included directly. Any path
+    matching one of the provided exclusion patterns is silently skipped.
 
     Args:
         paths (list[Path]): A list of file and/or directory paths to search.

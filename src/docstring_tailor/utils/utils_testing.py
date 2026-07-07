@@ -10,10 +10,11 @@ def read_fixture(relative_file_path: Path) -> str:
     """Reads a fixture file and returns its contents.
 
     Args:
-        relative_file_path (Path): Individual path components relative to the fixtures directory.
+        relative_file_path (Path): Individual path components relative to the
+            fixtures directory.
 
     Returns:
-        str: The contents of the fixture file.
+        file_content (str): The contents of the fixture file.
     """
     path = DIR_PATH_TEST_FIXTURES / relative_file_path
     file_content = path.read_text(encoding="utf-8")
@@ -24,8 +25,8 @@ def read_fixture(relative_file_path: Path) -> str:
 def generate_case_ids(case: Case) -> str:
     """Generates a readable pytest parameter ID.
 
-    The generated ID is displayed by pytest when parametrized tests run, making it easier to
-    identify failing cases.
+    The generated ID is displayed by pytest when parametrized tests run, making
+    it easier to identify failing cases.
 
     Args:
         case (Case): The case for which the ID should be generated.

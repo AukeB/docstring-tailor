@@ -45,6 +45,7 @@ git:
 
 # Run full workflow: format, type-check, test, clean, commit
 all:
+	uv run src/docstring_tailor/main.py --line-length 80
 	make ruff
 	make ty
 	make pytest

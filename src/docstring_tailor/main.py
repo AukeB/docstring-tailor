@@ -1,4 +1,11 @@
-"""Main module"""
+"""Main module
+
+Todo
+
+- Fix that for return section the variable name is optional.
+- Fix that the program does not break if brackets can not be found for variable
+  types.
+"""
 
 from pathlib import Path
 from typing import Annotated, Optional
@@ -76,16 +83,19 @@ def main(
         ),
     ] = None,
 ) -> None:
-    """Formats Python docstrings in the given files or directories to the specified style.
+    """Formats Python docstrings in the given files or directories to the
+    specified style.
 
-    Processes all .py files found at the provided paths, reformatting their docstrings in place.
-    Directories are searched recursively.
+    Processes all .py files found at the provided paths, reformatting their
+    docstrings in place. Directories are searched recursively.
 
     Args:
-        paths (list[Path] | None): Files or directories to process. Defaults to 'src/'.
+        paths (list[Path] | None): Files or directories to process. Defaults to
+            'src/'.
         line_length (int | None): The maximum line length to wrap docstrings to.
         style (DocstringStyle | None): The docstring style to format to.
-        diff (bool): If True, print a unified diff to stdout instead of writing files.
+        diff (bool): If True, print a unified diff to stdout instead of writing
+            files.
         exclude (list[str] | None): Glob patterns for paths to exclude.
         version (bool | None): If passed, print the version and exit.
     """
@@ -114,6 +124,7 @@ def main(
     )
 
     for file_path in python_files:
+        print(file_path)
         input_data = file_path.read_text(encoding=ENCODING)
         input_tree = cst.parse_module(source=input_data)
         modified_tree = input_tree.visit(

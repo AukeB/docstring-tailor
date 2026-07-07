@@ -6,15 +6,16 @@ from docstring_tailor.defaults.constants import RE_PATTERN_LIST_MARKER
 
 
 def extract_items(content: str, skip_first_line: bool = False) -> list[str]:
-    """Extracts individual item strings from a section, using indentation to detect boundaries.
+    """Extracts individual item strings from a section, using indentation to
+    detect boundaries.
 
-    Lines at the base indentation level start a new item. Continuation lines
-    at a deeper indentation are joined to the preceding item.
+    Lines at the base indentation level start a new item. Continuation lines at
+    a deeper indentation are joined to the preceding item.
 
     Args:
         content (str): The raw section content.
-        skip_first_line (bool): Whether to skip the first line, e.g. for sections
-            with a keyword header like 'Args:'.
+        skip_first_line (bool): Whether to skip the first line, e.g. for
+            sections with a keyword header like 'Args:'.
 
     Returns:
         items (list[str]): Each item as a single joined string.

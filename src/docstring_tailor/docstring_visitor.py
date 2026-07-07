@@ -10,51 +10,59 @@ from docstring_tailor.renderer.docstring_renderer import DocstringRenderer
 class DocstringVisitor(cst.CSTTransformer):
     """A transformer for traversing and rendering docstrings.
 
-    Subclasses libcst's CSTTransformer, which implements the visitor pattern over a Concrete Syntax
-    Tree (CST). When tree.visit(DocstringVisitor()) is called, libcst traverses every node in the
-    tree and automatically dispatches to the corresponding visit_* or leave_* method on this class
-    if one exists. Method names are derived directly from the CST node class names — for example,
-    visit_IndentedBlock is called for every cst.IndentedBlock node encountered. visit_* methods are
-    called on entry into a node (pre-order) and leave_* methods are called on exit (post-order).
-    leave_* methods receive both the original and updated node, and their return value replaces the
-    node in the reconstructed tree.
+    Subclasses libcst's CSTTransformer, which implements the visitor pattern
+    over a Concrete Syntax Tree (CST). When tree.visit(DocstringVisitor()) is
+    called, libcst traverses every node in the tree and automatically dispatches
+    to the corresponding visit_* or leave_* method on this class if one exists.
+    Method names are derived directly from the CST node class names — for
+    example, visit_IndentedBlock is called for every cst.IndentedBlock node
+    encountered. visit_* methods are called on entry into a node (pre-order) and
+    leave_* methods are called on exit (post-order). leave_* methods receive
+    both the original and updated node, and their return value replaces the node
+    in the reconstructed tree.
 
-    The visit_* methods in this class (visit_Module, visit_IndentedBlock) are used exclusively to
-    track indentation state as the tree is traversed, not to modify it. leave_IndentedBlock is
-    similarly used only for indentation tracking. Modifications to the tree happen only in
+    The visit_* methods in this class (visit_Module, visit_IndentedBlock) are
+    used exclusively to track indentation state as the tree is traversed, not to
+    modify it. leave_IndentedBlock is similarly used only for indentation
+    tracking. Modifications to the tree happen only in
     leave_SimpleStatementLine.
 
-    Workflow: The entry point for all transformations is leave_SimpleStatementLine, called for every
-    simple statement encountered. It delegates to _is_docstring to determine whether the statement
-    is a docstring. If not, the node is returned unchanged via the super() call. If it is, the node
-    is passed to _process_docstring_node, which extracts the raw string content and passes it to
-    _transform_docstring. There, the content is parsed into a typed IR by DocstringParser, then
-    rendered back into a formatted docstring string by DocstringRenderer.
+    Workflow: The entry point for all transformations is
+    leave_SimpleStatementLine, called for every simple statement encountered. It
+    delegates to _is_docstring to determine whether the statement is a
+    docstring. If not, the node is returned unchanged via the super() call. If
+    it is, the node is passed to _process_docstring_node, which extracts the raw
+    string content and passes it to _transform_docstring. There, the content is
+    parsed into a typed IR by DocstringParser, then rendered back into a
+    formatted docstring string by DocstringRenderer.
 
     Attributes:
-        _line_length (int): Maximum characters per line including indentation and triple double
-            quotes.
-        _current_indent (str): The accumulated indentation string at the current nesting level,
-            updated as the tree is traversed.
-        _indent_unit (str): The indentation unit string used in the source file, captured from the
-            module node on entry. Initialised to four spaces as a safety placeholder.
-        _parser (DocstringParser): Reusable parser instance, instantiated once since the parser is
-            stateless across docstrings.
+        _line_length (int): Maximum characters per line including indentation
+            and triple double quotes.
+        _current_indent (str): The accumulated indentation string at the current
+            nesting level, updated as the tree is traversed.
+        _indent_unit (str): The indentation unit string used in the source file,
+            captured from the module node on entry. Initialised to four spaces
+            as a safety placeholder.
+        _parser (DocstringParser): Reusable parser instance, instantiated once
+            since the parser is stateless across docstrings.
     """
 
     def __init__(self, line_length: int) -> None:
         """Initialises the DocstringVisitor.
 
-        Sets up the indentation tracker used to correctly render multi-line docstrings at any
-        nesting level. The initial value of _indent_unit is a four-space placeholder for safety, as
-        it will always be overwritten by visit_Module before any docstring is processed.
-        DocstringParser is instantiated once here since it is stateless across docstrings.
-        DocstringRenderer is instantiated per docstring in _transform_docstring since it depends on
-        _current_indent, which changes as the tree is traversed.
+        Sets up the indentation tracker used to correctly render multi-line
+        docstrings at any nesting level. The initial value of _indent_unit is a
+        four-space placeholder for safety, as it will always be overwritten by
+        visit_Module before any docstring is processed. DocstringParser is
+        instantiated once here since it is stateless across docstrings.
+        DocstringRenderer is instantiated per docstring in _transform_docstring
+        since it depends on _current_indent, which changes as the tree is
+        traversed.
 
         Args:
-            line_length (int): Maximum characters per line including indentation and triple double
-                quotes.
+            line_length (int): Maximum characters per line including indentation
+                and triple double quotes.
         """
         self._line_length = line_length
         self._current_indent = ""
@@ -64,9 +72,10 @@ class DocstringVisitor(cst.CSTTransformer):
     def visit_Module(self, node: cst.Module) -> None:
         """Captures the default indentation unit from the module on first entry.
 
-        Called automatically by libcst when entering the root Module node, before any other node is
-        visited. Overwrites the placeholder _indent_unit set in __init__ with the actual indentation
-        string used in the source file.
+        Called automatically by libcst when entering the root Module node,
+        before any other node is visited. Overwrites the placeholder
+        _indent_unit set in __init__ with the actual indentation string used in
+        the source file.
 
         Args:
             node (cst.Module): The root module node.
@@ -76,9 +85,10 @@ class DocstringVisitor(cst.CSTTransformer):
     def visit_IndentedBlock(self, node: cst.IndentedBlock) -> None:
         """Tracks the current indentation level when entering an indented block.
 
-        Called automatically by libcst each time it enters a cst.IndentedBlock node, such as the
-        body of a function, class, or control flow statement. Accumulates the indentation depth by
-        appending one indent unit to _current_indent.
+        Called automatically by libcst each time it enters a cst.IndentedBlock
+        node, such as the body of a function, class, or control flow statement.
+        Accumulates the indentation depth by appending one indent unit to
+        _current_indent.
 
         Args:
             node (cst.IndentedBlock): The indented block node being visited.
@@ -90,11 +100,12 @@ class DocstringVisitor(cst.CSTTransformer):
         original_node: cst.IndentedBlock,
         updated_node: cst.IndentedBlock,
     ) -> cst.IndentedBlock:
-        """Restores the current indentation level when leaving an indented block.
+        """Restores the current indentation level when leaving an indented
+        block.
 
-        Called automatically by libcst each time it exits a cst.IndentedBlock node. Counterpart to
-        visit_IndentedBlock — strips one indent unit from _current_indent to restore the indentation
-        level of the enclosing scope.
+        Called automatically by libcst each time it exits a cst.IndentedBlock
+        node. Counterpart to visit_IndentedBlock — strips one indent unit from
+        _current_indent to restore the indentation level of the enclosing scope.
 
         Args:
             original_node (cst.IndentedBlock): The original indented block node.
@@ -108,18 +119,18 @@ class DocstringVisitor(cst.CSTTransformer):
         return updated_node
 
     def _transform_docstring(self, content: str) -> str:
-        """Parses and renders a raw docstring string into its formatted equivalent.
+        """Parses and renders a raw docstring string into its formatted
+        equivalent.
 
         Args:
-            content (str): The raw docstring string including triple-quote delimiters.
+            content (str): The raw docstring string including triple-quote
+                delimiters.
 
         Returns:
             rendered (str): The fully rendered docstring string.
         """
 
         ir = self._parser.parse(content=content)
-
-        print(ir)
 
         renderer = DocstringRenderer(
             line_length=self._line_length,
@@ -134,17 +145,19 @@ class DocstringVisitor(cst.CSTTransformer):
     def _process_docstring_node(
         self, node: cst.SimpleStatementLine
     ) -> cst.SimpleStatementLine:
-        """Extracts, transforms, and reattaches the rendered docstring on the given CST node.
+        """Extracts, transforms, and reattaches the rendered docstring on the
+        given CST node.
 
-        Extracts the raw string value from the CST node and passes it to _transform_docstring. The
-        result is then wrapped back into the appropriate CST node types and reattached to the
-        statement.
+        Extracts the raw string value from the CST node and passes it to
+        _transform_docstring. The result is then wrapped back into the
+        appropriate CST node types and reattached to the statement.
 
         Args:
             node (cst.SimpleStatementLine): A CST node containing a docstring.
 
         Returns:
-            updated_node (cst.SimpleStatementLine): The updated node with the rendered docstring.
+            updated_node (cst.SimpleStatementLine): The updated node with the
+                rendered docstring.
         """
         # Extract
         raw_docstring = node.body[0].value.value  # type: ignore
@@ -162,14 +175,17 @@ class DocstringVisitor(cst.CSTTransformer):
     def _is_docstring(self, node: cst.SimpleStatementLine) -> bool:
         """Determines if a given node is a docstring.
 
-        Checks that the statement contains exactly one expression, that the expression is a simple
-        string, and that the string begins with the triple quote delimiter.
+        Checks that the statement contains exactly one expression, that the
+        expression is a simple string, and that the string begins with the
+        triple quote delimiter.
 
         Args:
-            node (cst.SimpleStatementLine): A node in the CST representing a statement.
+            node (cst.SimpleStatementLine): A node in the CST representing a
+                statement.
 
         Returns:
-            is_docstring (bool): True if the node is a docstring, False otherwise.
+            is_docstring (bool): True if the node is a docstring, False
+                otherwise.
         """
         is_docstring: bool = (
             len(node.body) == 1
@@ -187,12 +203,14 @@ class DocstringVisitor(cst.CSTTransformer):
     ) -> (
         cst.BaseStatement | cst.FlattenSentinel[cst.BaseStatement] | cst.RemovalSentinel
     ):
-        """Processes a simple statement line during traversal and formats it if it is a docstring.
+        """Processes a simple statement line during traversal and formats it if
+        it is a docstring.
 
-        Called automatically by libcst for every simple statement in the file. Acts as the entry
-        point for all docstring transformations. If the statement is not a docstring, the node is
-        returned unchanged via the super() call. If it is, it is passed to _process_docstring_node
-        for formatting.
+        Called automatically by libcst for every simple statement in the file.
+        Acts as the entry point for all docstring transformations. If the
+        statement is not a docstring, the node is returned unchanged via the
+        super() call. If it is, it is passed to _process_docstring_node for
+        formatting.
 
         Args:
             original_node (cst.SimpleStatementLine): The original CST node.
