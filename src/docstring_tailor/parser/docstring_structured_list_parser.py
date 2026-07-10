@@ -1,5 +1,7 @@
 """Contains logic for parsing structured list sections of a docstring."""
 
+import re
+
 from docstring_tailor.defaults.constants import (
     PARAMETER_TYPE_ANNOTATION_CLOSE,
     PARAMETER_TYPE_ANNOTATION_OPEN,
@@ -12,6 +14,21 @@ from docstring_tailor.defaults.ir_model import (
     StructuredListParameter,
 )
 from docstring_tailor.utils.utils_parsing import extract_items
+
+# Matches the "name (type)" shape: a single whitespace-free token, a space,
+# then a parenthesized type running to the end of the string. Used to detect
+# whether a parameter item includes a name at all, since Returns/Yields
+# entries conventionally omit it (e.g. "bool: True if valid.") while Args
+# entries conventionally include it (e.g. "flag (bool): Whether to ...") --
+# and either shape can, in principle, appear under either keyword, so the
+# shape is detected structurally rather than switched on the keyword.
+_NAME_AND_TYPE_PATTERN = re.compile(
+    r"^(?P<name>\S+)\s"
+    + re.escape(PARAMETER_TYPE_ANNOTATION_OPEN)
+    + r"(?P<type>.*)"
+    + re.escape(PARAMETER_TYPE_ANNOTATION_CLOSE)
+    + r"$"
+)
 
 
 class StructuredListParser:
@@ -29,8 +46,11 @@ class StructuredListParser:
         """Parses a single parameter item string into a StructuredListParameter.
 
         Splits on the first ':' to separate the name/type from the description,
-        then searches backwards from that ':' for the last ')' to extract the
-        type.
+        then matches the name/type portion against the "name (type)" shape. If
+        it matches, both name and type are extracted. If it doesn't -- as is
+        conventional for Returns/Yields entries, which document only the type --
+        the entire name/type portion is treated as the type, and the name is
+        left as None.
 
         Args:
             item (str): A single joined item string.
@@ -39,18 +59,17 @@ class StructuredListParser:
             parameter (StructuredListParameter): The parsed parameter entry.
         """
         colon_index = item.index(STRUCTURED_LIST_DESCRIPTION_SEPARATOR)
-        name_and_type = item[:colon_index]
+        name_and_type = item[:colon_index].strip()
         description = item[colon_index + 1 :].strip()
 
-        opening_parenthesis_index = name_and_type.index(PARAMETER_TYPE_ANNOTATION_OPEN)
-        closing_parenthesis_index = name_and_type.rindex(
-            PARAMETER_TYPE_ANNOTATION_CLOSE
-        )
+        match = _NAME_AND_TYPE_PATTERN.match(name_and_type)
 
-        name = name_and_type[:opening_parenthesis_index].strip()
-        variable_type = name_and_type[
-            opening_parenthesis_index + 1 : closing_parenthesis_index
-        ].strip()
+        if match:
+            name = match.group("name")
+            variable_type = match.group("type").strip()
+        else:
+            name = None
+            variable_type = name_and_type
 
         parameter = StructuredListParameter(
             name=name,

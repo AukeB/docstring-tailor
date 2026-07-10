@@ -2,10 +2,13 @@
 
 import re
 import textwrap
+from collections.abc import Iterator
+from contextlib import contextmanager
 
 from docstring_tailor.defaults.constants import (
     DOCSTRING_DELIMITER,
     DOCSTRING_DELIMITER_LENGTH,
+    RE_PATTERN_WHITESPACE,
 )
 from docstring_tailor.defaults.ir_model import (
     CodeBlock,
@@ -32,20 +35,26 @@ class DocstringRenderer:
     that fits within the line length limit, and as a multi-line docstring
     otherwise.
 
+    Mirrors the parser's own strategy for handling NamedParagraph content:
+    rather than a second dispatcher with different constants baked in for
+    indented content, _relative_indent_level tracks how many levels deep the
+    renderer currently is inside a NamedParagraph or StructuredList body.
+    _wrap_width, _line_separator, and _paragraph_separator are derived from it
+    on every access, so _render_node is reused unchanged at every indent level
+    -- the same way the parser reuses _parse_flat_content for both top-level
+    content and a dedented NamedParagraph body.
+
     Attributes:
         _line_length (int): Maximum characters per line including indentation.
-        _current_indent (str): The accumulated indentation string at the current
-            nesting level.
+        _base_indent_level (str): The accumulated indentation string at the
+            docstring's own position within the module, supplied by the caller
+            and constant for the lifetime of this instance.
         _indent_unit (str): The indentation unit string used in the source file.
         _indent_length (int): Length of _indent_unit.
-        _paragraph_separator (str): Separator inserted between rendered
-            paragraphs.
-        _line_separator (str): Separator inserted between rendered lines.
-        _line_separator_indented (str): Line separator followed by one
-            additional indentation level.
-        _wrap_width (int): Maximum content width after accounting for current
-            indentation.
-        _wrap_width_indented (int): Maximum content width for indented content.
+        _relative_indent_level (int): The nesting depth within the docstring's
+            own content, relative to _base_indent_level. 0 while rendering top-
+            level content, 1 while inside a NamedParagraph or StructuredList
+            body. Mutated only by _nested_body.
     """
 
     def __init__(
@@ -65,17 +74,83 @@ class DocstringRenderer:
                 file.
         """
         self._line_length = line_length
-        self._current_indent = current_indent
+        self._base_indent_level = current_indent
         self._indent_unit = indent_unit
 
         self._indent_length = len(self._indent_unit)
+        self._relative_indent_level = 0
 
-        self._paragraph_separator: str = "\n\n" + self._current_indent
-        self._line_separator: str = "\n" + self._current_indent
-        self._line_separator_indented: str = self._line_separator + self._indent_unit
+    @property
+    def _relative_indent(self) -> str:
+        """The indentation string for content at the current relative indent
+        level.
 
-        self._wrap_width: int = self._line_length - len(self._current_indent)
-        self._wrap_width_indented: int = self._wrap_width - self._indent_length
+        Returns:
+            relative_indent (str): The base indent plus one indent unit per
+                level of relative nesting.
+        """
+        relative_indent = (
+            self._base_indent_level + self._relative_indent_level * self._indent_unit
+        )
+
+        return relative_indent
+
+    @property
+    def _wrap_width(self) -> int:
+        """Maximum content width at the current relative indent level.
+
+        Returns:
+            wrap_width (int): Maximum content width after accounting for the
+                base indent and any relative nesting depth.
+        """
+        wrap_width = self._line_length - len(self._relative_indent)
+
+        return wrap_width
+
+    @property
+    def _line_separator(self) -> str:
+        """Separator inserted between rendered lines at the current relative
+        indent level.
+
+        Returns:
+            line_separator (str): A newline followed by the indentation for the
+                current relative indent level.
+        """
+        line_separator = "\n" + self._relative_indent
+
+        return line_separator
+
+    @property
+    def _paragraph_separator(self) -> str:
+        """Separator inserted between rendered paragraphs at the current
+        relative indent level.
+
+        Returns:
+            paragraph_separator (str): A blank line followed by the indentation
+                for the current relative indent level.
+        """
+        paragraph_separator = "\n\n" + self._relative_indent
+
+        return paragraph_separator
+
+    @contextmanager
+    def _nested_body(self) -> Iterator[None]:
+        """Increments _relative_indent_level for the duration of a with block,
+        decrementing it again on exit.
+
+        Used when entering a NamedParagraph or StructuredList body, so that
+        _wrap_width, _line_separator, and _paragraph_separator all reflect the
+        extra indentation for every node rendered inside the block, without
+        _render_node needing a separate indented variant of itself. The
+        decrement happens in a finally clause so the level is restored even if
+        rendering a body node raises.
+        """
+        self._relative_indent_level += 1
+
+        try:
+            yield
+        finally:
+            self._relative_indent_level -= 1
 
     def _render_one_line(self, ir: list[DocstringNode]) -> str | None:
         """Renders the IR as a one-line docstring, if it qualifies.
@@ -108,9 +183,11 @@ class DocstringRenderer:
         else:
             return None
 
-        normalized = re.sub(r"\s+", " ", content.strip()) or " "
+        normalized = re.sub(RE_PATTERN_WHITESPACE, " ", content.strip()) or " "
         total_length = (
-            len(self._current_indent) + len(normalized) + 2 * DOCSTRING_DELIMITER_LENGTH
+            len(self._base_indent_level)
+            + len(normalized)
+            + 2 * DOCSTRING_DELIMITER_LENGTH
         )
 
         if total_length > self._wrap_width:
@@ -152,7 +229,7 @@ class DocstringRenderer:
         Returns:
             rendered_paragraph (str): The wrapped paragraph string.
         """
-        normalized = re.sub(r"\s+", " ", paragraph.strip())
+        normalized = re.sub(RE_PATTERN_WHITESPACE, " ", paragraph.strip())
         lines = textwrap.wrap(
             normalized,
             width=self._wrap_width,
@@ -167,89 +244,7 @@ class DocstringRenderer:
 
         return rendered_paragraph
 
-    def _render_named_paragraph_chunk(self, node: DocstringNode) -> str:
-        """Renders a single node from within a named paragraph body.
-
-        Args:
-            node (DocstringNode): A node from NamedParagraph.body. In practice
-                always one of CodeBlock, CodeREPL, SimpleList, or Paragraph --
-                StructuredList and NamedParagraph never appear here, since
-                neither is permitted to nest inside a named paragraph's body.
-
-        Returns:
-            rendered (str): The rendered node string.
-
-        Raises:
-            ValueError: If the node is not a recognized DocstringNode subtype.
-        """
-        if isinstance(node, CodeBlock):
-            rendered_content = format_code(
-                text=node.code,
-                line_separator=self._line_separator_indented,
-            )
-            indented = self._current_indent + self._indent_unit
-            rendered = (
-                node.delimiter
-                + "\n"
-                + indented
-                + rendered_content
-                + "\n"
-                + indented
-                + node.delimiter
-            )
-        elif isinstance(node, SimpleList):
-            rendered = self._render_simple_list(
-                node,
-                wrap_width=self._wrap_width_indented,
-                line_separator=self._line_separator_indented,
-            )
-        elif isinstance(node, CodeREPL):
-            rendered = format_code(
-                text=node.code,
-                line_separator=self._line_separator_indented,
-            )
-        elif isinstance(node, Paragraph):
-            rendered = format_text(
-                text=node.content,
-                wrap_width=self._wrap_width_indented,
-                line_separator=self._line_separator_indented,
-            )
-        else:
-            raise ValueError
-
-        return rendered
-
-    def _render_named_paragraph(self, section: NamedParagraph) -> str:
-        """Renders a NAMED_PARAGRAPH section, rendering each body node
-        independently.
-
-        Args:
-            section (NamedParagraph): A parsed named paragraph node.
-
-        Returns:
-            rendered (str): The rendered named paragraph string.
-        """
-        chunk_separator = self._paragraph_separator + self._indent_unit
-
-        rendered_body_nodes = [
-            self._render_named_paragraph_chunk(node) for node in section.body
-        ]
-
-        body = chunk_separator.join(rendered_body_nodes)
-
-        rendered = (
-            section.header + ":\n" + self._current_indent + self._indent_unit + body
-        )
-
-        return rendered
-
-    def _render_simple_list(
-        self,
-        section: SimpleList,
-        *,
-        wrap_width: int,
-        line_separator: str,
-    ) -> str:
+    def _render_simple_list(self, section: SimpleList) -> str:
         """Renders a SIMPLE_LIST section by rendering each parsed item
         independently.
 
@@ -258,23 +253,15 @@ class DocstringRenderer:
         ('- '). For ordered lists it is derived from the total number of items,
         since longer lists produce wider markers (e.g. '10. ' vs '1. ').
 
-        `wrap_width` and `line_separator` are required, with no default, so
-        every call site must state explicitly which indentation level the list
-        sits at. A SimpleList rendered at the top level uses
-        `self._wrap_width`/`self._line_separator`; one nested inside a
-        NamedParagraph body sits one level deeper and needs
-        `self._wrap_width_indented`/`self._line_separator_indented`. A default
-        here would risk silently reintroducing the bug this fixes: a nested
-        list's first item is indented correctly by the NamedParagraph's own
-        chunk separator, but every other item is joined using whatever
-        `line_separator` this method falls back to -- so if that fallback were
-        the shallower top-level one, only the first item would look right.
+        Reads self._wrap_width and self._line_separator directly rather than
+        taking them as parameters. Both are already correct for wherever this
+        method is called from: a SimpleList rendered at the top level picks up
+        the base values, and one nested inside a NamedParagraph body picks up
+        the indented values, since _nested_body has already incremented
+        _relative_indent_level by the time this method runs.
 
         Args:
             section (SimpleList): A parsed simple list node.
-            wrap_width (int): Maximum content width for wrapping each item.
-            line_separator (str): Separator inserted between wrapped lines and
-                between items.
 
         Returns:
             rendered (str): The rendered list string.
@@ -293,14 +280,14 @@ class DocstringRenderer:
         rendered_items = [
             format_text(
                 text=item,
-                wrap_width=wrap_width,
-                line_separator=line_separator,
+                wrap_width=self._wrap_width,
+                line_separator=self._line_separator,
                 subsequent_indent=subsequent_indent,
             )
             for item in formatted_items
         ]
 
-        rendered = line_separator.join(rendered_items)
+        rendered = self._line_separator.join(rendered_items)
 
         return rendered
 
@@ -309,7 +296,12 @@ class DocstringRenderer:
         reassembling.
 
         Dispatches each entry to the appropriate item text format based on its
-        type, then wraps the result in the section header.
+        type, then wraps the result in the section header. A
+        StructuredListParameter entry renders as "name (type): description" when
+        it has a name, or just "type: description" when it doesn't -- the latter
+        being the conventional shape for Returns/Yields entries. Entries are
+        rendered inside a _nested_body block, one level deeper than the header,
+        the same way a NamedParagraph's body is.
 
         Args:
             section (StructuredList): A parsed structured list node.
@@ -317,28 +309,32 @@ class DocstringRenderer:
         Returns:
             rendered (str): The rendered structured list string.
         """
-        rendered_entries: list[str] = []
+        with self._nested_body():
+            rendered_entries: list[str] = []
 
-        for entry in section.entries:
-            item_text = (
-                f"{entry.name} ({entry.type}): {entry.description}"
-                if isinstance(entry, StructuredListParameter)
-                else f"{entry.error_type}: {entry.description}"
-            )
+            for entry in section.entries:
+                if isinstance(entry, StructuredListParameter):
+                    item_text = (
+                        f"{entry.name} ({entry.type}): {entry.description}"
+                        if entry.name is not None
+                        else f"{entry.type}: {entry.description}"
+                    )
+                else:
+                    item_text = f"{entry.error_type}: {entry.description}"
 
-            rendered_entry = format_text(
-                text=item_text,
-                wrap_width=self._wrap_width_indented,
-                line_separator=self._line_separator_indented,
-                subsequent_indent=self._indent_unit,
-            )
+                rendered_entry = format_text(
+                    text=item_text,
+                    wrap_width=self._wrap_width,
+                    line_separator=self._line_separator,
+                    subsequent_indent=self._indent_unit,
+                )
 
-            rendered_entries.append(rendered_entry)
+                rendered_entries.append(rendered_entry)
 
-        body = self._line_separator_indented.join(rendered_entries)
+            body = self._line_separator.join(rendered_entries)
 
         rendered = (
-            section.keyword + ":\n" + self._current_indent + self._indent_unit + body
+            section.keyword + ":\n" + self._base_indent_level + self._indent_unit + body
         )
 
         return rendered
@@ -346,6 +342,10 @@ class DocstringRenderer:
     def _render_code_block(self, section: CodeBlock) -> str:
         """Renders a CODE_BLOCK section, wrapping content in its original fence
         delimiter.
+
+        Uses self._relative_indent, which already reflects whichever level this
+        code block sits at -- top-level or nested inside a NamedParagraph body
+        -- so this single method serves both cases.
 
         Args:
             section (CodeBlock): A parsed code block node.
@@ -362,17 +362,48 @@ class DocstringRenderer:
         rendered = (
             section.delimiter
             + "\n"
-            + self._current_indent
+            + self._relative_indent
             + rendered_content
             + "\n"
-            + self._current_indent
+            + self._relative_indent
             + section.delimiter
+        )
+
+        return rendered
+
+    def _render_named_paragraph(self, section: NamedParagraph) -> str:
+        """Renders a NAMED_PARAGRAPH section, rendering each body node
+        independently.
+
+        Body nodes are rendered inside a _nested_body block, so every node
+        dispatched through _render_node picks up the indented wrap width and
+        separators automatically, without a separate indented dispatcher.
+
+        Args:
+            section (NamedParagraph): A parsed named paragraph node.
+
+        Returns:
+            rendered (str): The rendered named paragraph string.
+        """
+        with self._nested_body():
+            rendered_body_nodes = [self._render_node(node) for node in section.body]
+            body = self._paragraph_separator.join(rendered_body_nodes)
+
+        rendered = (
+            section.header + ":\n" + self._base_indent_level + self._indent_unit + body
         )
 
         return rendered
 
     def _render_node(self, node: DocstringNode) -> str:
         """Dispatches a single IR node to the appropriate renderer.
+
+        StructuredList and NamedParagraph are only valid at the top level --
+        neither is permitted to nest inside a NamedParagraph body, since Google-
+        style docstrings don't support a second level of named sections. This is
+        enforced here as a guard clause rather than relying solely on the parser
+        never producing such a shape, since _render_node is now called
+        recursively for body content from _render_named_paragraph itself.
 
         Args:
             node (DocstringNode): Any IR node.
@@ -381,18 +412,22 @@ class DocstringRenderer:
             rendered (str): The rendered node string.
 
         Raises:
-            ValueError: If the node is not a recognized DocstringNode subtype.
+            ValueError: If the node is not a recognized DocstringNode subtype,
+                or if a StructuredList or NamedParagraph node is encountered
+                while already inside a NamedParagraph body.
         """
+        if (
+            isinstance(node, StructuredList | NamedParagraph)
+            and self._relative_indent_level > 0
+        ):
+            raise ValueError
+
         if isinstance(node, CodeBlock):
             rendered = self._render_code_block(node)
         elif isinstance(node, StructuredList):
             rendered = self._render_structured_list(node)
         elif isinstance(node, SimpleList):
-            rendered = self._render_simple_list(
-                node,
-                wrap_width=self._wrap_width,
-                line_separator=self._line_separator,
-            )
+            rendered = self._render_simple_list(node)
         elif isinstance(node, NamedParagraph):
             rendered = self._render_named_paragraph(node)
         elif isinstance(node, CodeREPL):
@@ -463,13 +498,13 @@ class DocstringRenderer:
         rendered_content = self._paragraph_separator.join(rendered_parts)
 
         if self._opens_with_block(ir):
-            rendered_content = "\n" + self._current_indent + rendered_content
+            rendered_content = "\n" + self._base_indent_level + rendered_content
 
         rendered_docstring = (
             DOCSTRING_DELIMITER
             + rendered_content
             + "\n"
-            + self._current_indent
+            + self._base_indent_level
             + DOCSTRING_DELIMITER
         )
 

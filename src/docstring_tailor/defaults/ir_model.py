@@ -59,12 +59,14 @@ class StructuredListParameter:
     """Represents a single parsed parameter entry in a structured list section.
 
     Attributes:
-        name (str): The variable or attribute name.
+        name (str | None): The variable or attribute name, or None when the
+            entry has no name -- the conventional shape for Returns and Yields
+            entries, which document only the type.
         type (str): The annotated type of the variable.
         description (str): The description of the variable.
     """
 
-    name: str
+    name: str | None
     type: str
     description: str
 

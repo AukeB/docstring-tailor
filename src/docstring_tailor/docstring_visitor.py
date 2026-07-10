@@ -5,6 +5,7 @@ import libcst as cst
 from docstring_tailor.defaults.constants import DOCSTRING_DELIMITER
 from docstring_tailor.parser.docstring_parser import DocstringParser
 from docstring_tailor.renderer.docstring_renderer import DocstringRenderer
+from docstring_tailor.utils.utils_printing import print_docstring_ir
 
 
 class DocstringVisitor(cst.CSTTransformer):
@@ -137,6 +138,8 @@ class DocstringVisitor(cst.CSTTransformer):
             current_indent=self._current_indent,
             indent_unit=self._indent_unit,
         )
+
+        print_docstring_ir(nodes=ir)
 
         rendered = renderer.render(ir=ir)
 

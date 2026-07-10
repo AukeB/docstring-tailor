@@ -37,6 +37,7 @@ PARAMETER_TYPE_ANNOTATION_CLOSE: str = ")"
 # Regular expression patterns
 RE_PATTERN_CODE_BLOCK_DELIMITER = re.compile(r"^\s*(```|~~~)", re.MULTILINE)
 RE_PATTERN_BLANK_LINES = re.compile(r"\n\s*\n")
+RE_PATTERN_WHITESPACE = re.compile(r"\s+")
 RE_PATTERN_UNORDERED_LIST_ITEM = re.compile(r"^\s*[-*+]\s+")
 RE_PATTERN_ORDERED_LIST_ITEM = re.compile(r"^\s*(\d+)[.)]\s+")
 RE_PATTERN_LIST_MARKER = re.compile(r"^[-*+]\s+|^\d+[.)]\s+")

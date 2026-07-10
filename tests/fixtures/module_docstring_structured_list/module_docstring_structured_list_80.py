@@ -14,4 +14,14 @@ Raises:
         received list).
     RuntimeError: If an unexpected failure occurs during processing of the input
         data.
+
+Returns:
+    index (int): The zero-based index of the window's starting position in data.
+    mean (float): The arithmetic mean of the values in the current window,
+        rounded to precision decimal places.
+
+Returns:
+    int: The zero-based index of the window's starting position in data.
+    float: The arithmetic mean of the values in the current window, rounded to
+        precision decimal places.
 """
