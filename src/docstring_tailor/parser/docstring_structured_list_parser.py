@@ -2,13 +2,14 @@
 
 import re
 
-from docstring_tailor.defaults.constants import (
+from docstring_tailor.constants import (
+    DOCSTRING_KEYWORD_SEPARATOR,
+    GOOGLE_RAISES_SECTIONS,
     PARAMETER_TYPE_ANNOTATION_CLOSE,
     PARAMETER_TYPE_ANNOTATION_OPEN,
     STRUCTURED_LIST_DESCRIPTION_SEPARATOR,
 )
-from docstring_tailor.defaults.docstring_keywords import GOOGLE_RAISES_SECTIONS
-from docstring_tailor.defaults.ir_model import (
+from docstring_tailor.ir_model import (
     StructuredList,
     StructuredListError,
     StructuredListParameter,
@@ -90,7 +91,7 @@ class StructuredListParser:
         Returns:
             error (StructuredListError): The parsed error entry.
         """
-        colon_index = item.index(":")
+        colon_index = item.index(STRUCTURED_LIST_DESCRIPTION_SEPARATOR)
         error_type = item[:colon_index].strip()
         description = item[colon_index + 1 :].strip()
 
@@ -115,7 +116,7 @@ class StructuredListParser:
         Returns:
             structured_list (StructuredList): Fully parsed structured list node.
         """
-        keyword = content.splitlines()[0].strip().rstrip(":")
+        keyword = content.splitlines()[0].strip().rstrip(DOCSTRING_KEYWORD_SEPARATOR)
         items = extract_items(content, skip_first_line=True)
 
         entries = (

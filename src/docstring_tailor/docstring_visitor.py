@@ -2,7 +2,7 @@
 
 import libcst as cst
 
-from docstring_tailor.defaults.constants import DOCSTRING_DELIMITER
+from docstring_tailor.constants import DOCSTRING_DELIMITER
 from docstring_tailor.parser.docstring_parser import DocstringParser
 from docstring_tailor.renderer.docstring_renderer import DocstringRenderer
 from docstring_tailor.utils.utils_printing import print_docstring_ir

@@ -5,7 +5,7 @@ human-readable indented representation in the terminal. The output is intended
 for debugging and inspection purposes rather than serialization.
 """
 
-from docstring_tailor.defaults.ir_model import (
+from docstring_tailor.ir_model import (
     CodeBlock,
     CodeREPL,
     DocstringNode,

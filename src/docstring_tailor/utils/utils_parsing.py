@@ -2,7 +2,7 @@
 
 import re
 
-from docstring_tailor.defaults.constants import RE_PATTERN_LIST_MARKER
+from docstring_tailor.constants import RE_PATTERN_SIMPLE_LIST_MARKER
 
 
 def extract_items(content: str, skip_first_line: bool = False) -> list[str]:
@@ -47,6 +47,6 @@ def extract_items(content: str, skip_first_line: bool = False) -> list[str]:
         continuation = " ".join(l.strip() for l in current_item_lines[1:])
         items.append(f"{first_line} {continuation}".strip())
 
-    items = [re.sub(RE_PATTERN_LIST_MARKER, "", item) for item in items]
+    items = [re.sub(RE_PATTERN_SIMPLE_LIST_MARKER, "", item) for item in items]
 
     return items

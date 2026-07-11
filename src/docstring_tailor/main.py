@@ -13,7 +13,7 @@ from typing import Annotated, Optional
 import libcst as cst
 import typer
 
-from docstring_tailor.defaults.cli_config import (
+from docstring_tailor.cli_config import (
     DEFAULT_PATHS,
     DEFAULT_STYLE,
     LINE_LENGTH_DEFAULT,
@@ -22,7 +22,7 @@ from docstring_tailor.defaults.cli_config import (
     SUPPORTED_STYLES,
     DocstringStyle,
 )
-from docstring_tailor.defaults.constants import ENCODING
+from docstring_tailor.constants import ENCODING
 from docstring_tailor.docstring_visitor import DocstringVisitor
 from docstring_tailor.utils.utils_cli import show_diff, version_callback
 from docstring_tailor.utils.utils_file_system import (

@@ -3,18 +3,16 @@
 from inspect import cleandoc
 from typing import cast
 
-from docstring_tailor.defaults.constants import (
+from docstring_tailor.constants import (
     CODE_REPL_PROMPT,
     DOCSTRING_DELIMITER_LENGTH,
-    RE_PATTERN_BLANK_LINES,
-    RE_PATTERN_CODE_BLOCK_DELIMITER,
-    STRUCTURED_LIST_DESCRIPTION_SEPARATOR,
-)
-from docstring_tailor.defaults.docstring_keywords import (
+    DOCSTRING_KEYWORD_SEPARATOR,
     GOOGLE_NAMED_PARAGRAPH_SECTIONS,
     GOOGLE_STRUCTURED_LIST_SECTIONS,
+    RE_PATTERN_BLANK_LINES,
+    RE_PATTERN_CODE_BLOCK_DELIMITER,
 )
-from docstring_tailor.defaults.ir_model import (
+from docstring_tailor.ir_model import (
     CodeBlock,
     CodeBlockDelimiterType,
     CodeREPL,
@@ -203,7 +201,7 @@ class DocstringParser:
             named_paragraph (NamedParagraph): Fully parsed node with typed body.
         """
         lines = content.splitlines()
-        header = lines[0].strip().rstrip(":")
+        header = lines[0].strip().rstrip(DOCSTRING_KEYWORD_SEPARATOR)
         body_content = "\n".join(lines[1:])
         body = self._parse_named_paragraph_body(body_content)
 
@@ -221,7 +219,7 @@ class DocstringParser:
         Returns:
             node (DocstringNode): A StructuredList or NamedParagraph node.
         """
-        keyword = content.splitlines()[0].strip().rstrip(":")
+        keyword = content.splitlines()[0].strip().rstrip(DOCSTRING_KEYWORD_SEPARATOR)
 
         if keyword in GOOGLE_STRUCTURED_LIST_SECTIONS:
             node = self._structured_list_parser.parse(content)
@@ -264,7 +262,7 @@ class DocstringParser:
                 continue
 
             indent = len(line) - len(line.lstrip())
-            keyword = line.strip().rstrip(":")
+            keyword = line.strip().rstrip(DOCSTRING_KEYWORD_SEPARATOR)
             is_base = indent == base_indent
             is_keyword_line = is_base and (
                 keyword in GOOGLE_NAMED_PARAGRAPH_SECTIONS

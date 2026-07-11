@@ -1,10 +1,10 @@
 """Utility module with functions for list detection in docstrings."""
 
-from docstring_tailor.defaults.constants import (
+from docstring_tailor.constants import (
     RE_PATTERN_ORDERED_LIST_ITEM,
     RE_PATTERN_UNORDERED_LIST_ITEM,
 )
-from docstring_tailor.defaults.ir_model import SimpleListType
+from docstring_tailor.ir_model import SimpleListType
 
 
 def _is_unordered_list(lines: list[str]) -> bool:
