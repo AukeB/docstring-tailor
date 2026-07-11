@@ -1,12 +1,9 @@
 """Contains logic for parsing structured list sections of a docstring."""
 
-import re
-
 from docstring_tailor.constants import (
     DOCSTRING_KEYWORD_SEPARATOR,
     GOOGLE_RAISES_SECTIONS,
-    PARAMETER_TYPE_ANNOTATION_CLOSE,
-    PARAMETER_TYPE_ANNOTATION_OPEN,
+    RE_PATTERN_STRUCTURED_LIST_NAME_AND_TYPE,
     STRUCTURED_LIST_DESCRIPTION_SEPARATOR,
 )
 from docstring_tailor.ir_model import (
@@ -15,21 +12,6 @@ from docstring_tailor.ir_model import (
     StructuredListParameter,
 )
 from docstring_tailor.utils.utils_parsing import extract_items
-
-# Matches the "name (type)" shape: a single whitespace-free token, a space,
-# then a parenthesized type running to the end of the string. Used to detect
-# whether a parameter item includes a name at all, since Returns/Yields
-# entries conventionally omit it (e.g. "bool: True if valid.") while Args
-# entries conventionally include it (e.g. "flag (bool): Whether to ...") --
-# and either shape can, in principle, appear under either keyword, so the
-# shape is detected structurally rather than switched on the keyword.
-_NAME_AND_TYPE_PATTERN = re.compile(
-    r"^(?P<name>\S+)\s"
-    + re.escape(PARAMETER_TYPE_ANNOTATION_OPEN)
-    + r"(?P<type>.*)"
-    + re.escape(PARAMETER_TYPE_ANNOTATION_CLOSE)
-    + r"$"
-)
 
 
 class StructuredListParser:
@@ -63,7 +45,7 @@ class StructuredListParser:
         name_and_type = item[:colon_index].strip()
         description = item[colon_index + 1 :].strip()
 
-        match = _NAME_AND_TYPE_PATTERN.match(name_and_type)
+        match = RE_PATTERN_STRUCTURED_LIST_NAME_AND_TYPE.match(name_and_type)
 
         if match:
             name = match.group("name")

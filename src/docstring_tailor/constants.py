@@ -16,7 +16,9 @@ RE_PATTERN_CODE_BLOCK_DELIMITER = re.compile(r"^\s*(```|~~~)", re.MULTILINE)
 RE_PATTERN_UNORDERED_LIST_ITEM = re.compile(r"^\s*[-*+]\s+")
 RE_PATTERN_ORDERED_LIST_ITEM = re.compile(r"^\s*(\d+)[.)]\s+")
 RE_PATTERN_SIMPLE_LIST_MARKER = re.compile(r"^[-*+]\s+|^\d+[.)]\s+")
-
+RE_PATTERN_STRUCTURED_LIST_NAME_AND_TYPE = re.compile(
+    r"^(?P<name>\S+)\s\((?P<type>.*)\)$"
+)
 
 # =========================================
 # Constants used for all docstring formats.
