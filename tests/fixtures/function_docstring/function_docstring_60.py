@@ -6,15 +6,24 @@ def generate_windowed_stats(
     max_value: float | None = None,
     precision: int = 2,
 ):
-    """Generates rolling window statistics over a sequence
-    of numerical data.
+    """Generate rolling window statistics over a sequence of
+    numerical data.
 
-    Slides a window of fixed size across the input data,
+    Slides a fixed-size window across the input data,
     yielding summary statistics for each window position.
     Windows whose mean falls outside the optional value
     bounds are skipped entirely. This is useful for
     analysing trends in time series data without loading all
     results into memory at once.
+
+    Processing steps:
+    1. Validate the input arguments.
+    2. Slide a fixed-size window over the input sequence.
+    3. Compute the mean and standard deviation for each
+       window.
+    4. Skip windows whose mean falls outside the configured
+       bounds.
+    5. Yield the remaining statistics.
 
     Args:
         data (list[float]): The input sequence of numerical
@@ -33,6 +42,12 @@ def generate_windowed_stats(
         precision (int): The number of decimal places to
             round yielded statistics to. Defaults to 2.
 
+    Raises:
+        ValueError: If window_size is less than 1.
+        ValueError: If step is less than 1.
+        ValueError: If window_size is greater than the
+            length of data.
+
     Yields:
         index (int): The zero-based index of the window's
             starting position in data.
@@ -43,39 +58,38 @@ def generate_windowed_stats(
             values in the current window, rounded to
             precision decimal places.
 
+    Note:
+        The algorithm in this function can be described in
+        the following way:
+
+        ```
+        validate inputs
+        
+        for each sliding window:
+            compute mean
+            compute standard deviation
+        
+            if mean outside configured bounds:
+                continue
+        
+            yield index, mean, standard deviation
+        ```
+
     Examples:
-        Basic usage over a short sequence, stepping one
-        position at a time. The loop body uses continuation
-        lines to stay within the line length limit.
+        Basic usage over a short sequence.
 
         >>> data = [1.0, 2.0, 3.0, 4.0, 5.0]
-        >>> for index, mean, std_dev in generate_windowed_stats(data, window_size=3):
+        >>> for index, mean, std_dev in generate_windowed_stats(
+        ...     data,
+        ...     window_size=3,
+        ... ):
         ...     print(index, mean, std_dev)
         0 2.0 0.82
         1 3.0 0.82
         2 4.0 0.82
 
-        Increasing the step size reduces the number of
-        windows yielded. The multi-line call below uses
-        ellipsis continuation to keep each argument on its
-        own line, which is preferred when there are many
-        keyword arguments.
-
-        >>> results = list(generate_windowed_stats(
-        ...     data,
-        ...     window_size=3,
-        ...     step=2,
-        ...     precision=4,
-        ... ))
-        >>> for index, mean, std_dev in results:
-        ...     print(index, mean, std_dev)
-        0 2.0000 0.8165
-        2 4.0000 0.8165
-
-        Value bounds filter out windows whose mean falls
-        outside the desired range. Only the middle window
-        survives here since its mean of 3.0 is the only one
-        within the bounds of 2.5 and 3.5.
+        Windows can be filtered using lower and upper mean
+        bounds.
 
         >>> for index, mean, std_dev in generate_windowed_stats(
         ...     data,
@@ -86,14 +100,25 @@ def generate_windowed_stats(
         ...     print(index, mean, std_dev)
         1 3.0 0.82
     """
+    if window_size < 1:
+        raise ValueError("window_size must be at least 1")
+
+    if step < 1:
+        raise ValueError("step must be at least 1")
+
+    if window_size > len(data):
+        raise ValueError("window_size cannot exceed the length of data")
+
     for i in range(0, len(data) - window_size + 1, step):
         window = data[i : i + window_size]
+
         mean = round(sum(window) / window_size, precision)
         variance = sum((x - mean) ** 2 for x in window) / window_size
         std_dev = round(variance**0.5, precision)
 
         if min_value is not None and mean < min_value:
             continue
+
         if max_value is not None and mean > max_value:
             continue
 

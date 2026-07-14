@@ -139,8 +139,6 @@ class DocstringVisitor(cst.CSTTransformer):
             indent_unit=self._indent_unit,
         )
 
-        print_docstring_ir(nodes=ir)
-
         rendered = renderer.render(ir=ir)
 
         return rendered

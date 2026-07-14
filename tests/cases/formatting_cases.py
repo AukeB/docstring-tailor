@@ -7,6 +7,17 @@ from tests.cases.config_model import Case, CaseTemplate, expand_template
 
 CASE_TEMPLATES: list[CaseTemplate] = [
     CaseTemplate(
+        fixture_directory_name=Path("class_docstring"),
+        input_file_paths=[
+            Path("class_docstring_60.py"),
+            Path("class_docstring_80.py"),
+            Path("class_docstring_100.py"),
+        ],
+        output_file_path_template=Path("class_docstring_{line_length}.py"),
+        shared_parameters={},
+        parameter_grid={"line_length": [60, 80, 100]},
+    ),
+    CaseTemplate(
         fixture_directory_name=Path("docstring_elements/empty"),
         input_file_paths=[
             Path("empty_blank_lines.py"),
@@ -138,13 +149,24 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("function_docstring_complex"),
+        fixture_directory_name=Path("function_docstring"),
         input_file_paths=[
-            Path("function_docstring_complex_60.py"),
-            Path("function_docstring_complex_80.py"),
-            Path("function_docstring_complex_100.py"),
+            Path("function_docstring_60.py"),
+            Path("function_docstring_80.py"),
+            Path("function_docstring_100.py"),
         ],
-        output_file_path_template=Path("function_docstring_complex_{line_length}.py"),
+        output_file_path_template=Path("function_docstring_{line_length}.py"),
+        shared_parameters={},
+        parameter_grid={"line_length": [60, 80, 100]},
+    ),
+    CaseTemplate(
+        fixture_directory_name=Path("module_docstring"),
+        input_file_paths=[
+            Path("module_docstring_60.py"),
+            Path("module_docstring_80.py"),
+            Path("module_docstring_100.py"),
+        ],
+        output_file_path_template=Path("module_docstring_{line_length}.py"),
         shared_parameters={},
         parameter_grid={"line_length": [60, 80, 100]},
     ),
