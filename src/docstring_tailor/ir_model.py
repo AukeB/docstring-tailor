@@ -107,10 +107,16 @@ class SimpleList(DocstringNode):
         list_type (SimpleListType): Variable that stores whether the simple list
             is an ordered or unordered list.
         items (list[str]): The parsed list items as plain strings.
+        has_leading_blank_line (bool): Whether the list was preceded by a blank
+            line in the source. False only when the list immediately follows a
+            Paragraph with no blank line between them; a SimpleList is always
+            followed by a blank line, so this asymmetry is the only adjacency
+            that needs tracking.
     """
 
     list_type: SimpleListType
     items: list[str]
+    has_leading_blank_line: bool
 
 
 @dataclass

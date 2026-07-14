@@ -128,6 +128,16 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
+        fixture_directory_name=Path("module_docstring_paragraph_and_simple_list"),
+        input_file_paths=[
+            Path("module_docstring_paragraph_and_simple_list_wrong_input.py"),
+            Path("module_docstring_paragraph_and_simple_list_{line_length}.py"),
+        ],
+        output_file_path_template=Path("module_docstring_paragraph_and_simple_list_{line_length}.py"),
+        shared_parameters={},
+        parameter_grid={"line_length": [60, 80, 100]}
+    ),
+    CaseTemplate(
         fixture_directory_name=Path("function_docstring_complex"),
         input_file_paths=[
             Path("function_docstring_complex_60.py"),

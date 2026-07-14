@@ -24,7 +24,7 @@ from docstring_tailor.ir_model import (
 from docstring_tailor.parser.docstring_structured_list_parser import (
     StructuredListParser,
 )
-from docstring_tailor.utils.utils_list_detection import get_list_type, is_list
+from docstring_tailor.utils.utils_list_detection import find_list_start, get_list_type
 from docstring_tailor.utils.utils_parsing import extract_items
 
 
@@ -47,11 +47,16 @@ class DocstringParser:
         """Initialises the DocstringParser."""
         self._structured_list_parser = StructuredListParser()
 
-    def _parse_simple_list(self, content: str) -> SimpleList:
+    def _parse_simple_list(
+        self, content: str, has_leading_blank_line: bool
+    ) -> SimpleList:
         """Parses raw list content into a SimpleList node.
 
         Args:
             content (str): Raw list text including markers.
+            has_leading_blank_line (bool): Whether the list was preceded by a
+                blank line in the source, as determined by the caller's position
+                within the chunk.
 
         Returns:
             simple_list (SimpleList): Parsed simple list with markers stripped
@@ -60,32 +65,64 @@ class DocstringParser:
         list_type = get_list_type(text=content)
         items = extract_items(content=content)
 
-        simple_list = SimpleList(list_type=list_type, items=items)
+        simple_list = SimpleList(
+            list_type=list_type,
+            items=items,
+            has_leading_blank_line=has_leading_blank_line,
+        )
 
         return simple_list
 
-    def _classify_paragraph(self, content: str) -> DocstringNode:
-        """Classifies a single blank-line-delimited chunk into its concrete IR
-        type.
+    def _classify_chunk(self, content: str) -> list[DocstringNode]:
+        """Classifies a single blank-line-delimited chunk into one or more IR
+        nodes.
 
-        Checks for REPL and list patterns before falling back to plain
-        Paragraph.
+        Checks for the REPL pattern on the whole chunk first, same as before.
+        Otherwise, uses find_list_start to locate where a confirmed list run
+        begins within the chunk, if at all. A chunk with no list run yields a
+        single Paragraph. A chunk that is a list run from its very first line
+        yields a single SimpleList with has_leading_blank_line=True, since
+        nothing in this chunk precedes it -- it was already separated from
+        whatever came before by the outer blank-line split (or it is the first
+        node overall). A chunk where a list run starts partway through yields
+        two nodes: the leading Paragraph, then a SimpleList with
+        has_leading_blank_line=False, since that list immediately follows the
+        paragraph with no blank line between them.
 
         Args:
             content (str): A single stripped paragraph chunk.
 
         Returns:
-            node (DocstringNode): A CodeREPL, SimpleList, or Paragraph node.
+            nodes (list[DocstringNode]): One node for a plain Paragraph or
+                CodeREPL chunk, or a Paragraph followed by a SimpleList when a
+                list run immediately follows leading prose within the chunk.
         """
         first_line = content.splitlines()[0].strip()
 
         if first_line.startswith(CODE_REPL_PROMPT):
-            return CodeREPL(code=content)
+            return [CodeREPL(code=content)]
 
-        if is_list(content):
-            return self._parse_simple_list(content)
+        list_start = find_list_start(content)
 
-        return Paragraph(content=content)
+        if list_start is None:
+            return [Paragraph(content=content)]
+
+        if list_start == 0:
+            simple_list = self._parse_simple_list(
+                content=content, has_leading_blank_line=True
+            )
+            return [simple_list]
+
+        lines = content.split("\n")
+        paragraph_content = "\n".join(lines[:list_start]).strip()
+        list_content = "\n".join(lines[list_start:])
+
+        paragraph = Paragraph(content=paragraph_content)
+        simple_list = self._parse_simple_list(
+            content=list_content, has_leading_blank_line=False
+        )
+
+        return [paragraph, simple_list]
 
     def _extract_code_blocks(self, content: str) -> list[CodeBlock | str]:
         """Splits content on code fences, preserving fence structure.
@@ -154,7 +191,7 @@ class DocstringParser:
 
             for paragraph in RE_PATTERN_BLANK_LINES.split(chunk):
                 if paragraph.strip():
-                    nodes.append(self._classify_paragraph(paragraph.strip()))
+                    nodes.extend(self._classify_chunk(paragraph.strip()))
 
         return nodes
 
