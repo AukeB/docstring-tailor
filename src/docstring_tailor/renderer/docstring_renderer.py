@@ -176,6 +176,43 @@ class DocstringRenderer:
 
         return result
 
+    def _join_rendered_nodes(
+        self, nodes: list[DocstringNode], rendered_parts: list[str]
+    ) -> str:
+        """Joins rendered node strings, choosing a separator per junction.
+
+        Every junction uses the paragraph separator, except the one immediately
+        before a SimpleList with has_leading_blank_line=False, which uses the
+        line separator instead. This is the one place a paragraph and a
+        following list must render with no blank line between them, mirroring
+        how they appeared in the source. Reused at both call sites -- the top-
+        level render() and _render_named_paragraph -- rather than duplicating
+        the per-junction logic in each.
+
+        Args:
+            nodes (list[DocstringNode]): The IR nodes corresponding to
+                rendered_parts, in the same order.
+            rendered_parts (list[str]): Each node's rendered string form, in
+                order.
+
+        Returns:
+            joined (str): The fully joined string.
+        """
+        if not rendered_parts:
+            return ""
+
+        joined = rendered_parts[0]
+
+        for node, part in zip(nodes[1:], rendered_parts[1:]):
+            separator = (
+                self._line_separator
+                if isinstance(node, SimpleList) and not node.has_leading_blank_line
+                else self._paragraph_separator
+            )
+            joined += separator + part
+
+        return joined
+
     def _render_named_paragraph(self, section: NamedParagraph) -> str:
         """Renders a NAMED_PARAGRAPH section, rendering each body node
         independently.
@@ -405,43 +442,6 @@ class DocstringRenderer:
         rendered_paragraph = self._line_separator.join(lines)
 
         return rendered_paragraph
-
-    def _join_rendered_nodes(
-        self, nodes: list[DocstringNode], rendered_parts: list[str]
-    ) -> str:
-        """Joins rendered node strings, choosing a separator per junction.
-
-        Every junction uses the paragraph separator, except the one immediately
-        before a SimpleList with has_leading_blank_line=False, which uses the
-        line separator instead. This is the one place a paragraph and a
-        following list must render with no blank line between them, mirroring
-        how they appeared in the source. Reused at both call sites -- the top-
-        level render() and _render_named_paragraph -- rather than duplicating
-        the per-junction logic in each.
-
-        Args:
-            nodes (list[DocstringNode]): The IR nodes corresponding to
-                rendered_parts, in the same order.
-            rendered_parts (list[str]): Each node's rendered string form, in
-                order.
-
-        Returns:
-            joined (str): The fully joined string.
-        """
-        if not rendered_parts:
-            return ""
-
-        joined = rendered_parts[0]
-
-        for node, part in zip(nodes[1:], rendered_parts[1:]):
-            separator = (
-                self._line_separator
-                if isinstance(node, SimpleList) and not node.has_leading_blank_line
-                else self._paragraph_separator
-            )
-            joined += separator + part
-
-        return joined
 
     def _render_nodes(self, ir: list[DocstringNode]) -> list[str]:
         """Renders each IR node to its multi-line string form.
