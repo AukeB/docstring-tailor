@@ -7,133 +7,133 @@ from tests.cases.config_model import Case, CaseTemplate, expand_template
 
 CASE_TEMPLATES: list[CaseTemplate] = [
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring_empty"),
+        fixture_directory_name=Path("docstring_elements/empty"),
         input_file_paths=[
-            Path("module_docstring_empty_blank_lines.py"),
-            Path("module_docstring_empty_no_space.py"),
-            Path("module_docstring_empty_{line_length}.py"),
+            Path("empty_blank_lines.py"),
+            Path("empty_no_space.py"),
+            Path("empty_{line_length}.py"),
         ],
-        output_file_path_template=Path("module_docstring_empty_{line_length}.py"),
+        output_file_path_template=Path("empty_{line_length}.py"),
         shared_parameters={},
         parameter_grid={"line_length": [80]},
     ),
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring_paragraph_multi_line"),
+        fixture_directory_name=Path("docstring_elements/paragraph_multi_line"),
         input_file_paths=[
-            Path("module_docstring_paragraph_multi_line_wrong_input.py"),
-            Path("module_docstring_paragraph_multi_line_{line_length}.py"),
+            Path("paragraph_multi_line_wrong_input.py"),
+            Path("paragraph_multi_line_{line_length}.py"),
         ],
-        output_file_path_template=Path("module_docstring_paragraph_multi_line_{line_length}.py"),
+        output_file_path_template=Path("paragraph_multi_line_{line_length}.py"),
         shared_parameters={},
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring_paragraph_one_line"),
+        fixture_directory_name=Path("docstring_elements/paragraph_one_line"),
         input_file_paths=[
-            Path("module_docstring_paragraph_one_line_wrong_input.py"),
-            Path("module_docstring_paragraph_one_line_{line_length}.py"),
+            Path("paragraph_one_line_wrong_input.py"),
+            Path("paragraph_one_line_{line_length}.py"),
         ],
-        output_file_path_template=Path("module_docstring_paragraph_one_line_{line_length}.py"),
+        output_file_path_template=Path("paragraph_one_line_{line_length}.py"),
         shared_parameters={},
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring_code_block_singular"),
+        fixture_directory_name=Path("docstring_elements/code_block_singular"),
         input_file_paths=[
-            Path("module_docstring_code_block_singular_blank_lines.py"),
-            Path("module_docstring_code_block_singular_{line_length}.py"),
+            Path("code_block_singular_blank_lines.py"),
+            Path("code_block_singular_{line_length}.py"),
         ],
-        output_file_path_template=Path("module_docstring_code_block_singular_{line_length}.py"),
+        output_file_path_template=Path("code_block_singular_{line_length}.py"),
         shared_parameters={},
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring_code_block_multiple"),
+        fixture_directory_name=Path("docstring_elements/code_block_multiple"),
         input_file_paths=[
-            Path("module_docstring_code_block_multiple_blank_lines.py"),
-            Path("module_docstring_code_block_multiple_{line_length}.py"),
+            Path("code_block_multiple_blank_lines.py"),
+            Path("code_block_multiple_{line_length}.py"),
         ],
-        output_file_path_template=Path("module_docstring_code_block_multiple_{line_length}.py"),
+        output_file_path_template=Path("code_block_multiple_{line_length}.py"),
         shared_parameters={},
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring_code_repl_singular"),
+        fixture_directory_name=Path("docstring_elements/code_repl_singular"),
         input_file_paths=[
-            Path("module_docstring_code_repl_singular_blank_lines.py"),
-            Path("module_docstring_code_repl_singular_{line_length}.py"),
+            Path("code_repl_singular_blank_lines.py"),
+            Path("code_repl_singular_{line_length}.py"),
         ],
-        output_file_path_template=Path("module_docstring_code_repl_singular_{line_length}.py"),
+        output_file_path_template=Path("code_repl_singular_{line_length}.py"),
         shared_parameters={},
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring_code_repl_multiple"),
+        fixture_directory_name=Path("docstring_elements/code_repl_multiple"),
         input_file_paths=[
-            Path("module_docstring_code_repl_multiple_blank_lines.py"),
-            Path("module_docstring_code_repl_multiple_{line_length}.py"),
+            Path("code_repl_multiple_blank_lines.py"),
+            Path("code_repl_multiple_{line_length}.py"),
         ],
-        output_file_path_template=Path("module_docstring_code_repl_multiple_{line_length}.py"),
+        output_file_path_template=Path("code_repl_multiple_{line_length}.py"),
         shared_parameters={},
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring_structured_list"),
+        fixture_directory_name=Path("docstring_elements/structured_list"),
         input_file_paths=[
-            Path("module_docstring_structured_list_wrong_input.py"),
-            Path("module_docstring_structured_list_{line_length}.py"),
+            Path("structured_list_wrong_input.py"),
+            Path("structured_list_{line_length}.py"),
         ],
-        output_file_path_template=Path("module_docstring_structured_list_{line_length}.py"),
+        output_file_path_template=Path("structured_list_{line_length}.py"),
         shared_parameters={},
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring_simple_list"),
+        fixture_directory_name=Path("docstring_elements/simple_list"),
         input_file_paths=[
-            Path("module_docstring_simple_list_wrong_input.py"),
-            Path("module_docstring_simple_list_{line_length}.py"),
+            Path("simple_list_wrong_input.py"),
+            Path("simple_list_{line_length}.py"),
         ],
-        output_file_path_template=Path("module_docstring_simple_list_{line_length}.py"),
+        output_file_path_template=Path("simple_list_{line_length}.py"),
         shared_parameters={},
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring_named_paragraph_paragraph"),
+        fixture_directory_name=Path("docstring_elements/named_paragraph_paragraph"),
         input_file_paths=[
-            Path("module_docstring_named_paragraph_paragraph_wrong_input.py"),
-            Path("module_docstring_named_paragraph_paragraph_{line_length}.py"),
+            Path("named_paragraph_paragraph_wrong_input.py"),
+            Path("named_paragraph_paragraph_{line_length}.py"),
         ],
-        output_file_path_template=Path("module_docstring_named_paragraph_paragraph_{line_length}.py"),
+        output_file_path_template=Path("named_paragraph_paragraph_{line_length}.py"),
         shared_parameters={},
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring_named_paragraph_code_block"),
+        fixture_directory_name=Path("docstring_elements/named_paragraph_code_block"),
         input_file_paths=[
-            Path("module_docstring_named_paragraph_code_block_blank_lines.py"),
-            Path("module_docstring_named_paragraph_code_block_{line_length}.py"),
+            Path("named_paragraph_code_block_blank_lines.py"),
+            Path("named_paragraph_code_block_{line_length}.py"),
         ],
-        output_file_path_template=Path("module_docstring_named_paragraph_code_block_{line_length}.py"),
+        output_file_path_template=Path("named_paragraph_code_block_{line_length}.py"),
         shared_parameters={},
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring_named_paragraph_code_repl"),
+        fixture_directory_name=Path("docstring_elements/named_paragraph_code_repl"),
         input_file_paths=[
-            Path("module_docstring_named_paragraph_code_repl_blank_lines.py"),
-            Path("module_docstring_named_paragraph_code_repl_{line_length}.py"),
+            Path("named_paragraph_code_repl_blank_lines.py"),
+            Path("named_paragraph_code_repl_{line_length}.py"),
         ],
-        output_file_path_template=Path("module_docstring_named_paragraph_code_repl_{line_length}.py"),
+        output_file_path_template=Path("named_paragraph_code_repl_{line_length}.py"),
         shared_parameters={},
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring_paragraph_and_simple_list"),
+        fixture_directory_name=Path("docstring_elements/paragraph_and_simple_list"),
         input_file_paths=[
-            Path("module_docstring_paragraph_and_simple_list_wrong_input.py"),
-            Path("module_docstring_paragraph_and_simple_list_{line_length}.py"),
+            Path("paragraph_and_simple_list_wrong_input.py"),
+            Path("paragraph_and_simple_list_{line_length}.py"),
         ],
-        output_file_path_template=Path("module_docstring_paragraph_and_simple_list_{line_length}.py"),
+        output_file_path_template=Path("paragraph_and_simple_list_{line_length}.py"),
         shared_parameters={},
         parameter_grid={"line_length": [60, 80, 100]}
     ),
