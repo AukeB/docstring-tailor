@@ -1,5 +1,6 @@
-"""Contains logic for parsing docstrings into a structured IR."""
+"""Contains the abstract base parser for indentation-based docstring styles."""
 
+from abc import ABC, abstractmethod
 from inspect import cleandoc
 from typing import cast
 
@@ -7,8 +8,6 @@ from docstring_tailor.constants import (
     CODE_REPL_PROMPT,
     DOCSTRING_DELIMITER_LENGTH,
     DOCSTRING_KEYWORD_SEPARATOR,
-    GOOGLE_NAMED_PARAGRAPH_SECTIONS,
-    GOOGLE_STRUCTURED_LIST_SECTIONS,
     RE_PATTERN_BLANK_LINES,
     RE_PATTERN_CODE_BLOCK_DELIMITER,
 )
@@ -21,15 +20,16 @@ from docstring_tailor.ir_model import (
     Paragraph,
     SimpleList,
 )
-from docstring_tailor.parser.docstring_structured_list_parser import (
-    StructuredListParser,
+from docstring_tailor.parser.indentation_based.google_structured_list_parser import (
+    GoogleStructuredListParser,
 )
 from docstring_tailor.utils.utils_list_detection import find_list_start, get_list_type
 from docstring_tailor.utils.utils_parsing import extract_items
 
 
-class DocstringParser:
-    """Parses a raw docstring string into a typed intermediate representation.
+class IndentationBasedParser(ABC):
+    """Parses a raw docstring string into a typed intermediate representation
+    using indentation-based section detection.
 
     The parsing pipeline operates in two phases:
 
@@ -41,11 +41,53 @@ class DocstringParser:
     2. Flat content parsing — applies fence detection, blank-line splitting, and
        type classification to non-keyword content, and recursively to named
        paragraph bodies after dedenting.
+
+    Subclasses supply the style-specific keyword sets and structured list parser
+    instance; the scanning and classification pipeline itself is inherited
+    unchanged, since it is identical across all indentation-based styles
+    (Google, NumPy).
     """
 
     def __init__(self) -> None:
-        """Initialises the DocstringParser."""
-        self._structured_list_parser = StructuredListParser()
+        """Initialises the IndentationBasedParser."""
+        self._structured_list_parser = self._create_structured_list_parser()
+
+    @abstractmethod
+    def _detect_structured_list_sections(self) -> frozenset[str]:
+        """Returns the section keywords that map to structured list parsing for
+        this docstring style.
+
+        Returns:
+            structured_list_sections (frozenset[str]): The set of keywords, e.g.
+                'Args', 'Raises', 'Returns'.
+        """
+        ...
+
+    @abstractmethod
+    def _detect_named_paragraph_sections(self) -> frozenset[str]:
+        """Returns the section keywords that map to named paragraph parsing for
+        this docstring style.
+
+        Returns:
+            named_paragraph_sections (frozenset[str]): The set of keywords, e.g.
+                'Note', 'Examples', 'See Also'.
+        """
+        ...
+
+    @abstractmethod
+    def _create_structured_list_parser(self) -> GoogleStructuredListParser:
+        """Creates the structured list parser variant for this docstring style.
+
+        Each style has fundamentally different item syntax within
+        Args/Raises/Returns-like sections (e.g. NumPy's 'name : type' on its own
+        line vs Google's 'name (type):' inline), so the concrete parser instance
+        is supplied by the subclass rather than constructed here.
+
+        Returns:
+            structured_list_parser (StructuredListParser): The style-specific
+                parser used to parse structured list section entries.
+        """
+        ...
 
     def _parse_simple_list(
         self, content: str, has_leading_blank_line: bool
@@ -258,7 +300,7 @@ class DocstringParser:
         """
         keyword = content.splitlines()[0].strip().rstrip(DOCSTRING_KEYWORD_SEPARATOR)
 
-        if keyword in GOOGLE_STRUCTURED_LIST_SECTIONS:
+        if keyword in self._detect_structured_list_sections():
             node = self._structured_list_parser.parse(content)
         else:
             node = self._parse_named_paragraph(content)
@@ -302,8 +344,8 @@ class DocstringParser:
             keyword = line.strip().rstrip(DOCSTRING_KEYWORD_SEPARATOR)
             is_base = indent == base_indent
             is_keyword_line = is_base and (
-                keyword in GOOGLE_NAMED_PARAGRAPH_SECTIONS
-                or keyword in GOOGLE_STRUCTURED_LIST_SECTIONS
+                keyword in self._detect_named_paragraph_sections()
+                or keyword in self._detect_structured_list_sections()
             )
 
             if is_keyword_line:

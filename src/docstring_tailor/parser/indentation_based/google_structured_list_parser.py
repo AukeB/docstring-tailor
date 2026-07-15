@@ -14,7 +14,7 @@ from docstring_tailor.ir_model import (
 from docstring_tailor.utils.utils_parsing import extract_items
 
 
-class StructuredListParser:
+class GoogleStructuredListParser:
     """Parses raw structured-list section content into a StructuredList node.
 
     Determines whether the section is a Raises section or a parameter section

@@ -3,9 +3,10 @@
 import libcst as cst
 
 from docstring_tailor.constants import DOCSTRING_DELIMITER
-from docstring_tailor.parser.docstring_parser import DocstringParser
+from docstring_tailor.parser.indentation_based.google_docstring_parser import (
+    GoogleDocstringParser,
+)
 from docstring_tailor.renderer.docstring_renderer import DocstringRenderer
-from docstring_tailor.utils.utils_printing import print_docstring_ir
 
 
 class DocstringVisitor(cst.CSTTransformer):
@@ -68,7 +69,7 @@ class DocstringVisitor(cst.CSTTransformer):
         self._line_length = line_length
         self._current_indent = ""
         self._indent_unit = "    "
-        self._parser = DocstringParser()
+        self._parser = GoogleDocstringParser()
 
     def visit_Module(self, node: cst.Module) -> None:
         """Captures the default indentation unit from the module on first entry.
