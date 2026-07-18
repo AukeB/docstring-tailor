@@ -20,8 +20,8 @@ from docstring_tailor.ir_model import (
     Paragraph,
     SimpleList,
 )
-from docstring_tailor.parser.indentation_based.google_structured_list_parser import (
-    GoogleStructuredListParser,
+from docstring_tailor.parser.indentation_based.structured_list_parser import (
+    StructuredListParserBase,
 )
 from docstring_tailor.utils.utils_list_detection import find_list_start, get_list_type
 from docstring_tailor.utils.utils_parsing import extract_items
@@ -29,23 +29,22 @@ from docstring_tailor.utils.utils_parsing import extract_items
 
 class IndentationBasedParser(ABC):
     """Parses a raw docstring string into a typed intermediate representation
-    using indentation-based section detection.
+    using indentation- based section detection.
 
     The parsing pipeline operates in two phases:
 
     1. Indentation-based top-level scanning — identifies keyword-headed sections
-       (NamedParagraph, StructuredList) by tracking base indentation, without
-       relying on blank lines. This sidesteps the chicken-and-egg problem where
-       named paragraphs need blank-line detection to be found, but themselves
-       contain blank lines.
+       (NamedParagraph, StructuredList) by tracking indentation. Segment
+       boundary rules differ enough between styles that this step is implemented
+       per style (see _scan_top_level_segments).
     2. Flat content parsing — applies fence detection, blank-line splitting, and
        type classification to non-keyword content, and recursively to named
-       paragraph bodies after dedenting.
+       paragraph bodies after dedenting. This step is identical across styles
+       and fully shared.
 
-    Subclasses supply the style-specific keyword sets and structured list parser
-    instance; the scanning and classification pipeline itself is inherited
-    unchanged, since it is identical across all indentation-based styles
-    (Google, NumPy).
+    Subclasses supply the style-specific keyword sets, structured list parser
+    instance, and top- level segment scanning rule; the classification pipeline
+    beneath that is inherited unchanged.
     """
 
     def __init__(self) -> None:
@@ -75,7 +74,7 @@ class IndentationBasedParser(ABC):
         ...
 
     @abstractmethod
-    def _create_structured_list_parser(self) -> GoogleStructuredListParser:
+    def _create_structured_list_parser(self) -> StructuredListParserBase:
         """Creates the structured list parser variant for this docstring style.
 
         Each style has fundamentally different item syntax within
@@ -84,8 +83,34 @@ class IndentationBasedParser(ABC):
         is supplied by the subclass rather than constructed here.
 
         Returns:
-            structured_list_parser (StructuredListParser): The style-specific
-                parser used to parse structured list section entries.
+            structured_list_parser (StructuredListParserBase): The style-
+                specific parser used to parse structured list section entries.
+        """
+        ...
+
+    @abstractmethod
+    def _scan_top_level_segments(
+        self,
+        lines: list[str],
+        base_indent: int,
+    ) -> list[tuple[bool, str]]:
+        """Groups lines into keyword-section and plain-text segments using
+        indentation only.
+
+        The rule for where a keyword section ends differs enough between styles
+        that this cannot be shared: Google's items sit deeper than their section
+        header, so a line returning to base indentation reliably ends the
+        section. NumPy's items sit at the *same* indentation as the header, so
+        that same rule would truncate a NumPy section after its very first item.
+
+        Args:
+            lines (list[str]): All lines of the content to scan.
+            base_indent (int): The indentation level of top-level content lines.
+
+        Returns:
+            segments (list[tuple[bool, str]]): Each entry is
+                (is_keyword_section, content) where content is the raw joined
+                lines for that segment.
         """
         ...
 
@@ -306,68 +331,6 @@ class IndentationBasedParser(ABC):
             node = self._parse_named_paragraph(content)
 
         return node
-
-    def _scan_top_level_segments(
-        self,
-        lines: list[str],
-        base_indent: int,
-    ) -> list[tuple[bool, str]]:
-        """Groups lines into keyword-section and plain-text segments using
-        indentation only.
-
-        A keyword line at base indentation starts a new keyword segment. All
-        subsequent lines more indented than base belong to that segment's body,
-        regardless of any blank lines within. A non-keyword line returning to
-        base indentation ends the keyword segment and starts a new plain
-        segment.
-
-        Args:
-            lines (list[str]): All lines of the content to scan.
-            base_indent (int): The indentation level of top-level content lines.
-
-        Returns:
-            segments (list[tuple[bool, str]]): Each entry is
-                (is_keyword_section, content) where content is the raw joined
-                lines for that segment.
-        """
-        segments: list[tuple[bool, str]] = []
-        current_lines: list[str] = []
-        current_is_keyword = False
-        blank_buffer: list[str] = []
-
-        for line in lines:
-            if not line.strip():
-                blank_buffer.append(line)
-                continue
-
-            indent = len(line) - len(line.lstrip())
-            keyword = line.strip().rstrip(DOCSTRING_KEYWORD_SEPARATOR)
-            is_base = indent == base_indent
-            is_keyword_line = is_base and (
-                keyword in self._detect_named_paragraph_sections()
-                or keyword in self._detect_structured_list_sections()
-            )
-
-            if is_keyword_line:
-                if current_lines:
-                    segments.append((current_is_keyword, "\n".join(current_lines)))
-                current_lines = [line]
-                current_is_keyword = True
-                blank_buffer = []
-            elif is_base and current_is_keyword:
-                segments.append((True, "\n".join(current_lines)))
-                current_lines = [line]
-                current_is_keyword = False
-                blank_buffer = []
-            else:
-                current_lines.extend(blank_buffer)
-                blank_buffer = []
-                current_lines.append(line)
-
-        if current_lines:
-            segments.append((current_is_keyword, "\n".join(current_lines)))
-
-        return segments
 
     def _parse_top_level(self, content: str) -> list[DocstringNode]:
         """Parses top-level docstring content using indentation-based segment

@@ -19,6 +19,7 @@ RE_PATTERN_SIMPLE_LIST_MARKER = re.compile(r"^[-*+]\s+|^\d+[.)]\s+")
 RE_PATTERN_STRUCTURED_LIST_NAME_AND_TYPE = re.compile(
     r"^(?P<name>\S+)\s\((?P<type>.*)\)$"
 )
+RE_PATTERN_NUMPY_SECTION_UNDERLINE = re.compile(r"^-+$")
 
 # =========================================
 # Constants used for all docstring formats.
