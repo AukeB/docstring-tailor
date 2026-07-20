@@ -17,9 +17,10 @@ Formats Python docstrings to PEP 257 style with configurable line length.
     - [Options](#options)
     - [Examples](#examples)
 5. [Example docstrings](#example-docstrings)
-6. [Resources](#resources)
-7. [Release Notes](#release_notes)
-8. [Roadmap](#roadmap)
+6. [What Your Line Length Says About You!](#what-your-line-length-says-about-you)
+7. [Resources](#resources)
+8. [Release Notes](#release_notes)
+9. [Roadmap](#roadmap)
 
 ## Demo
 
@@ -183,32 +184,33 @@ style = "google"
 exclude = ["tests", "src/generated/*.py"]
 ```
 
-
 ## Example docstrings
 
-1. [Google](#google)
-    - [Module docstring](#module-docstring)
-    - [Class docstring](#class-docstring)
-    - [Function docstring](#function-docstring)
-    - [Codeblocks](#codeblocks)
-    - [Other sections](#other-sections)
-    - [Unordered and numbered lists](#unordered-and-numbered-lists)
+1. [Module docstring](#module-docstring)
+2. [Class docstring](#class-docstring)
+3. [Function docstring](#function-docstring)
+4. [Codeblocks](#codeblocks)
+5. [Other sections](#other-sections)
+6. [Unordered and numbered lists](#unordered-and-numbered-lists)
 
-### Google
+### Module docstring
 
-#### Module docstring
+**Google / Numpy** (identical for this example)
 
 ```python
-"""Demonstrates a minimal Google-style module docstring.
+"""Demonstrates a minimal Google or Numpy style module docstring.
 
 This module exists as a formatting example and illustrates the typical
-structure of a Google-style docstring, including a concise summary
-line followed by an additional descriptive paragraph.
+structure of a docstring, including a concise summary line followed by 
+an additional descriptive paragraph.
 """
 ```
-- Make sure to you use a **blank line** in between the summary line and the more elaborate description.
 
-#### Class docstring
+- Leave a **blank line** between the summary line and the more elaborate description. This applies to both styles.
+
+### Class docstring
+
+**Google**
 
 ```python
 class ExampleConfiguration:
@@ -226,10 +228,38 @@ class ExampleConfiguration:
             value provided at initialization.
     """
 ```
-- The `Attributes` section is recognized by the formatter and triggers special indentation rules for attribute entries.
-- If the description of an attribute extends to the next line, **it must be indented one additional level beyond the attribute name**. This indentation level is important: it is used by the formatter to distinguish between a new attribute entry and a continuation of the previous attribute’s description.
 
-#### Function docstring
+- The `Attributes` section is recognized by the formatter and triggers special indentation rules for attribute entries.
+- If an attribute's description runs onto the next line, it **must be indented one extra level beyond the attribute name**. The formatter relies on this indentation to tell a new attribute entry apart from a continuation of the previous one.
+
+**NumPy**
+
+```python
+class ExampleConfiguration:
+    """Represents a configuration object used to demonstrate NumPy-
+    style class docstrings.
+
+    This class is provided as a formatting example and illustrates how
+    attributes are documented consistently in the NumPy docstring
+    style.
+
+    Attributes
+    ----------
+    example_argument_1 : str
+        Stores the first configuration value provided at
+        initialization.
+    example_argument_2 : int
+        Stores the second configuration value provided at
+        initialization.
+    """
+```
+
+- The `Attributes` section header is followed by a line of dashes matching its length (`----------`).
+- Each attribute is written as `name : type`, and its description starts on the next line. Continuation lines are indented to line up with the description, one level deeper than the `name : type` line.
+
+### Function docstring
+
+**Google**
 
 ```python
 def example_function(example_argument_1: str, example_argument_2: int) -> str:
@@ -277,49 +307,98 @@ def example_function(example_argument_1: str, example_argument_2: int) -> str:
 
     return f"{example_argument_1}-{example_argument_2}"
 ```
-- The `Args`, `Returns`, `Examples` and `Raises` section are all keywords recognized by the formatter.
-- You can either use `Args` or `Arguments` for the argument section, and    `Example` or `Examples` for the example section.
-- Similar to the `Attributes` section for the class docstring above, make sure to **introduce another level of indentation** for the description of a function argument, return variable or error description, if it extends to the next line.
-- In the `Example` section, make sure to use `>>>` for the start of the Python REPL, and use `...` for continuation lines. In this way it is consistent with Pydoc.
-- You can also use these keywords in module or class docstrings. For example, an `Args` section in a class docstring, or an `Example(s)` section in a module docstring.
 
-#### Codeblocks
+- `Args`, `Returns`, `Examples`, and `Raises` are all keywords recognized by the package.
+- You can use either `Args` or `Arguments` for the argument section, and `Example` or `Examples` for the example section.
+- As with the `Attributes` section above, add **one extra level of indentation** for the description of an argument, return value, or error, whenever it spans multiple lines.
+- In the `Example(s)` section, start the Python REPL with `>>>` and use `...` for continuation lines, matching Pydoc conventions.
+- These same keywords can also be used in module or class docstrings — for example, an `Args` section in a class docstring, or an `Example(s)` section in a module docstring.
+
+**NumPy**
 
 ```python
-"""Demonstrates a Google-style module docstring containing a code
-block.
+def example_function(example_argument_1: str, example_argument_2: int) -> str:
+    """Demonstrates a NumPy-style function docstring with multiple
+    sections.
 
+    This function exists purely as a formatting example and
+    illustrates how Parameters, Returns, Examples, and Raises sections
+    are structured in a NumPy-style docstring.
+
+    Parameters
+    ----------
+    example_argument_1 : str
+        First example input value used to construct a formatted
+        result string.
+    example_argument_2 : int
+        Second example input value used to influence the
+        transformation logic.
+
+    Returns
+    -------
+    str
+        A formatted string combining both input arguments into a
+        single human-readable representation.
+
+    Examples
+    --------
+    Basic usage with typical inputs produces a simple combined string:
+
+    >>> example_function("alpha", 3)
+    'alpha-3'
+
+    You can also write text in between two Python REPL sections, and
+    this part will be formatted, while the two small code sections
+    won't be formatted.
+
+    >>> example_function(
+    ...     "beta",
+    ...     7,
+    ... )
+    'beta-7'
+
+    Raises
+    ------
+    ValueError
+        Raised when example_argument_2 is negative or zero, as only
+        positive integers are considered valid in this demonstration.
+    """
+    if example_argument_2 <= 0:
+        raise ValueError("example_argument_2 must be positive")
+
+    return f"{example_argument_1}-{example_argument_2}"
+```
+
+- `Parameters`, `Returns`, `Examples`, and `Raises` are all keywords recognized by the package. Each is followed by an underline of dashes matching the header's length.
+- Parameters and return values are documented as `name : type` (or just `type` for a return value), with the description indented on the following line(s).
+- As with the `Attributes` section above, add **one extra level of indentation** for a description that spans multiple lines, so it lines up under the `name : type` entry rather than under the header.
+- In the `Examples` section, start the Python REPL with `>>>` and use `...` for continuation lines, matching Pydoc conventions — same as Google style.
+- These same section keywords can also be used in module or class docstrings — for example, a `Parameters` section in a class docstring, or an `Examples` section in a module docstring.
+
+### Codeblocks
+
+**Google / Numpy** (identical for this example)
+
+```python
+"""Demonstrates a Google or Numpy style module docstring containing 
+a code block.
+ 
 This module-level docstring is used as a formatting example and shows
 how code blocks can be embedded inside docstrings using fenced
 delimiters.
-
-Example:
-    ```
-    def example_function(x, y):
-        return x + y
-    ```
-"""
+ 
+~~~
+def example_function(x, y):
+    return x + y
+~~~
 ```
 
-```python
-"""Demonstrates a Google-style module docstring containing a code
-block.
+- A code block can appear inside the `Example(s)` section, but it doesn't have to — it can also stand on its own outside of it.
+- Either backticks (` ``` `) or tildes (`~~~`) can be used to fence the block, the same way code blocks work in markdown files. This is true for both styles.
 
-This module-level docstring is used as a formatting example and shows
-how code blocks can be embedded inside docstrings using fenced
-delimiters.
+### Other sections
 
-Example:
-    ~~~
-    def example_function(x, y):
-        return x + y
-    ~~~
-"""
-```
-- Codeblocks should be under the `Example(s)` section.
-- You can either use backticks ` ``` ` or tildes `~~~`, similar to how code sections work in markdown files.
-
-#### Other sections
+**Google — Yields**
 
 ```python
 def example_generator(n):
@@ -334,7 +413,29 @@ def example_generator(n):
         int: The next number in the range of 0 to `n` - 1.
     """
 ```
-- Similar to `Returns`, `Yields` is also supported.
+
+**NumPy — Yields**
+
+```python
+def example_generator(n):
+    """Generators have a ``Yields`` section instead of a ``Returns``
+    section.
+
+    Parameters
+    ----------
+    n : int
+        The upper limit of the range to generate, from 0 to `n` - 1.
+
+    Yields
+    ------
+    int
+        The next number in the range of 0 to `n` - 1.
+    """
+```
+
+- `Yields` is supported as a drop-in replacement for `Returns` in both styles, for use in generator functions.
+
+**Google — Note**
 
 ```python
 """Demonstrates a Google-style module docstring containing a Note
@@ -350,14 +451,35 @@ Note:
     transformation.
 """
 ```
-- `Note` is a keyword that is also supported.
-- You can use either `Note` or `Notes`.
 
-#### Unordered and numbered lists
+- `Note` is a supported keyword; you can use either `Note` or `Notes`.
+
+**NumPy — Notes**
 
 ```python
-"""Demonstrates that Google-style docstrings can include structured
-lists.
+"""Demonstrates a NumPy-style module docstring containing a Notes
+section.
+
+This module-level docstring is used as a formatting example and
+illustrates how additional informational sections can be included
+alongside the main description in a NumPy-style docstring.
+
+Notes
+-----
+The formatting of this docstring is intentionally designed to test how
+notes sections are detected and preserved during docstring
+transformation.
+"""
+```
+
+- `Notes` is the conventional NumPy keyword for this section (as opposed to `Note`, which is the singular form used in Google style).
+
+### Unordered and numbered lists
+
+The following examples are valid for **both Google and NumPy** styles, since list formatting isn't tied to a particular section keyword.
+
+```python
+"""Demonstrates that docstrings can include structured lists.
 
 This module-level docstring is used as a formatting example and shows
 how unordered lists can be represented inside a docstring. Each list
@@ -376,8 +498,7 @@ Items:
 ```
 
 ```python
-"""Demonstrates that Google-style docstrings can include structured
-lists.
+"""Demonstrates that docstrings can include structured lists.
 
 This module-level docstring is used as a formatting example and shows
 how numbered lists can be represented inside a docstring. Each list
@@ -396,7 +517,33 @@ Steps:
 """
 ```
 
-- Personally, I like to use unordered and numbered lists sometimes in a docstring. Similar to what has been described before, **indentation** is used to detect new list elements. 
+- Unordered and numbered lists can be a nice addition to a docstring from time to time. As with the sections above, **indentation** is what the formatter uses to detect where a new list item begins.
+
+## What Your `line-length` says about You!
+
+### 60 characters per line — The Minimalist Monk 🧘
+
+You believe every character has a purpose and every extra column is a personal failure 😤. You keep your docstrings short, your functions tiny, and your emotional attachment to whitespace surprisingly strong. You don't need room to explain your code because your code should be obvious. If a sentence doesn't fit in 60 characters, you simply rewrite the sentence until it does. Brevity is not a preference for you. Brevity is a lifestyle.
+
+### 80 characters per line — The Digital Archaeologist 🦖
+
+You have been programming for at least half a century, and you still remember when computers were mysterious machines instead of fancy boxes running websites. You believe software peaked before color displays, and honestly, you are a little disappointed with where things went 😔. You know that everything after assembly was already too high-level and a mistake, because real programming means understanding the machine, not asking some framework to do the work for you. You hate GenAI because you believe thinking is the programmer's job. Python? Far too comfortable. Your motto is simple: real programmers toggle individual transistors. Everything after that is just frameworks ⚙️.
+
+### 88 characters per line — The Black Ritualist 🖤
+
+You are nostalgic for the comforting embrace of Black, where every formatting decision has already been made for you. You don't want to risk the chaos of choosing your own line length because what if you accidentally become different? 😨 You trust the collective wisdom of the formatter, the community, and the thousands of developers who came before you. You are not afraid of change exactly; you are just very comfortable knowing that Black has already decided your fate. Peace through formatting consistency ✨.
+
+### 100 characters per line — The Peacekeeper 🤝
+
+You chose 100 characters because you wanted everyone to be happy, including the people who review your code and the people who have to read it on a laptop. You looked at 80 characters and thought it felt a little cramped, but you looked at 120 and felt society was moving too fast 😅. You carefully live in the middle, avoiding formatting wars and unnecessary debates. Nobody writes angry comments about your line length, nobody praises it either, and that quiet neutrality is exactly the comfortable existence you wanted.
+
+### 240 characters per line — The Ultrawide Warrior 🖥️
+
+You claim you increased your line length because it improves readability, but everyone knows the real reason: you want people to notice your enormous ultrawide monitor. You paid for every pixel, and you refuse to leave any of them unemployed 😎. Your docstrings stretch from one side of the screen to the other just to prove your setup is bigger than everyone else's. Whenever someone questions your line length, you casually mention your monitor resolution, refresh rate, and somehow the GPU model.
+
+### 500 characters per line — The Horizon Programmer 🌌
+
+You don't wrap text because wrapping is a skill issue. You let photons travel uninterrupted across the entire display because your docstrings deserve the full cinematic experience 🎬. You combine programming with neck exercises, allowing you to safely skip neck day at the gym. You don't use a monitor anymore; you rent a cinema, sit in the back row, and program using a telescope pointed at your code 🔭. Your Git diffs require geological surveys, satellite mapping, and a team of explorers. NASA can read your docstrings from orbit 🚀.
 
 ## Resources
 
