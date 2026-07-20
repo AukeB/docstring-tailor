@@ -58,15 +58,15 @@ pip install docstring-tailor
 Run on a single file or directory:
 
 ```bash
-uv run docstring_tailor my_file.py
-uv run docstring_tailor my_folder
+uv run docstring_tailor format my_file.py
+uv run docstring_tailor format my_folder
 ```
 Multiple files and/or folders are also accepted. Without a file path or folder path, it will try to locate the `src` folder.
 
 The default line length is 100. To customise it:
 
 ```bash
-uv run docstring_tailor --line-length 88
+uv run docstring_tailor format --line-length 88
 ```
 
 Configure it permanently in `pyproject.toml` or in `docstring_tailor.toml`:
@@ -82,10 +82,10 @@ line-length = 88
 line-length = 88
 ```
 
-Define a docstring style, however the only style that is currently supported is [Google](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html). This is also the default style. Explicit configuration:
+Define a docstring style. Two styles are currently supported: [Google](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html) and [NumPy](https://numpydoc.readthedocs.io/en/latest/format.html). Google is the default. Explicit configuration:
 
 ```bash
-uv run docstring_tailor --style google
+uv run docstring_tailor format --style numpy
 ```
 
 or in `pyproject.toml`
@@ -95,30 +95,63 @@ or in `pyproject.toml`
 style = "google"
 ```
 
-## API Overview
-
-### Command
+To convert existing docstrings from one style to another, use the `convert` command instead:
 
 ```bash
-uv run docstring_tailor [PATHS ...] [OPTIONS]
+uv run docstring_tailor convert my_file.py --from-style google --to-style numpy
+```
+
+## API Overview
+
+### Commands
+
+`docstring_tailor` has two commands: `format` and `convert`.
+
+**`format`** reformats docstrings in place, in a single style — use this for everyday formatting (adjusting line length, wrapping, whitespace) without changing the docstring style itself.
+
+**`convert`** reparses and re-renders docstrings from one style into another — use this the one time you need to migrate a codebase, or part of one, between styles.
+
+```bash
+uv run docstring_tailor format [PATHS ...] [OPTIONS]
+uv run docstring_tailor convert [PATHS ...] --from-style STYLE --to-style STYLE [OPTIONS]
 ```
 `PATHS` may contain one or more files and/or directories.
 Examples:
 ```bash
-uv run docstring_tailor my_file.py
-uv run docstring_tailor src/
-uv run docstring_tailor src/ tests/test_file.py
+uv run docstring_tailor format my_file.py
+uv run docstring_tailor format src/
+uv run docstring_tailor format src/ tests/test_file.py
+uv run docstring_tailor convert src/ --from-style google --to-style numpy
 ```
 If no paths are provided, `docstring_tailor` will attempt to locate and format files inside the `src` directory.
 
 ### Options
 
+#### `format`
+
 | <div style="width:140px">Option</div> | <div style="width:50px">Type</div> | <div style="width:80px">Default</div> | Description |
 |---|---|---|---|
 | `--line-length`      | `int`  | 100    | Maximum number of characters allowed per line after formatting. |
-| `--style`            | `str`  | google | Docstring style to enforce. Currently only the Google docstring style is supported. |
+| `--style`            | `str`  | google | Docstring style to format to. `google` or `numpy`. |
 | `--exclude`          | `str`  | —      | A glob pattern for paths to exclude. Can be passed multiple times. Single-path patterns (e.g. `tests`, `*.pyi`) match by name anywhere in the tree. Relative patterns (e.g. `src/generated/*.py`) match against the path relative to the project root. |
 | `--diff`             | flag   | —      | Print a unified diff of changes to stdout instead of modifying files. No files are written when this flag is set. |
+
+#### `convert`
+
+| <div style="width:140px">Option</div> | <div style="width:50px">Type</div> | <div style="width:80px">Default</div> | Description |
+|---|---|---|---|
+| `--from-style`       | `str`  | *required* | Docstring style to convert from. `google` or `numpy`. |
+| `--to-style`         | `str`  | *required* | Docstring style to convert to. `google` or `numpy`. Must differ from `--from-style`. |
+| `--line-length`      | `int`  | 100    | Maximum number of characters allowed per line after formatting. |
+| `--exclude`          | `str`  | —      | A glob pattern for paths to exclude. Can be passed multiple times. Single-path patterns (e.g. `tests`, `*.pyi`) match by name anywhere in the tree. Relative patterns (e.g. `src/generated/*.py`) match against the path relative to the project root. |
+| `--diff`             | flag   | —      | Print a unified diff of changes to stdout instead of modifying files. No files are written when this flag is set. |
+
+`--from-style` and `--to-style` have no config-file or default fallback — both must be given explicitly on every `convert` invocation, and must be different from each other.
+
+#### Global
+
+| <div style="width:140px">Option</div> | <div style="width:50px">Type</div> | <div style="width:80px">Default</div> | Description |
+|---|---|---|---|
 | `--version`, `-V`    | flag   | —      | Print the installed version and exit. |
 | `--help`             | flag   | —      | Show the help message and exit. |
 
@@ -126,13 +159,14 @@ If no paths are provided, `docstring_tailor` will attempt to locate and format f
 
 `CLI`
 ```bash
-uv run docstring_tailor src/ --line-length 88
-uv run docstring_tailor my_file.py --style google
-uv run docstring_tailor src/ --exclude tests --exclude "src/generated/*.py"
-uv run docstring_tailor src/ --diff
+uv run docstring_tailor format src/ --line-length 88
+uv run docstring_tailor format my_file.py --style numpy
+uv run docstring_tailor format src/ --exclude tests --exclude "src/generated/*.py"
+uv run docstring_tailor format src/ --diff
+uv run docstring_tailor convert src/ --from-style google --to-style numpy
+uv run docstring_tailor convert my_file.py --from-style numpy --to-style google --diff
 uv run docstring_tailor --version
 uv run docstring_tailor --help
-
 ```
 `pyproject.toml`
 ```toml
@@ -148,6 +182,7 @@ line-length = 88
 style = "google"
 exclude = ["tests", "src/generated/*.py"]
 ```
+
 
 ## Example docstrings
 
@@ -389,33 +424,33 @@ Steps:
 | `0.1.1` | 2026-05-31 | Documentation update | Updated the `README.md` file with the 'Installation' and 'Quick Start' section. |
 | `0.2.0` | 2026-06-07 | Feature update | <ul><li>Implemented the `detect-lists` parameter, adding support for unordered and ordered (numbered) lists in docstrings. When enabled, list structures are detected automatically and each list item is formatted onto its own line.</li><li>Introduced a declarative golden-file test framework for formatter validation. Test cases are now generated from parametrized templates using Cartesian-product expansion, significantly reducing boilerplate and improving scalability for configuration coverage.</li><li>Expanded this `README.md` with the 'API Overview', 'Release Notes', 'Example docstrings' and 'Roadmap' sections.</li><li>Test coverage: 75%</li></ul> |
 | `0.2.1` | 2026-06-11 | Feature update | <ul><li>Added the `-V`/`--version` command to the CLI.</li><li>Added the `--exclude` command to the CLI.</li><li>Added the `--diff` command to the CLI.</li><li>Added the 'Demo' part to to the `README.md`.</ul> |
-| `0.3.0` | TBD | Feature update & bug fixes | <ul><li>Introduced a new parsing module that converts raw docstrings into a style-agnostic intermediate representation (IR), laying the foundation for multi-style parsing and formatting.</li><li>Refactored the formatting module based on the new IR model.</li><li>Code sections and Python REPL blocks now also can be created outside the 'Example(s)' section.</li><li>Fixed a bug when codeblock sections contain blank lines.</li><li>Fixed a bug when the docstring starts immediately with an (un)ordered list.</li><li>Removed `detect-lists` as CLI parameter, because the logic should always be applied if the docstring contains (un)ordered lists.</li><li>Changed behaviour for empty docstrings so that it consistent with Ruff.</li></ul> |
+| `0.3.0` | TBD | Feature update & bug fixes | <ul><li>Introduced a style-agnostic intermediate representation (IR) model and refactored parsing into an abstract base class hierarchy. Google and NumPy docstrings now parse into the same IR via `IndentationBasedParser` subclasses, enabling lossless conversion between styles. Structured list parsing is delegated to style-specific implementations to handle syntactic differences (Google's inline `name (type):` vs. NumPy's `name : type` on separate lines).</li><li>Refactored rendering to match the parser architecture: `DocstringRendererBase` (ABC) with style-specific subclasses that implement two hooks — section header formatting (Google's `Args:` vs. NumPy's `Parameters` + underline) and section body indentation rules (confirmed against numpy's own docstrings to keep bodies flush with headers, unlike Google). Keyword translation between styles happens automatically during conversion.</li><li>Code sections and Python REPL blocks now also can be created outside the 'Example(s)' section.</li><li>Fixed a bug when codeblock sections contain blank lines.</li><li>Fixed a bug when the docstring starts immediately with an (un)ordered list.</li><li>Removed `detect-lists` as CLI parameter, because the logic should always be applied if the docstring contains (un)ordered lists.</li><li>Changed behaviour for empty docstrings so that it consistent with Ruff.</li></ul> |
+
 ## Roadmap
 
 ### Must have
-- Parsing module for all four major docstring formats (Google, NumPy, Sphinx, Epydoc),
-  establishing a style-agnostic intermediate representation (IR) that decouples the
-  parsed structure from any specific docstring style.
-- Formatting module for all four major docstring formats, driven entirely by the
-  style-agnostic IR, enabling consistent and predictable output regardless of input style.
+- Parsing-time validation: the parser enforces structural rules on a docstring
+  (e.g. well-formed sections, consistent indentation, correctly closed lists and
+  code blocks) and rejects it if those rules aren't met. Formatting, rendering, and
+  conversion must never run on a docstring that fails this check — malformed input
+  should be refused at the parsing stage, not silently passed through. A dedicated
+  lint/check command exposes these errors directly to the user, with clear and
+  actionable messages, rather than only blocking format/convert silently.
+- Parsing module for the remaining docstring formats (Sphinx, Epydoc), extending
+  the existing style-agnostic intermediate representation (IR) to cover all four
+  major styles.
+- Formatting module for the remaining docstring formats (Sphinx, Epydoc), driven
+  entirely by the same IR already used for Google and NumPy.
 
 ### Nice to have
 - Make sure the package can be used as a pre-commit hook.
-- Add docstring linting/syntax validation functionality, raising meaningful errors
-  for malformed docstrings (e.g. missing type annotations, incorrect indentation,
-  missing blank lines around lists). Passing linting would be a requirement for
-  conversion.
-- Add docstring conversion functionality that allows you to change your docstring
-  style. For example, conversion from the Google docstring style to NumPy. This is
-  enabled by the intermediate representation (IR) layer, which decouples parsing
-  from formatting.
 - LSP (Language Server Protocol) support, enabling real-time feedback on malformed
   docstrings directly in editors like VS Code, PyCharm and Neovim. Built on top of
-  the linting layer and the existing parser, with `pygls` handling the protocol.
-- Make the package available as VSCode extension.
+  the validation layer and the existing parser, with `pygls` handling the protocol.
+  Requires position tracking in the IR (line/column numbers per node) as a
+  prerequisite, for precise diagnostics and editor highlighting.
+- Make the package available as a VSCode extension.
 
 ### Maybe later
 - Parameter that allows the user to format module, class and function docstrings
   independently.
-- Position tracking in the IR (line/column numbers per node), which is a
-  prerequisite for precise LSP diagnostics and editor highlighting.
