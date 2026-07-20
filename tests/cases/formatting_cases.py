@@ -3,6 +3,7 @@
 from pathlib import Path
 from itertools import chain
 
+from docstring_tailor.cli_config import DocstringStyle
 from tests.cases.config_model import Case, CaseTemplate, expand_template
 
 CASE_TEMPLATES: list[CaseTemplate] = [
@@ -14,7 +15,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("class_docstring_100.py"),
         ],
         output_file_path_template=Path("class_docstring_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [60, 80, 100]},
     ),
     CaseTemplate(
@@ -25,7 +29,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("empty_{line_length}.py"),
         ],
         output_file_path_template=Path("empty_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [80]},
     ),
     CaseTemplate(
@@ -35,7 +42,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("paragraph_multi_line_{line_length}.py"),
         ],
         output_file_path_template=Path("paragraph_multi_line_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
@@ -45,7 +55,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("paragraph_one_line_{line_length}.py"),
         ],
         output_file_path_template=Path("paragraph_one_line_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
@@ -55,7 +68,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("code_block_singular_{line_length}.py"),
         ],
         output_file_path_template=Path("code_block_singular_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
@@ -65,7 +81,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("code_block_multiple_{line_length}.py"),
         ],
         output_file_path_template=Path("code_block_multiple_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
@@ -75,7 +94,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("code_repl_singular_{line_length}.py"),
         ],
         output_file_path_template=Path("code_repl_singular_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
@@ -85,7 +107,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("code_repl_multiple_{line_length}.py"),
         ],
         output_file_path_template=Path("code_repl_multiple_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
@@ -95,7 +120,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("structured_list_{line_length}.py"),
         ],
         output_file_path_template=Path("structured_list_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
@@ -105,7 +133,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("simple_list_{line_length}.py"),
         ],
         output_file_path_template=Path("simple_list_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
@@ -115,7 +146,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("named_paragraph_paragraph_{line_length}.py"),
         ],
         output_file_path_template=Path("named_paragraph_paragraph_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
@@ -125,7 +159,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("named_paragraph_code_block_{line_length}.py"),
         ],
         output_file_path_template=Path("named_paragraph_code_block_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
@@ -135,7 +172,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("named_paragraph_code_repl_{line_length}.py"),
         ],
         output_file_path_template=Path("named_paragraph_code_repl_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
@@ -145,7 +185,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("paragraph_and_simple_list_{line_length}.py"),
         ],
         output_file_path_template=Path("paragraph_and_simple_list_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
@@ -156,7 +199,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("function_docstring_100.py"),
         ],
         output_file_path_template=Path("function_docstring_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [60, 80, 100]},
     ),
     CaseTemplate(
@@ -167,7 +213,10 @@ CASE_TEMPLATES: list[CaseTemplate] = [
             Path("module_docstring_100.py"),
         ],
         output_file_path_template=Path("module_docstring_{line_length}.py"),
-        shared_parameters={},
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google
+        },
         parameter_grid={"line_length": [60, 80, 100]},
     ),
 ]

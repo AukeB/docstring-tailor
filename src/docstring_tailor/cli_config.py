@@ -16,7 +16,7 @@ class DocstringStyle(str, Enum):
     epydoc = "epydoc"
 
 
-SUPPORTED_STYLES = {DocstringStyle.google}
+SUPPORTED_STYLES = {DocstringStyle.google, DocstringStyle.numpy}
 DEFAULT_STYLE = DocstringStyle.google
 
 # Argument: '--line-length'

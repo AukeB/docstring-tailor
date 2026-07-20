@@ -2,11 +2,11 @@
 
 import libcst as cst
 
+from docstring_tailor.cli_config import DocstringStyle
 from docstring_tailor.constants import DOCSTRING_DELIMITER
-from docstring_tailor.parser.indentation_based.google_docstring_parser import (
-    GoogleDocstringParser,
-)
-from docstring_tailor.renderer.docstring_renderer import DocstringRenderer
+from docstring_tailor.parser.parser_factory import create_parser
+from docstring_tailor.renderer.renderer_factory import get_renderer_class
+from docstring_tailor.utils.utils_keyword_translation import translate_keywords
 
 
 class DocstringVisitor(cst.CSTTransformer):
@@ -35,8 +35,9 @@ class DocstringVisitor(cst.CSTTransformer):
     docstring. If not, the node is returned unchanged via the super() call. If
     it is, the node is passed to _process_docstring_node, which extracts the raw
     string content and passes it to _transform_docstring. There, the content is
-    parsed into a typed IR by DocstringParser, then rendered back into a
-    formatted docstring string by DocstringRenderer.
+    parsed into a typed IR by the from_style parser, translated to to_style's
+    keyword vocabulary if the two styles differ, then rendered back into a
+    formatted docstring string by the to_style renderer.
 
     Attributes:
         _line_length (int): Maximum characters per line including indentation
@@ -46,30 +47,49 @@ class DocstringVisitor(cst.CSTTransformer):
         _indent_unit (str): The indentation unit string used in the source file,
             captured from the module node on entry. Initialised to four spaces
             as a safety placeholder.
-        _parser (DocstringParser): Reusable parser instance, instantiated once
-            since the parser is stateless across docstrings.
+        _from_style (DocstringStyle): The style docstrings are parsed as.
+        _to_style (DocstringStyle): The style docstrings are rendered as. Equal
+            to _from_style for a same-style format, different for a convert.
+        _parser (IndentationBasedParser): Reusable parser instance for
+            _from_style, instantiated once since the parser is stateless across
+            docstrings.
+        _renderer_class (type[DocstringRendererBase]): The renderer class for
+            _to_style. Not instantiated here -- a fresh renderer is built per
+            docstring in _transform_docstring, since it depends on
+            _current_indent, which changes as the tree is traversed.
     """
 
-    def __init__(self, line_length: int) -> None:
+    def __init__(
+        self,
+        line_length: int,
+        from_style: DocstringStyle,
+        to_style: DocstringStyle,
+    ) -> None:
         """Initialises the DocstringVisitor.
 
         Sets up the indentation tracker used to correctly render multi-line
         docstrings at any nesting level. The initial value of _indent_unit is a
         four-space placeholder for safety, as it will always be overwritten by
-        visit_Module before any docstring is processed. DocstringParser is
-        instantiated once here since it is stateless across docstrings.
-        DocstringRenderer is instantiated per docstring in _transform_docstring
-        since it depends on _current_indent, which changes as the tree is
-        traversed.
+        visit_Module before any docstring is processed. The parser is
+        instantiated once here since it is stateless across docstrings; the
+        renderer class is looked up but not instantiated, since a renderer
+        instance is built fresh per docstring.
 
         Args:
             line_length (int): Maximum characters per line including indentation
                 and triple double quotes.
+            from_style (DocstringStyle): The style to parse docstrings as.
+            to_style (DocstringStyle): The style to render docstrings as. Pass
+                the same value as from_style for a same-style format; a
+                different value performs a style conversion.
         """
         self._line_length = line_length
         self._current_indent = ""
         self._indent_unit = "    "
-        self._parser = GoogleDocstringParser()
+        self._from_style = from_style
+        self._to_style = to_style
+        self._parser = create_parser(from_style)
+        self._renderer_class = get_renderer_class(to_style)
 
     def visit_Module(self, node: cst.Module) -> None:
         """Captures the default indentation unit from the module on first entry.
@@ -124,6 +144,10 @@ class DocstringVisitor(cst.CSTTransformer):
         """Parses and renders a raw docstring string into its formatted
         equivalent.
 
+        Keyword translation only runs when _from_style and _to_style differ,
+        since a same-style format has nothing to translate and the two keyword-
+        translation tables are only defined for cross-style pairs.
+
         Args:
             content (str): The raw docstring string including triple-quote
                 delimiters.
@@ -131,10 +155,14 @@ class DocstringVisitor(cst.CSTTransformer):
         Returns:
             rendered (str): The fully rendered docstring string.
         """
-
         ir = self._parser.parse(content=content)
 
-        renderer = DocstringRenderer(
+        if self._from_style != self._to_style:
+            ir = translate_keywords(
+                ir, from_style=self._from_style, to_style=self._to_style
+            )
+
+        renderer = self._renderer_class(
             line_length=self._line_length,
             current_indent=self._current_indent,
             indent_unit=self._indent_unit,

@@ -51,7 +51,7 @@ class GoogleDocstringParser(IndentationBasedParser):
 
         Returns:
             structured_list_parser (StructuredListParserBase): Parser for
-                Args/Raises/Returns-like sections written in Google style.
+                Args/Raises/Returns- like sections written in Google style.
         """
         structured_list_parser = GoogleStructuredListParser()
 

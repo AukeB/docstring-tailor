@@ -46,7 +46,7 @@ def format_code(text: str, line_separator: str) -> str:
 
     Args:
         text (str): The raw code block string.
-        line_separator (str): The string used to join re-indented lines.
+        line_separator (str): The string used to join re- indented lines.
 
     Returns:
         formatted_code_block (str): The re-indented code block string.

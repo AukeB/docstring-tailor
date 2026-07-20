@@ -67,8 +67,8 @@ class NumpyDocstringParser(IndentationBasedParser):
         beginning 'Notes on this method apply only when...'.
 
         Args:
-            lines (list[str]): All lines being scanned.
-            index (int): The index of the candidate header line.
+            lines (list[str]): All lines being scanned. index (int): The index
+                of the candidate header line.
 
         Returns:
             result (bool): True if the line at index is a genuine section

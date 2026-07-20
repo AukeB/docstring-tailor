@@ -1,9 +1,10 @@
-"""Contains logic for rendering docstrings from a parsed IR."""
+"""Contains the abstract base renderer shared by all docstring styles."""
 
 import re
 import textwrap
+from abc import ABC, abstractmethod
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 
 from docstring_tailor.constants import (
     DOCSTRING_DELIMITER,
@@ -20,22 +21,36 @@ from docstring_tailor.ir_model import (
     Paragraph,
     SimpleList,
     StructuredList,
+    StructuredListError,
     StructuredListParameter,
 )
-from docstring_tailor.utils.utils_formatting import (
-    format_code,
-    format_text,
-)
+from docstring_tailor.utils.utils_formatting import format_code, format_text
 
 
-class DocstringRenderer:
-    """Renders a parsed docstring IR into the Google docstring format.
+class DocstringRendererBase(ABC):
+    """Renders a parsed docstring IR into a style-specific docstring string.
 
     Receives a list of typed DocstringNode objects from the parser and renders
     each according to its concrete type. The final result is rendered as a one-
     line docstring when the IR is empty or consists of a single Paragraph node
     that fits within the line length limit, and as a multi-line docstring
     otherwise.
+
+    Two pieces are style-specific and left abstract: how a section header line
+    is rendered (_render_section_header), and how a single structured list entry
+    is rendered (_render_structured_list_entry) -- NumPy's header-line- plus-
+    indented-description shape isn't a different string template like Google's
+    inline format, it's a different physical-line structure, so this cannot be a
+    shared string-formatting detail the way the header is. Everything else --
+    node dispatch, joining, wrapping, indentation tracking -- is identical
+    across styles and fully shared here.
+
+    A structured list entry may be a StructuredListParameter OR a
+    StructuredListError regardless of which parser produced the IR: when
+    rendering an IR that was parsed in a different style and is being converted,
+    a renderer must handle entry types its own parser never produces (e.g.
+    NumPy's renderer must handle a StructuredListError coming from a Google-
+    parsed Raises section).
 
     Mirrors the parser's own strategy for handling NamedParagraph content:
     rather than a second dispatcher with different constants baked in for
@@ -46,17 +61,15 @@ class DocstringRenderer:
     -- the same way the parser reuses _parse_flat_content for both top-level
     content and a dedented NamedParagraph body.
 
-    Attributes:
-        _line_length (int): Maximum characters per line including indentation.
-        _base_indent_level (str): The accumulated indentation string at the
-            docstring's own position within the module, supplied by the caller
-            and constant for the lifetime of this instance.
-        _indent_unit (str): The indentation unit string used in the source file.
-        _indent_length (int): Length of _indent_unit.
-        _relative_indent_level (int): The nesting depth within the docstring's
-            own content, relative to _base_indent_level. 0 while rendering top-
-            level content, 1 while inside a NamedParagraph or StructuredList
-            body. Mutated only by _nested_body.
+    Attributes: _line_length (int): Maximum characters per line including
+    indentation. _base_indent_level (str): The accumulated indentation string at
+    the docstring's own position within the module, supplied by the caller and
+    constant for the lifetime of this instance. _indent_unit (str): The
+    indentation unit string used in the source file. _indent_length (int):
+    Length of _indent_unit. _relative_indent_level (int): The nesting depth
+    within the docstring's own content, relative to _base_indent_level. 0 while
+    rendering top- level content, 1 while inside a NamedParagraph or
+    StructuredList body. Mutated only by _nested_body.
     """
 
     def __init__(
@@ -65,7 +78,7 @@ class DocstringRenderer:
         current_indent: str,
         indent_unit: str,
     ) -> None:
-        """Initialises the DocstringRenderer.
+        """Initialises the DocstringRendererBase.
 
         Args:
             line_length (int): Maximum characters per line including
@@ -81,6 +94,75 @@ class DocstringRenderer:
 
         self._indent_length = len(self._indent_unit)
         self._relative_indent_level = 0
+
+    @abstractmethod
+    def _render_section_header(self, name: str) -> str:
+        """Renders a section header line (or lines) for a NamedParagraph or
+        StructuredList section.
+
+        Called with _relative_indent_level at the level the section itself sits
+        at (never inside its own body), so implementations that need to insert a
+        manual newline within the header -- e.g. NumPy's dashed underline -- can
+        use self._base_indent_level directly to align it.
+
+        Args:
+            name (str): The section keyword or header text, e.g. 'Args' or
+                'Parameters'.
+
+        Returns:
+            header (str): The fully rendered header, ready to be followed
+                directly by the section body on the next indented line.
+        """
+        ...
+
+    @abstractmethod
+    def _render_structured_list_entry(
+        self, entry: StructuredListParameter | StructuredListError
+    ) -> str:
+        """Renders a single structured list entry to its final, wrapped and
+        indented string form.
+
+        Called with _relative_indent_level at whatever level entries actually
+        render at for this style -- see _structured_list_entries_indented.
+        Implementations needing a further nested level for their own shape (e.g.
+        NumPy's indented description) enter another _nested_body block
+        themselves.
+
+        Must handle both StructuredListParameter and StructuredListError,
+        regardless of whether the implementation's own parser ever produces the
+        latter -- see the class docstring.
+
+        Args:
+            entry (StructuredListParameter | StructuredListError): A single
+                parsed entry.
+
+        Returns:
+            rendered (str): The fully rendered, indented entry string.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def _section_body_indented(self) -> bool:
+        """Whether a section's body renders one level deeper than its header, or
+        flush with it. Applies to both a NamedParagraph's body and a
+        StructuredList's entries -- confirmed empirically to behave the same way
+        for both, in both currently supported styles.
+
+        Google: True -- both 'Note:' bodies and 'Args:' items are indented under
+        their header. NumPy: False -- confirmed against numpy's own docstrings,
+        both a Notes body and Parameters entries share a column with their
+        header; only a structured list entry's own description (handled inside
+        _render_structured_list_entry) indents deeper.
+
+        TODO: if a future style needs these two to differ, split this into two
+        separate hooks. Not done now since no supported style needs it.
+
+        Returns:
+            result (bool): True if the section body sits one level deeper than
+                its header.
+        """
+        ...
 
     @property
     def _relative_indent(self) -> str:
@@ -165,8 +247,7 @@ class DocstringRenderer:
         section keywords.
 
         Args:
-            ir (list[DocstringNode]): Fully parsed and typed IR from
-                DocstringParser.
+            ir (list[DocstringNode]): Fully parsed and typed IR from a parser.
 
         Returns:
             result (bool): True if a leading newline must be inserted before the
@@ -217,9 +298,12 @@ class DocstringRenderer:
         """Renders a NAMED_PARAGRAPH section, rendering each body node
         independently.
 
-        Body nodes are rendered inside a _nested_body block, so every node
-        dispatched through _render_node picks up the indented wrap width and
-        separators automatically, without a separate indented dispatcher.
+        Whether the body renders one level deeper than the header (Google) or
+        flush with it (NumPy) is style-specific -- see _section_body_indented.
+        nullcontext stands in for _nested_body when the body stays flush, so
+        every node dispatched through _render_node still picks up the correct
+        wrap width and separators for whichever level applies, without a
+        separate indented dispatcher.
 
         Args:
             section (NamedParagraph): A parsed named paragraph node.
@@ -227,13 +311,17 @@ class DocstringRenderer:
         Returns:
             rendered (str): The rendered named paragraph string.
         """
-        with self._nested_body():
+        nested_context = (
+            self._nested_body() if self._section_body_indented else nullcontext()
+        )
+
+        with nested_context:
             rendered_body_nodes = [self._render_node(node) for node in section.body]
             body = self._join_rendered_nodes(section.body, rendered_body_nodes)
 
-        rendered = (
-            section.header + ":\n" + self._base_indent_level + self._indent_unit + body
-        )
+        body_indent = self._indent_unit if self._section_body_indented else ""
+        header = self._render_section_header(section.header)
+        rendered = header + "\n" + self._base_indent_level + body_indent + body
 
         return rendered
 
@@ -291,13 +379,10 @@ class DocstringRenderer:
         """Renders a STRUCTURED_LIST section by rendering each entry and
         reassembling.
 
-        Dispatches each entry to the appropriate item text format based on its
-        type, then wraps the result in the section header. A
-        StructuredListParameter entry renders as "name (type): description" when
-        it has a name, or just "type: description" when it doesn't -- the latter
-        being the conventional shape for Returns/Yields entries. Entries are
-        rendered inside a _nested_body block, one level deeper than the header,
-        the same way a NamedParagraph's body is.
+        Whether entries render one level deeper than the header (Google) or
+        flush with it (NumPy) is style-specific -- see _section_body_indented.
+        nullcontext stands in for _nested_body when entries stay flush, so the
+        render-and-join logic below doesn't need to be duplicated per branch.
 
         Args:
             section (StructuredList): A parsed structured list node.
@@ -305,33 +390,19 @@ class DocstringRenderer:
         Returns:
             rendered (str): The rendered structured list string.
         """
-        with self._nested_body():
-            rendered_entries: list[str] = []
+        nested_context = (
+            self._nested_body() if self._section_body_indented else nullcontext()
+        )
 
-            for entry in section.entries:
-                if isinstance(entry, StructuredListParameter):
-                    item_text = (
-                        f"{entry.name} ({entry.type}): {entry.description}"
-                        if entry.name is not None
-                        else f"{entry.type}: {entry.description}"
-                    )
-                else:
-                    item_text = f"{entry.error_type}: {entry.description}"
-
-                rendered_entry = format_text(
-                    text=item_text,
-                    wrap_width=self._wrap_width,
-                    line_separator=self._line_separator,
-                    subsequent_indent=self._indent_unit,
-                )
-
-                rendered_entries.append(rendered_entry)
-
+        with nested_context:
+            rendered_entries = [
+                self._render_structured_list_entry(entry) for entry in section.entries
+            ]
             body = self._line_separator.join(rendered_entries)
 
-        rendered = (
-            section.keyword + ":\n" + self._base_indent_level + self._indent_unit + body
-        )
+        entries_indent = self._indent_unit if self._section_body_indented else ""
+        header = self._render_section_header(section.keyword)
+        rendered = header + "\n" + self._base_indent_level + entries_indent + body
 
         return rendered
 
@@ -371,8 +442,8 @@ class DocstringRenderer:
         """Dispatches a single IR node to the appropriate renderer.
 
         StructuredList and NamedParagraph are only valid at the top level --
-        neither is permitted to nest inside a NamedParagraph body, since Google-
-        style docstrings don't support a second level of named sections. This is
+        neither is permitted to nest inside a NamedParagraph body, since none of
+        the supported styles allow a second level of named sections. This is
         enforced here as a guard clause rather than relying solely on the parser
         never producing such a shape, since _render_node is now called
         recursively for body content from _render_named_paragraph itself.
@@ -453,8 +524,7 @@ class DocstringRenderer:
         _render_node.
 
         Args:
-            ir (list[DocstringNode]): Fully parsed and typed IR from
-                DocstringParser.
+            ir (list[DocstringNode]): Fully parsed and typed IR from a parser.
 
         Returns:
             rendered_parts (list[str]): Each node rendered to its string form,
@@ -486,8 +556,7 @@ class DocstringRenderer:
            wrap width.
 
         Args:
-            ir (list[DocstringNode]): Fully parsed and typed IR from
-                DocstringParser.
+            ir (list[DocstringNode]): Fully parsed and typed IR from a parser.
 
         Returns:
             one_line (str | None): The rendered one-line docstring including
@@ -516,7 +585,7 @@ class DocstringRenderer:
         return one_line
 
     def render(self, ir: list[DocstringNode]) -> str:
-        """Renders a parsed docstring IR into a Google-style docstring string.
+        """Renders a parsed docstring IR into a style-specific docstring string.
 
         Attempts a one-line rendering first, since that is only ever possible
         for an empty IR or a single Paragraph node short enough to fit within
@@ -525,8 +594,7 @@ class DocstringRenderer:
         quotes as a multi-line docstring.
 
         Args:
-            ir (list[DocstringNode]): Fully parsed and typed IR from
-                DocstringParser.
+            ir (list[DocstringNode]): Fully parsed and typed IR from a parser.
 
         Returns:
             rendered_docstring (str): The fully rendered docstring string.
