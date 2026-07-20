@@ -61,15 +61,17 @@ class DocstringRendererBase(ABC):
     -- the same way the parser reuses _parse_flat_content for both top-level
     content and a dedented NamedParagraph body.
 
-    Attributes: _line_length (int): Maximum characters per line including
-    indentation. _base_indent_level (str): The accumulated indentation string at
-    the docstring's own position within the module, supplied by the caller and
-    constant for the lifetime of this instance. _indent_unit (str): The
-    indentation unit string used in the source file. _indent_length (int):
-    Length of _indent_unit. _relative_indent_level (int): The nesting depth
-    within the docstring's own content, relative to _base_indent_level. 0 while
-    rendering top- level content, 1 while inside a NamedParagraph or
-    StructuredList body. Mutated only by _nested_body.
+    Attributes:
+        _line_length (int): Maximum characters per line including indentation.
+        _base_indent_level (str): The accumulated indentation string at the
+            docstring's own position within the module, supplied by the caller
+            and constant for the lifetime of this instance.
+        _indent_unit (str): The indentation unit string used in the source file.
+        _indent_length (int): Length of _indent_unit.
+        _relative_indent_level (int): The nesting depth within the docstring's
+            own content, relative to _base_indent_level. 0 while rendering top-
+            level content, 1 while inside a NamedParagraph or StructuredList
+            body. Mutated only by _nested_body.
     """
 
     def __init__(

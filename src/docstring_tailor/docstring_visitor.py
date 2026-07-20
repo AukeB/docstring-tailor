@@ -49,7 +49,7 @@ class DocstringVisitor(cst.CSTTransformer):
             as a safety placeholder.
         _from_style (DocstringStyle): The style docstrings are parsed as.
         _to_style (DocstringStyle): The style docstrings are rendered as. Equal
-            to _from_style for a same-style format, different for a convert.
+            to _from_style for a same- style format, different for a convert.
         _parser (IndentationBasedParser): Reusable parser instance for
             _from_style, instantiated once since the parser is stateless across
             docstrings.
