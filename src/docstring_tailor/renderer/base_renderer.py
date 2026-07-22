@@ -552,10 +552,11 @@ class DocstringRendererBase(ABC):
         immediately without attempting a render.
 
         1. Determines the raw content: empty string, or the sole Paragraph's
-           text.
-        2. Normalizes internal whitespace to single spaces.
-        3. Rejects the one-line rendering if the delimited content exceeds the
-           wrap width.
+        text. 2. Normalizes internal whitespace to single spaces. 3. Rejects the
+        one-line rendering if the total physical line length exceeds the
+        configured line length by more than DOCSTRING_DELIMITER_LENGTH
+        characters. This allows up to 3 characters of overage (the closing
+        \"\"\") for Ruff compatibility in pre-commit hooks.
 
         Args:
             ir (list[DocstringNode]): Fully parsed and typed IR from a parser.
@@ -563,7 +564,8 @@ class DocstringRendererBase(ABC):
         Returns:
             one_line (str | None): The rendered one-line docstring including
                 triple-quote delimiters, or None if the IR does not qualify or
-                is too long to fit.
+                exceeds the line length by more than DOCSTRING_DELIMITER_LENGTH
+                characters.
         """
         if not ir:
             content = ""
@@ -579,7 +581,9 @@ class DocstringRendererBase(ABC):
             + 2 * DOCSTRING_DELIMITER_LENGTH
         )
 
-        if total_length > self._wrap_width:
+        # Allow up to DOCSTRING_DELIMITER_LENGTH characters of overage (the
+        # closing """) for Ruff compatibility in pre-commit hooks.
+        if total_length > self._line_length + DOCSTRING_DELIMITER_LENGTH:
             return None
 
         one_line = DOCSTRING_DELIMITER + normalized + DOCSTRING_DELIMITER
