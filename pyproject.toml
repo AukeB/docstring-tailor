@@ -1,6 +1,6 @@
 [project]
 name = "docstring-tailor"
-version = "0.2.2"
+version = "0.3.0"
 description = "Formats Python docstrings to PEP 257 style with configurable line length."
 authors = [{ name = "Auke Bruinsma", email = "afbruinsma@gmail.com" }]
 license = { file = "LICENSE" }

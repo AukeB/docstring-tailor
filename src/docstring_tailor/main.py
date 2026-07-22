@@ -16,7 +16,6 @@ import typer
 
 from docstring_tailor.cli_config import (
     DEFAULT_PATHS,
-    DEFAULT_STYLE,
     LINE_LENGTH_DEFAULT,
     LINE_LENGTH_MAX,
     LINE_LENGTH_MIN,
@@ -198,9 +197,18 @@ def format_command(
     resolved_paths, resolved_line_length, resolved_exclude, file_config = (
         _resolve_common_options(paths=paths, line_length=line_length, exclude=exclude)
     )
-    resolved_style = style or DocstringStyle(
-        file_config.get("style", DEFAULT_STYLE.value)
-    )
+
+    resolved_style = style or file_config.get("style")
+
+    if resolved_style is None:
+        typer.echo(
+            "Error: Docstring style not specified. "
+            "Pass --style on the command line or set 'style' in your config file "
+            "(pyproject.toml or docstring_tailor.toml)."
+        )
+        raise typer.Exit(code=1)
+
+    resolved_style = DocstringStyle(resolved_style)
 
     _validate_supported_style(resolved_style)
 

@@ -17,7 +17,6 @@ class DocstringStyle(str, Enum):
 
 
 SUPPORTED_STYLES = {DocstringStyle.google, DocstringStyle.numpy}
-DEFAULT_STYLE = DocstringStyle.google
 
 # Argument: '--line-length'
 LINE_LENGTH_MIN: int = 30
