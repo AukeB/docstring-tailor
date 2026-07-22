@@ -523,7 +523,11 @@ Steps:
 
 ### 60 characters per line — The Minimalist Monk 🧘
 
-You believe every character has a purpose and every extra column is a personal failure 😤. You keep your docstrings short, your functions tiny, and your emotional attachment to whitespace surprisingly strong. You don't need room to explain your code because your code should be obvious. If a sentence doesn't fit in 60 characters, you simply rewrite the sentence until it does. Brevity is not a preference for you. Brevity is a lifestyle.
+You believe every character has a purpose and every extra column is a personal failure 😤. You keep your docstrings short, your functions tiny, and your emotional attachment to whitespace surprisingly strong. Variable names? Anything longer than two characters is wasteful bloat — x, y, z, and i are sufficient for any problem. Docstrings are memory theft; everything the code needs to say should be obvious from context or inferred through pure spiritual understanding 🙏. Why document when you could just make the code so minimalist that it transcends the need for explanation? Your motto: if it takes more than 60 characters to explain, the explanation itself is the bug, not the code.
+
+### 79 characters per line — The Precision Tuner ⚙️
+
+You didn't choose 79 characters; you derived it through first principles and a spreadsheet. You read every formatter's GitHub issues, every style guide's rationale, and you have strong opinions about why 80 is overrated but 78 is cowardice 😤. You've A/B tested readability on three different monitors, measured your own eye-tracking data, and lost sleep over whether \n counts toward the limit or not. You configure your linter to lint your linter, and you have a .editorconfig file that is longer than most people's actual code 📋. You know exactly why PEP 8 suggested 79 and you've defended this choice at dinner parties with the fervor of someone protecting their firstborn child 🛡️. You don't just use docstring_tailor; you've benchmarked it against seven alternatives and created a spreadsheet ranking their consistency. Your line length is not a preference—it's a thesis 📊. You sleep well knowing that you have optimized, and the universe is in perfect order, exactly 79 characters wide.
 
 ### 80 characters per line — The Digital Archaeologist 🦖
 
