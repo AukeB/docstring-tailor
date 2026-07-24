@@ -83,7 +83,7 @@ line-length = 88
 line-length = 88
 ```
 
-Define a docstring style. Two styles are currently supported: [Google](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html) and [NumPy](https://numpydoc.readthedocs.io/en/latest/format.html). Google is the default. Explicit configuration:
+Define a docstring style. Three styles are currently supported: [Google](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html), [NumPy](https://numpydoc.readthedocs.io/en/latest/format.html), and [Sphinx](https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists). The style always has to be configured explicitly.
 
 ```bash
 uv run docstring_tailor format --style numpy
@@ -132,20 +132,20 @@ If no paths are provided, `docstring_tailor` will attempt to locate and format f
 
 | <div style="width:140px">Option</div> | <div style="width:50px">Type</div> | <div style="width:80px">Default</div> | Description |
 |---|---|---|---|
-| `--line-length`      | `int`  | 100    | Maximum number of characters allowed per line after formatting. |
-| `--style`            | `str`  | google | Docstring style to format to. `google` or `numpy`. |
-| `--exclude`          | `str`  | —      | A glob pattern for paths to exclude. Can be passed multiple times. Single-path patterns (e.g. `tests`, `*.pyi`) match by name anywhere in the tree. Relative patterns (e.g. `src/generated/*.py`) match against the path relative to the project root. |
-| `--diff`             | flag   | —      | Print a unified diff of changes to stdout instead of modifying files. No files are written when this flag is set. |
+| `--line-length`      | `int`  | 100        | Maximum number of characters allowed per line after formatting. |
+| `--style`            | `str`  | *required* | Docstring style to format to. `google`, `numpy` or `sphinx`. |
+| `--exclude`          | `str`  | —          | A glob pattern for paths to exclude. Can be passed multiple times. Single-path patterns (e.g. `tests`, `*.pyi`) match by name anywhere in the tree. Relative patterns (e.g. `src/generated/*.py`) match against the path relative to the project root. |
+| `--diff`             | flag   | —          | Print a unified diff of changes to stdout instead of modifying files. No files are written when this flag is set. |
 
 #### `convert`
 
 | <div style="width:140px">Option</div> | <div style="width:50px">Type</div> | <div style="width:80px">Default</div> | Description |
 |---|---|---|---|
-| `--from-style`       | `str`  | *required* | Docstring style to convert from. `google` or `numpy`. |
-| `--to-style`         | `str`  | *required* | Docstring style to convert to. `google` or `numpy`. Must differ from `--from-style`. |
-| `--line-length`      | `int`  | 100    | Maximum number of characters allowed per line after formatting. |
-| `--exclude`          | `str`  | —      | A glob pattern for paths to exclude. Can be passed multiple times. Single-path patterns (e.g. `tests`, `*.pyi`) match by name anywhere in the tree. Relative patterns (e.g. `src/generated/*.py`) match against the path relative to the project root. |
-| `--diff`             | flag   | —      | Print a unified diff of changes to stdout instead of modifying files. No files are written when this flag is set. |
+| `--from-style`       | `str`  | *required* | Docstring style to convert from. `google`, `numpy` or `sphinx`. |
+| `--to-style`         | `str`  | *required* | Docstring style to convert to. `google`, `numpy` or `sphinx`. Must differ from `--from-style`. |
+| `--line-length`      | `int`  | 100        | Maximum number of characters allowed per line after formatting. |
+| `--exclude`          | `str`  | —          | A glob pattern for paths to exclude. Can be passed multiple times. Single-path patterns (e.g. `tests`, `*.pyi`) match by name anywhere in the tree. Relative patterns (e.g. `src/generated/*.py`) match against the path relative to the project root. |
+| `--diff`             | flag   | —          | Print a unified diff of changes to stdout instead of modifying files. No files are written when this flag is set. |
 
 `--from-style` and `--to-style` have no config-file or default fallback — both must be given explicitly on every `convert` invocation, and must be different from each other.
 
@@ -375,6 +375,47 @@ def example_function(example_argument_1: str, example_argument_2: int) -> str:
 - In the `Examples` section, start the Python REPL with `>>>` and use `...` for continuation lines, matching Pydoc conventions — same as Google style.
 - These same section keywords can also be used in module or class docstrings — for example, a `Parameters` section in a class docstring, or an `Examples` section in a module docstring.
 
+**Sphinx / reST**
+
+```python
+def example_function(example_argument_1: str, example_argument_2: int) -> str:
+    """Demonstrates a Sphinx-style function docstring with multiple
+    sections.
+
+    This function exists purely as a formatting example and
+    illustrates how parameters, return values, and raised exceptions
+    are documented using reStructuredText info fields.
+
+    :param example_argument_1: First example input value used to
+        construct a formatted result string.
+    :type example_argument_1: str
+    :param example_argument_2: Second example input value used to
+        influence the transformation logic.
+    :type example_argument_2: int
+    :returns: A formatted string combining both input arguments into a
+        single human-readable representation.
+    :rtype: str
+    :raises ValueError: Raised when example_argument_2 is negative or
+        zero, as only positive integers are considered valid in this
+        demonstration.
+
+    .. note::
+        Additional informational directives such as ``.. note::`` and
+        ``.. warning::`` are recognized and preserved during
+        formatting.
+    """
+    if example_argument_2 <= 0:
+        raise ValueError("example_argument_2 must be positive")
+
+    return f"{example_argument_1}-{example_argument_2}"
+```
+
+- Parameters are documented with `:param name: description` info fields, and their types with a separate `:type name: type` field. An inline form (`:param str name: description`) is also accepted on input and is split into the two-field form on output.
+- Types are genuinely optional in reST: a `:param:` without a matching `:type:` is preserved as-is, and `docstring_tailor` never fabricates a type when one is absent.
+- Return values use `:returns:` (with `:return:` accepted as an alias), and the return type uses `:rtype:`.
+- Raised exceptions use `:raises Exception: description` (`:raise`, `:except` and `:exception` are accepted as aliases).
+- Informational directives such as `.. note::`, `.. warning::`, `.. seealso::` and `.. example::` are recognized and their indented bodies are formatted while the directive header is preserved.
+
 ### Codeblocks
 
 **Google / Numpy** (identical for this example)
@@ -556,6 +597,8 @@ You don't wrap text because wrapping is a skill issue. You let photons travel un
 | <div style="width:70px">Resource</div> | <div style="width:100px">Description</div> | <div style="width:130px">Link</div>
 |---|---|---|
 | PEP 257 - Docstring Conventions | Documents the semantics and conventions associated with Python docstrings. | [Link](https://peps.python.org/pep-0257/) |
+| PEP 287 - reStructuredText Docstring Format | Specifies a reStructuredText-based markup convention for Python docstrings, the basis of the Sphinx/reST style. | [Link](https://peps.python.org/pep-0287) |
+| PEP 484 - Type Hints | Provides a standard syntax for type annotations in Python. | [Link](https://peps.python.org/pep-0484/) |
 | Google Python Style Guide | Lists *dos and don'ts* for Python programs. | [Link](https://google.github.io/styleguide/pyguide.html#s3.8-comments-and-docstrings) |
 | Numpy Style Guide | Describes the syntax and best practices for docstrings used with the numpydoc extension for Sphinx | [Link](https://numpydoc.readthedocs.io/en/latest/format.html) |
 | Types of indentation | Wikipedia article that defines different kinds of indentation | [Link](https://en.wikipedia.org/wiki/Indentation_(typesetting)) |
@@ -577,6 +620,7 @@ You don't wrap text because wrapping is a skill issue. You let photons travel un
 | `0.2.1` | 2026-06-11 | Feature update | <ul><li>Added the `-V`/`--version` command to the CLI.</li><li>Added the `--exclude` command to the CLI.</li><li>Added the `--diff` command to the CLI.</li><li>Added the 'Demo' part to to the `README.md`.</ul> |
 | `0.3.0` | 2026-07-20 | Feature update & bug fixes | <ul><li>Introduced a style-agnostic intermediate representation (IR) model and refactored parsing into an abstract base class hierarchy. Google and NumPy docstrings now parse into the same IR via `IndentationBasedParser` subclasses, enabling lossless conversion between styles. Structured list parsing is delegated to style-specific implementations to handle syntactic differences (Google's inline `name (type):` vs. NumPy's `name : type` on separate lines).</li><li>Refactored rendering to match the parser architecture: `DocstringRendererBase` (ABC) with style-specific subclasses that implement two hooks — section header formatting (Google's `Args:` vs. NumPy's `Parameters` + underline) and section body indentation rules (confirmed against numpy's own docstrings to keep bodies flush with headers, unlike Google). Keyword translation between styles happens automatically during conversion.</li><li>Code sections and Python REPL blocks now also can be created outside the 'Example(s)' section.</li><li>Fixed a bug when codeblock sections contain blank lines.</li><li>Fixed a bug when the docstring starts immediately with an (un)ordered list.</li><li>Removed `detect-lists` as CLI parameter, because the logic should always be applied if the docstring contains (un)ordered lists.</li><li>Changed behaviour for empty docstrings so that it consistent with Ruff.</li></ul> |
 | `0.3.1` | 2026-07-21 | Small fixes | <ul><li>The `style` parameter does not have a default argument anymore, instead it always has to be configured explicitly by the user.</li><li>Fixed a bug where one-line docstrings inside indented scopes (e.g. class or method bodies) were wrapped to multiple lines prematurely, due to indentation being counted twice when checking against the configured line length.</li> <li>Added an exception, consistent with Ruff, allowing a one-line docstring to exceed the configured line length by up to 3 characters when only the closing triple quotes would otherwise be pushed onto their own line. This prevents docstring_tailor and Ruff from repeatedly reformatting the same docstring back and forth when both are run as pre-commit hooks.</li></ul> |
+| `0.4.0` | TBD | Feature update | <ul><li>Added support for the Sphinx/reST docstring `style`, covering both parsing and rendering. Sphinx docstrings now parse into the same style-agnostic intermediate representation (IR) as Google and NumPy, enabling lossless conversion in all directions between the three styles (`format --style sphinx` and `convert` to/from `sphinx`).</li><li>Extracted a shared `DocstringParserBase` holding the style-agnostic flat-content pipeline; `IndentationBasedParser` (Google/NumPy) and the new directive-based `SphinxDocstringParser` both build on it, reusing the existing pipeline rather than duplicating logic.</li><li>The Sphinx parser handles info-field lists (`:param:`/`:type:`, `:returns:`/`:rtype:`, `:raises:`), the inline parameter form (`:param str name:`), field/type pairing by name, tag aliases (`:return:`, `:raise:`, `:except:`, `:exception:`), and informational directives (`.. note::`, `.. warning::`, `.. seealso::`, `.. example::`).</li><li>The Sphinx renderer emits a contiguous info-field list with separate `:type:`/`:rtype:` lines, with hanging-indent wrapping of field bodies.</li><li>Modelled an absent parameter type as `None` in the IR (never fabricated), and updated the Google and NumPy renderers to degrade gracefully when a type is undocumented.</li><li>Reorganized the golden-file test fixtures into per-style folders (`google/`, `sphinx/`, `convert/`), with the fixture style folder derived automatically from each test case's configuration.</li></ul> |
 
 ## Roadmap
 
@@ -593,6 +637,15 @@ You don't wrap text because wrapping is a skill issue. You let photons travel un
   major styles.
 - Formatting module for the remaining docstring formats (Sphinx, Epydoc), driven
   entirely by the same IR already used for Google and NumPy.
+
+### Finish the Sphinx/reST implementation
+
+The core Sphinx style (parameters, returns, raises, and the common admonitions) is supported, but full coverage of every Sphinx construct is not there yet. Currently, unrecognized constructs are passed through as plain paragraph text — never dropped, but not parsed into a structured section, so they don't wrap as fields and don't convert to a Google/NumPy equivalent. The following would close that gap:
+
+- Class attribute fields (`:ivar:`, `:cvar:`, `:var:` paired with `:vartype:`), mapped onto the same `Attributes` section Google and NumPy already expose, so class docstrings round-trip and convert like the other styles. Requires a new field-pairing path in the parser, an `Attributes` render path in the renderer, and a fix to the keyword translation tables (which currently fold Attributes into Parameters).
+- Keyword-only argument fields (`:keyword:` / `:kwarg:` with `:kwtype:`), aliased onto the existing parameter/type handling.
+- The broader set of admonition directives (`.. tip::`, `.. important::`, `.. caution::`, `.. attention::`, `.. hint::`, `.. danger::`, `.. error::`, `.. todo::`, `.. deprecated::`, `.. versionadded::`, `.. versionchanged::`), added to the directive-to-header map so their bodies format as named paragraphs. Headers without a Google/NumPy equivalent pass through unchanged on conversion.
+- Literal-body directives (`.. code-block::`, `.. math::`) — more involved, because their content must be preserved verbatim and never reflowed, and there is no clean equivalent in the current IR. Needs a dedicated literal-block IR node before it can be handled safely.
 
 ### Nice to have
 - Make sure the package can be used as a pre-commit hook.
