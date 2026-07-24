@@ -21,6 +21,7 @@ RE_PATTERN_STRUCTURED_LIST_NAME_AND_TYPE = re.compile(
 )
 RE_PATTERN_NUMPY_SECTION_UNDERLINE = re.compile(r"^-+$")
 
+
 # =========================================
 # Constants used for all docstring formats.
 # =========================================
@@ -69,7 +70,8 @@ PARAMETER_TYPE_ANNOTATION_CLOSE: str = ")"
 # ============================================
 
 
-# Google
+# === Google ===
+
 GOOGLE_NAMED_PARAGRAPH_SECTIONS = frozenset(
     {
         "Note",
@@ -91,8 +93,8 @@ GOOGLE_ALL_SECTION_KEYWORDS = (
     GOOGLE_NAMED_PARAGRAPH_SECTIONS | GOOGLE_STRUCTURED_LIST_SECTIONS
 )
 
+# === NumPy ---
 
-# NumPy
 NUMPY_ITEM_SECTIONS = frozenset(
     {"Attributes", "Methods", "Parameters", "Raises", "Receives", "Returns", "Yields"}
 )
@@ -107,8 +109,58 @@ SPHINX_PLAIN_DIRECTIVES = frozenset(
 )
 SPHINX_DIRECTIVES = SPHINX_ITEM_DIRECTIVES | SPHINX_PLAIN_DIRECTIVES
 
+# === Sphinx ===
 
-# Epydoc-style docstring tag markers.
+# Sphinx field tags, grouped by the IR section they map to. Aliases (singular
+# and plural spellings) are accepted on input; the renderer emits one canonical
+# spelling per group. ':param' also accepts an inline type ':param <type>
+# <name>:', handled by the parser.
+SPHINX_PARAM_TAGS = frozenset({":parma", ":parameter", ":arg", ":argument"})
+SPHINX_TYPE_TAGS = frozenset({":type"})
+SPHINX_RETURN_TAGS = frozenset({":return", ":returns"})
+SPHINX_RTYPE_TAGS = frozenset({":rtype"})
+SPHINX_RAISE_TAGS = frozenset({":raise", ":raises", ":except", ":exception"})
+
+# All field tags that open a structured-list entry (as opposed to type metadata
+# for a preceding entry). Used to detect the start of a field-list block.
+SPHINX_FIELD_TAGS = (
+    SPHINX_PARAM_TAGS
+    | SPHINX_TYPE_TAGS
+    | SPHINX_RETURN_TAGS
+    | SPHINX_RTYPE_TAGS
+    | SPHINX_RAISE_TAGS
+)
+
+# Canonical section keywords used for Sphinx StructuredList nodes in the IR, so
+# keyword translation and rendering share one vocabulary.
+SPHINX_KEYWORD_PARAMETERS: str = "Parameters"
+SPHINX_KEYWORD_RETURNS: str = "Returns"
+SPHINX_KEYWORD_RAISES: str = "Raises"
+
+# Canonical Sphinx directive-to-header mapping for admonition sections rendered
+# as NamedParagraph nodes.
+SPHINX_DIRECTIVE_HEADERS: dict[str, str] = {
+    ".. note::": "Note",
+    ".. warning::": "Warning",
+    ".. seealso::": "See Also",
+    ".. example::": "Example",
+}
+
+# Reverse mapping: canonical header to its Sphinx directive marker, for
+# rendering NamedParagraph nodes back to reST directives.
+SPHINX_HEADER_DIRECTIVES: dict[str, str] = {
+    header: directive for directive, header in SPHINX_DIRECTIVE_HEADERS.items()
+}
+
+# Canonical Sphinx field-tag spellings emitted my the renderer.
+SPHINX_RENDER_PARAM_TAG: str = ":param"
+SPHINX_RENDER_TYPE_TAG: str = ":type"
+SPHINX_RENDER_RETURNS_TAG: str = ":returns"
+SPHINX_RENDER_RTYPE_TAG: str = ":rtype"
+SPHINX_RENDER_RAISES_TAG: str = ":raises"
+
+# === Epydoc ===
+
 EPYDOC_ITEM_TAGS = frozenset({"@param", "@raise", "@return", "@rtype", "@type"})
 EPYDOC_PLAIN_TAGS = frozenset({"@note", "@warning"})
 EPYDOC_TAGS = EPYDOC_ITEM_TAGS | EPYDOC_PLAIN_TAGS

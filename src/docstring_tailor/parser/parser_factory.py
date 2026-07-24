@@ -1,32 +1,34 @@
 """Factory for instantiating the correct docstring parser for a given style."""
 
 from docstring_tailor.cli_config import DocstringStyle
+from docstring_tailor.parser.directive_based.sphinx_docstring_parser import (
+    SphinxDocstringParser,
+)
+from docstring_tailor.parser.docstring_parser_base import DocstringParserBase
 from docstring_tailor.parser.indentation_based.google_docstring_parser import (
     GoogleDocstringParser,
-)
-from docstring_tailor.parser.indentation_based.indentation_based_parser import (
-    IndentationBasedParser,
 )
 from docstring_tailor.parser.indentation_based.numpy_docstring_parser import (
     NumpyDocstringParser,
 )
 
-# Maps each supported style to its parser class. Sphinx and Epydoc will add
-# entries here once their (directive-based) parsers exist.
-_PARSER_CLASSES: dict[str, type[IndentationBasedParser]] = {
+# Maps each supported style to its parser class. Epydoc will add an entry here
+# once its (directive-based) parsers exist.
+_PARSER_CLASSES: dict[str, type[DocstringParserBase]] = {
     DocstringStyle.google: GoogleDocstringParser,
     DocstringStyle.numpy: NumpyDocstringParser,
+    DocstringStyle.sphinx: SphinxDocstringParser,
 }
 
 
-def create_parser(style: DocstringStyle) -> IndentationBasedParser:
+def create_parser(style: DocstringStyle) -> DocstringParserBase:
     """Instantiates the parser for the given docstring style.
 
     Args:
         style (DocstringStyle): The docstring style to parse.
 
     Returns:
-        parser (IndentationBasedParser): A fresh parser instance for style.
+        parser (DocstringParserBase): A fresh parser instance for style.
 
     Raises:
         ValueError: If style has no registered parser.

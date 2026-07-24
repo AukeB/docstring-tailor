@@ -57,11 +57,12 @@ class NumpyDocstringRenderer(DocstringRendererBase):
         """Renders a single entry as a 'name : type' header line, followed by
         its description indented one level deeper on the next line.
 
-        A StructuredListParameter without a name (Returns/Yields) renders its
-        type alone as the header, with no ' : ' separator. A StructuredListError
+        The header degrades gracefully when parts are absent: a named entry with
+        no documented type renders 'name' alone; an unnamed entry (Returns/
+        Yields) renders its 'type' alone with no ' : ' separator; and an unnamed
+        entry with no type falls back to an empty header. A StructuredListError
         -- which only arises here when rendering an IR converted from a style
-        that does distinguish Raises entries -- is treated the same way, using
-        error_type as the header.
+        that does distinguish Raises entries -- uses error_type as the header.
 
         Enters its own _nested_body block for the description, one level deeper
         than the entries themselves sit at (which is already one level deeper
@@ -82,9 +83,12 @@ class NumpyDocstringRenderer(DocstringRendererBase):
                 description together.
         """
         if isinstance(entry, StructuredListParameter):
-            header = (
-                f"{entry.name} : {entry.type}" if entry.name is not None else entry.type
-            )
+            if entry.name is not None and entry.type is not None:
+                header = f"{entry.name} : {entry.type}"
+            elif entry.name is not None:
+                header = entry.name
+            else:
+                header = entry.type if entry.type is not None else ""
         else:
             header = entry.error_type
 
@@ -94,6 +98,7 @@ class NumpyDocstringRenderer(DocstringRendererBase):
                 wrap_width=self._wrap_width,
                 line_separator=self._line_separator,
             )
+
             rendered = header + self._line_separator + description
 
         return rendered

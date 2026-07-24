@@ -8,7 +8,7 @@ from tests.cases.config_model import Case, CaseTemplate, expand_template
 
 CASE_TEMPLATES: list[CaseTemplate] = [
     CaseTemplate(
-        fixture_directory_name=Path("class_docstring"),
+        fixture_directory_name=Path("google/class_docstring"),
         input_file_paths=[
             Path("class_docstring_60.py"),
             Path("class_docstring_80.py"),
@@ -22,7 +22,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [60, 80, 100]},
     ),
     CaseTemplate(
-        fixture_directory_name=Path("docstring_elements/empty"),
+        fixture_directory_name=Path("google/docstring_elements/empty"),
         input_file_paths=[
             Path("empty_blank_lines.py"),
             Path("empty_no_space.py"),
@@ -36,7 +36,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [80]},
     ),
     CaseTemplate(
-        fixture_directory_name=Path("docstring_elements/paragraph_multi_line"),
+        fixture_directory_name=Path("google/docstring_elements/paragraph_multi_line"),
         input_file_paths=[
             Path("paragraph_multi_line_wrong_input.py"),
             Path("paragraph_multi_line_{line_length}.py"),
@@ -49,7 +49,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("docstring_elements/paragraph_one_line"),
+        fixture_directory_name=Path("google/docstring_elements/paragraph_one_line"),
         input_file_paths=[
             Path("paragraph_one_line_wrong_input.py"),
             Path("paragraph_one_line_{line_length}.py"),
@@ -62,7 +62,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("docstring_elements/code_block_singular"),
+        fixture_directory_name=Path("google/docstring_elements/code_block_singular"),
         input_file_paths=[
             Path("code_block_singular_blank_lines.py"),
             Path("code_block_singular_{line_length}.py"),
@@ -75,7 +75,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("docstring_elements/code_block_multiple"),
+        fixture_directory_name=Path("google/docstring_elements/code_block_multiple"),
         input_file_paths=[
             Path("code_block_multiple_blank_lines.py"),
             Path("code_block_multiple_{line_length}.py"),
@@ -88,7 +88,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("docstring_elements/code_repl_singular"),
+        fixture_directory_name=Path("google/docstring_elements/code_repl_singular"),
         input_file_paths=[
             Path("code_repl_singular_blank_lines.py"),
             Path("code_repl_singular_{line_length}.py"),
@@ -101,7 +101,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("docstring_elements/code_repl_multiple"),
+        fixture_directory_name=Path("google/docstring_elements/code_repl_multiple"),
         input_file_paths=[
             Path("code_repl_multiple_blank_lines.py"),
             Path("code_repl_multiple_{line_length}.py"),
@@ -114,7 +114,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("docstring_elements/structured_list"),
+        fixture_directory_name=Path("google/docstring_elements/structured_list"),
         input_file_paths=[
             Path("structured_list_wrong_input.py"),
             Path("structured_list_{line_length}.py"),
@@ -127,7 +127,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("docstring_elements/simple_list"),
+        fixture_directory_name=Path("google/docstring_elements/simple_list"),
         input_file_paths=[
             Path("simple_list_wrong_input.py"),
             Path("simple_list_{line_length}.py"),
@@ -140,7 +140,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("docstring_elements/named_paragraph_paragraph"),
+        fixture_directory_name=Path("google/docstring_elements/named_paragraph_paragraph"),
         input_file_paths=[
             Path("named_paragraph_paragraph_wrong_input.py"),
             Path("named_paragraph_paragraph_{line_length}.py"),
@@ -153,7 +153,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("docstring_elements/named_paragraph_code_block"),
+        fixture_directory_name=Path("google/docstring_elements/named_paragraph_code_block"),
         input_file_paths=[
             Path("named_paragraph_code_block_blank_lines.py"),
             Path("named_paragraph_code_block_{line_length}.py"),
@@ -166,7 +166,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("docstring_elements/named_paragraph_code_repl"),
+        fixture_directory_name=Path("google/docstring_elements/named_paragraph_code_repl"),
         input_file_paths=[
             Path("named_paragraph_code_repl_blank_lines.py"),
             Path("named_paragraph_code_repl_{line_length}.py"),
@@ -179,7 +179,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [80]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("docstring_elements/paragraph_and_simple_list"),
+        fixture_directory_name=Path("google/docstring_elements/paragraph_and_simple_list"),
         input_file_paths=[
             Path("paragraph_and_simple_list_wrong_input.py"),
             Path("paragraph_and_simple_list_{line_length}.py"),
@@ -192,7 +192,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
-        fixture_directory_name=Path("function_docstring"),
+        fixture_directory_name=Path("google/function_docstring"),
         input_file_paths=[
             Path("function_docstring_60.py"),
             Path("function_docstring_80.py"),
@@ -206,7 +206,7 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [60, 80, 100]},
     ),
     CaseTemplate(
-        fixture_directory_name=Path("module_docstring"),
+        fixture_directory_name=Path("google/module_docstring"),
         input_file_paths=[
             Path("module_docstring_60.py"),
             Path("module_docstring_80.py"),

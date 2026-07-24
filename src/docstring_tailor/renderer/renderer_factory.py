@@ -4,12 +4,14 @@ from docstring_tailor.cli_config import DocstringStyle
 from docstring_tailor.renderer.base_renderer import DocstringRendererBase
 from docstring_tailor.renderer.google_renderer import GoogleDocstringRenderer
 from docstring_tailor.renderer.numpy_renderer import NumpyDocstringRenderer
+from docstring_tailor.renderer.sphinx_renderer import SphinxDocstringRenderer
 
 # Maps each supported style to its renderer class. Sphinx and Epydoc will add
 # entries here once their renderers exist.
 _RENDERER_CLASSES: dict[str, type[DocstringRendererBase]] = {
     DocstringStyle.google: GoogleDocstringRenderer,
     DocstringStyle.numpy: NumpyDocstringRenderer,
+    DocstringStyle.sphinx: SphinxDocstringRenderer,
 }
 
 

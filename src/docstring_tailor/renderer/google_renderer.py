@@ -42,11 +42,18 @@ class GoogleDocstringRenderer(DocstringRendererBase):
     def _render_structured_list_entry(
         self, entry: StructuredListParameter | StructuredListError
     ) -> str:
-        """Renders a single entry as "name (type): description", or "type:
-        description" when the entry has no name -- the conventional shape for
-        Returns/Yields entries, and coincidentally also the correct shape for a
-        StructuredListError, whose error_type plays the same role as an unnamed
-        type.
+        """Renders a single entry as "name (type): description", degrading
+        gracefully when either the name or the type is absent.
+
+        Four shapes are produced, depending on which parts are present:
+        - "name (type): description" when both are given
+        - "name: description" when a name has no documented type (e.g. a Sphinx
+          source relying on signature hints)
+        - "type: description" when the entry has no name but has a type -- the
+          conventional shape for Returns/Yields, and coincidentally also correct
+          for a StructuredListError, whose error_type plays the role of an
+          unnamed type
+        - "description" alone when neither is present.
 
         Rendered as a single flowing block via format_text, wrapping with a
         hanging indent of one indent unit for any continuation lines.
@@ -59,11 +66,14 @@ class GoogleDocstringRenderer(DocstringRendererBase):
             rendered (str): The wrapped, indented entry string.
         """
         if isinstance(entry, StructuredListParameter):
-            item_text = (
-                f"{entry.name} ({entry.type}): {entry.description}"
-                if entry.name is not None
-                else f"{entry.type}: {entry.description}"
-            )
+            if entry.name is not None and entry.type is not None:
+                item_text = f"{entry.name} ({entry.type}): {entry.description}"
+            elif entry.name is not None:
+                item_text = f"{entry.name}: {entry.description}"
+            elif entry.type is not None:
+                item_text = f"{entry.type}: {entry.description}"
+            else:
+                item_text = entry.description
         else:
             item_text = f"{entry.error_type}: {entry.description}"
 

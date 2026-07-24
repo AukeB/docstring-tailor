@@ -62,12 +62,17 @@ class StructuredListParameter:
         name (str | None): The variable or attribute name, or None when the
             entry has no name -- the conventional shape for Returns and Yields
             entries, which document only the type.
-        type (str): The annotated type of the variable.
+        type (str | None): The annotated type of the variable, or None when no
+            type was documented. Types are optional in some styles (e.g.
+            Sphinx/reST field lists relying on PEP 484 signature hints), so
+            absence is modelled explicitly rather than as an empty string,
+            mirroring the name field. Renderers omit the type entirely when it
+            is None.
         description (str): The description of the variable.
     """
 
     name: str | None
-    type: str
+    type: str | None
     description: str
 
 

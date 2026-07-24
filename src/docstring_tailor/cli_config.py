@@ -16,7 +16,7 @@ class DocstringStyle(str, Enum):
     epydoc = "epydoc"
 
 
-SUPPORTED_STYLES = {DocstringStyle.google, DocstringStyle.numpy}
+SUPPORTED_STYLES = {DocstringStyle.google, DocstringStyle.numpy, DocstringStyle.sphinx}
 
 # Argument: '--line-length'
 LINE_LENGTH_MIN: int = 30

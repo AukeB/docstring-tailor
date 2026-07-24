@@ -19,40 +19,112 @@ each, so adding a style only adds one table instead of one per existing style.
 from docstring_tailor.cli_config import DocstringStyle
 from docstring_tailor.ir_model import DocstringNode, NamedParagraph, StructuredList
 
+# Canonical keyword literals, defined once to avoid repeating the same strings
+# across the many per-direction translation tables below.
+_ARGS = "Args"
+_PARAMETERS = "Parameters"
+_ATTRIBUTES = "Attributes"
+_RETURNS = "Returns"
+_YIELDS = "Yields"
+_RAISES = "Raises"
+_RECEIVES = "Receives"
+_METHODS = "Methods"
+_NOTE = "Note"
+_NOTES = "Notes"
+_WARNING = "Warning"
+_WARNINGS = "Warnings"
+_EXAMPLE = "Example"
+_EXAMPLES = "Examples"
+_REFERENCES = "References"
+_SEE_ALSO = "See Also"
+
 # Google keywords with no NumPy equivalent in NUMPY_PLAIN_SECTIONS are kept
 # as-is, so content is never dropped -- though the result won't be recognized
 # as a structured NumPy keyword if it is parsed again.
 GOOGLE_TO_NUMPY_KEYWORDS: dict[str, str] = {
-    "Args": "Parameters",
-    "Arguments": "Parameters",
-    "Attributes": "Attributes",
-    "Returns": "Returns",
-    "Yields": "Yields",
-    "Raises": "Raises",
-    "Note": "Notes",
-    "Notes": "Notes",
-    "Example": "Examples",
-    "Examples": "Examples",
-    "References": "References",
-    "See Also": "See Also",
-    "Warning": "Warning",
-    "Warnings": "Warnings",
+    _ARGS: _PARAMETERS,
+    "Arguments": _PARAMETERS,
+    _ATTRIBUTES: _ATTRIBUTES,
+    _RETURNS: _RETURNS,
+    _YIELDS: _YIELDS,
+    _RAISES: _RAISES,
+    _NOTE: _NOTES,
+    _NOTES: _NOTES,
+    _EXAMPLE: _EXAMPLES,
+    _EXAMPLES: _EXAMPLES,
+    _REFERENCES: _REFERENCES,
+    _SEE_ALSO: _SEE_ALSO,
+    _WARNING: _WARNING,
+    _WARNINGS: _WARNINGS,
 }
 
 # NumPy keywords with no Google equivalent (Receives, Methods) are kept as-is
 # for the same reason.
 NUMPY_TO_GOOGLE_KEYWORDS: dict[str, str] = {
-    "Parameters": "Args",
-    "Attributes": "Attributes",
-    "Returns": "Returns",
-    "Yields": "Yields",
-    "Raises": "Raises",
-    "Receives": "Receives",
-    "Methods": "Methods",
-    "Examples": "Examples",
-    "Notes": "Notes",
-    "References": "References",
-    "See Also": "See Also",
+    _PARAMETERS: _ARGS,
+    _ATTRIBUTES: _ATTRIBUTES,
+    _RETURNS: _RETURNS,
+    _YIELDS: _YIELDS,
+    _RAISES: _RAISES,
+    _RECEIVES: _RECEIVES,
+    _METHODS: _METHODS,
+    _EXAMPLES: _EXAMPLES,
+    _NOTES: _NOTES,
+    _REFERENCES: _REFERENCES,
+    _SEE_ALSO: _SEE_ALSO,
+}
+
+# Sphinx StructuredList/NamedParagraph keywords use the canonical spellings
+# 'Parameters', 'Returns', 'Raises' (structured) and 'Note', 'Warning', 'See
+# Also', 'Example' (admonitions). Keywords with no target-style equivalent are
+# kept as-is so content is never dropped.
+SPHINX_TO_GOOGLE_KEYWORDS: dict[str, str] = {
+    _PARAMETERS: _ARGS,
+    _RETURNS: _RETURNS,
+    _RAISES: _RAISES,
+    _NOTE: _NOTE,
+    _WARNING: _WARNING,
+    _SEE_ALSO: _SEE_ALSO,
+    _EXAMPLE: _EXAMPLE,
+}
+
+GOOGLE_TO_SPHINX_KEYWORDS: dict[str, str] = {
+    _ARGS: _PARAMETERS,
+    "Arguments": _PARAMETERS,
+    _ATTRIBUTES: _PARAMETERS,
+    _RETURNS: _RETURNS,
+    _YIELDS: _RETURNS,
+    _RAISES: _RAISES,
+    _NOTE: _NOTE,
+    _NOTES: _NOTE,
+    _WARNING: _WARNING,
+    _WARNINGS: _WARNING,
+    _SEE_ALSO: _SEE_ALSO,
+    _EXAMPLE: _EXAMPLE,
+    _EXAMPLES: _EXAMPLE,
+    _REFERENCES: _REFERENCES,
+}
+
+SPHINX_TO_NUMPY_KEYWORDS: dict[str, str] = {
+    _PARAMETERS: _PARAMETERS,
+    _RETURNS: _RETURNS,
+    _RAISES: _RAISES,
+    _NOTE: _NOTES,
+    _WARNING: _WARNING,
+    _SEE_ALSO: _SEE_ALSO,
+    _EXAMPLE: _EXAMPLES,
+}
+
+NUMPY_TO_SPHINX_KEYWORDS: dict[str, str] = {
+    _PARAMETERS: _PARAMETERS,
+    _ATTRIBUTES: _PARAMETERS,
+    _RETURNS: _RETURNS,
+    _YIELDS: _RETURNS,
+    _RAISES: _RAISES,
+    _NOTES: _NOTE,
+    _EXAMPLES: _EXAMPLE,
+    _REFERENCES: _REFERENCES,
+    _SEE_ALSO: _SEE_ALSO,
 }
 
 
@@ -71,16 +143,24 @@ def _get_translation_table(
     Raises:
         ValueError: If no translation table exists for the given style pair.
     """
-    if from_style == DocstringStyle.google and to_style == DocstringStyle.numpy:
-        return GOOGLE_TO_NUMPY_KEYWORDS
+    tables: dict[tuple[DocstringStyle, DocstringStyle], dict[str, str]] = {
+        (DocstringStyle.google, DocstringStyle.numpy): GOOGLE_TO_NUMPY_KEYWORDS,
+        (DocstringStyle.numpy, DocstringStyle.google): NUMPY_TO_GOOGLE_KEYWORDS,
+        (DocstringStyle.sphinx, DocstringStyle.google): SPHINX_TO_GOOGLE_KEYWORDS,
+        (DocstringStyle.google, DocstringStyle.sphinx): GOOGLE_TO_SPHINX_KEYWORDS,
+        (DocstringStyle.sphinx, DocstringStyle.numpy): SPHINX_TO_NUMPY_KEYWORDS,
+        (DocstringStyle.numpy, DocstringStyle.sphinx): NUMPY_TO_SPHINX_KEYWORDS,
+    }
 
-    if from_style == DocstringStyle.numpy and to_style == DocstringStyle.google:
-        return NUMPY_TO_GOOGLE_KEYWORDS
+    table = tables.get((from_style, to_style))
 
-    raise ValueError(
-        f"No keyword translation available from {from_style.value!r} to "
-        f"{to_style.value!r}."
-    )
+    if table is None:
+        raise ValueError(
+            f"No keyword translation available from {from_style.value!r} to "
+            f"{to_style.value!r}."
+        )
+
+    return table
 
 
 def translate_keywords(
