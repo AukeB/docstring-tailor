@@ -85,8 +85,9 @@ class NumpyDocstringParser(IndentationBasedParser):
 
         next_index = index + 1
 
-        if next_index >= len(lines):
-            return False
+        # Don't think this code is necessary
+        # if next_index >= len(lines):
+        #     return False
 
         result = bool(
             RE_PATTERN_NUMPY_SECTION_UNDERLINE.match(lines[next_index].strip())

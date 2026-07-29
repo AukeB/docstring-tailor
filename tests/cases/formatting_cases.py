@@ -6,7 +6,7 @@ from itertools import chain
 from docstring_tailor.cli_config import DocstringStyle
 from tests.cases.config_model import Case, CaseTemplate, expand_template
 
-CASE_TEMPLATES: list[CaseTemplate] = [
+CASE_TEMPLATES_GOOGLE: list[CaseTemplate] = [
     CaseTemplate(
         fixture_directory_name=Path("google/class_docstring"),
         input_file_paths=[
@@ -220,6 +220,76 @@ CASE_TEMPLATES: list[CaseTemplate] = [
         parameter_grid={"line_length": [60, 80, 100]},
     ),
 ]
+
+CASE_TEMPLATES_NUMPY: list[CaseTemplate] = [
+    CaseTemplate(
+        fixture_directory_name=Path("numpy/docstring_elements/named_paragraph_code_block"),
+        input_file_paths=[
+            Path("named_paragraph_code_block_blank_lines.py"),
+            Path("named_paragraph_code_block_{line_length}.py"),
+        ],
+        output_file_path_template=Path("named_paragraph_code_block_{line_length}.py"),
+        shared_parameters={
+            "from_style": DocstringStyle.numpy,
+            "to_style": DocstringStyle.numpy
+        },
+        parameter_grid={"line_length": [80]}
+    ),
+    CaseTemplate(
+        fixture_directory_name=Path("numpy/docstring_elements/named_paragraph_code_repl"),
+        input_file_paths=[
+            Path("named_paragraph_code_repl_blank_lines.py"),
+            Path("named_paragraph_code_repl_{line_length}.py"),
+        ],
+        output_file_path_template=Path("named_paragraph_code_repl_{line_length}.py"),
+        shared_parameters={
+            "from_style": DocstringStyle.numpy,
+            "to_style": DocstringStyle.numpy
+        },
+        parameter_grid={"line_length": [80]}
+    ),
+    CaseTemplate(
+        fixture_directory_name=Path("numpy/docstring_elements/named_paragraph_paragraph"),
+        input_file_paths=[
+            Path("named_paragraph_paragraph_wrong_input.py"),
+            Path("named_paragraph_paragraph_{line_length}.py"),
+        ],
+        output_file_path_template=Path("named_paragraph_paragraph_{line_length}.py"),
+        shared_parameters={
+            "from_style": DocstringStyle.numpy,
+            "to_style": DocstringStyle.numpy
+        },
+        parameter_grid={"line_length": [60, 80, 100]}
+    ),
+    CaseTemplate(
+        fixture_directory_name=Path("numpy/docstring_elements/paragraph_and_simple_list"),
+        input_file_paths=[
+            Path("paragraph_and_simple_list_wrong_input.py"),
+            Path("paragraph_and_simple_list_{line_length}.py"),
+        ],
+        output_file_path_template=Path("paragraph_and_simple_list_{line_length}.py"),
+        shared_parameters={
+            "from_style": DocstringStyle.numpy,
+            "to_style": DocstringStyle.numpy
+        },
+        parameter_grid={"line_length": [60, 80, 100]}
+    ),
+    CaseTemplate(
+        fixture_directory_name=Path("numpy/docstring_elements/structured_list"),
+        input_file_paths=[
+            Path("structured_list_wrong_input.py"),
+            Path("structured_list_{line_length}.py"),
+        ],
+        output_file_path_template=Path("structured_list_{line_length}.py"),
+        shared_parameters={
+            "from_style": DocstringStyle.numpy,
+            "to_style": DocstringStyle.numpy
+        },
+        parameter_grid={"line_length": [60, 80, 100]}
+    ),
+]
+
+CASE_TEMPLATES = CASE_TEMPLATES_GOOGLE + CASE_TEMPLATES_NUMPY
 
 CASES: list[Case] = list(
     chain.from_iterable(expand_template(template) for template in CASE_TEMPLATES)
