@@ -82,11 +82,14 @@ class StructuredListError:
     section.
 
     Attributes:
-        error_type (str): The exception type being raised.
+        error_type (str | None): The exception type being raised, or None when
+            the entry had no ':' separator and could not be split. The whole
+            entry is preserved in description instead, mirroring how an
+            unclassifiable parameter entry is handled.
         description (str): The description of when the error is raised.
     """
 
-    error_type: str
+    error_type: str | None
     description: str
 
 

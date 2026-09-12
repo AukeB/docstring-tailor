@@ -392,8 +392,9 @@ class DocstringRendererBase(ABC):
         Returns:
             rendered (str): The rendered structured list string.
         """
+        header = self._render_section_header(section.keyword)
+
         if not section.entries:
-            header = self._render_section_header(name=section.keyword)
             return header
 
         nested_context = (
@@ -407,7 +408,6 @@ class DocstringRendererBase(ABC):
             body = self._line_separator.join(rendered_entries)
 
         entries_indent = self._indent_unit if self._section_body_indented else ""
-        header = self._render_section_header(section.keyword)
         rendered = header + "\n" + self._base_indent_level + entries_indent + body
 
         return rendered

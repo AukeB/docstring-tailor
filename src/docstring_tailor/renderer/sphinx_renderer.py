@@ -220,10 +220,14 @@ class SphinxDocstringRenderer(DocstringRendererBase):
         Returns:
             rendered (str): The rendered field line.
         """
-
-        rendered = self._render_field(
-            f"{SPHINX_RENDER_RAISES_TAG} {entry.error_type}: ", entry.description
-        )
+        if entry.error_type is not None:
+            rendered = self._render_field(
+                f"{SPHINX_RENDER_RAISES_TAG} {entry.error_type}: ", entry.description
+            )
+        else:
+            rendered = self._render_field(
+                f"{SPHINX_RENDER_RAISES_TAG}: ", entry.description
+            )
 
         return rendered
 

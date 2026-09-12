@@ -54,17 +54,6 @@ UNORDERED_LIST_MARKER: str = "- "
 ORDERED_LIST_SEPARATOR = ". "
 
 
-# ====================================================
-# Constants used for multiple docstings (but not all).
-# ====================================================
-
-
-# Related to StructuredList sections (Use in Google and Numpy format)
-STRUCTURED_LIST_DESCRIPTION_SEPARATOR: str = ":"
-PARAMETER_TYPE_ANNOTATION_OPEN: str = "("
-PARAMETER_TYPE_ANNOTATION_CLOSE: str = ")"
-
-
 # ============================================
 # Constants used for single docstring formats.
 # ============================================
@@ -93,6 +82,8 @@ GOOGLE_ALL_SECTION_KEYWORDS = (
     GOOGLE_NAMED_PARAGRAPH_SECTIONS | GOOGLE_STRUCTURED_LIST_SECTIONS
 )
 
+GOOGLE_STRUCTURED_LIST_DESCRIPTION_SEPARATOR: str = ":"
+
 # === NumPy ---
 
 NUMPY_ITEM_SECTIONS = frozenset(
@@ -101,6 +92,7 @@ NUMPY_ITEM_SECTIONS = frozenset(
 NUMPY_PLAIN_SECTIONS = frozenset({"Examples", "Notes", "References", "See Also"})
 NUMPY_SECTION_HEADERS = NUMPY_ITEM_SECTIONS | NUMPY_PLAIN_SECTIONS
 
+NUMPY_STRUCTURED_LIST_NAME_TYPE_SEPARATOR: str = ":"
 
 # Sphinx/reST-style
 SPHINX_ITEM_DIRECTIVES = frozenset({":param", ":raises", ":returns", ":rtype", ":type"})
@@ -115,7 +107,7 @@ SPHINX_DIRECTIVES = SPHINX_ITEM_DIRECTIVES | SPHINX_PLAIN_DIRECTIVES
 # and plural spellings) are accepted on input; the renderer emits one canonical
 # spelling per group. ':param' also accepts an inline type ':param <type>
 # <name>:', handled by the parser.
-SPHINX_PARAM_TAGS = frozenset({":parma", ":parameter", ":arg", ":argument"})
+SPHINX_PARAM_TAGS = frozenset({":param", ":parameter", ":arg", ":argument"})
 SPHINX_TYPE_TAGS = frozenset({":type"})
 SPHINX_RETURN_TAGS = frozenset({":return", ":returns"})
 SPHINX_RTYPE_TAGS = frozenset({":rtype"})

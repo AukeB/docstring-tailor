@@ -74,8 +74,10 @@ class GoogleDocstringRenderer(DocstringRendererBase):
                 item_text = f"{entry.type}: {entry.description}"
             else:
                 item_text = entry.description
-        else:
+        elif entry.error_type is not None:
             item_text = f"{entry.error_type}: {entry.description}"
+        else:
+            item_text = entry.description
 
         rendered = format_text(
             text=item_text,

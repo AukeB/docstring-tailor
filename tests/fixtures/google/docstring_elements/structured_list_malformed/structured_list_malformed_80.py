@@ -5,7 +5,7 @@ Args:
     missing_parenthesis int: This entry cannot be split safely.
 
 Raises:
-    ValueError:
+    ValueError
 
 Args:
 """

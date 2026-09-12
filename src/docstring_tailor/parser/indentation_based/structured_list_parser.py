@@ -4,10 +4,10 @@ from abc import ABC, abstractmethod
 
 from docstring_tailor.constants import (
     DOCSTRING_KEYWORD_SEPARATOR,
-    GOOGLE_PARAMETER_SECTIONS,
     GOOGLE_RAISES_SECTIONS,
+    GOOGLE_STRUCTURED_LIST_DESCRIPTION_SEPARATOR,
+    NUMPY_STRUCTURED_LIST_NAME_TYPE_SEPARATOR,
     RE_PATTERN_STRUCTURED_LIST_NAME_AND_TYPE,
-    STRUCTURED_LIST_DESCRIPTION_SEPARATOR,
 )
 from docstring_tailor.ir_model import (
     StructuredList,
@@ -45,19 +45,21 @@ class StructuredListParserBase(ABC):
 class GoogleStructuredListParser(StructuredListParserBase):
     """Parses raw structured-list section content into a StructuredList node.
 
-    Determines whether the section is a Raises section or a parameter section
+    Determines whether the section is a Raises section or a Parameter section
     based on the keyword on the first line, then parses each item accordingly.
     """
 
-    def _parse_parameter_item(self, item: str, keyword: str) -> StructuredListParameter:
+    def _parse_parameter_item(self, item: str) -> StructuredListParameter:
         """Parses a single parameter item string into a StructuredListParameter.
 
-        Splits on the first ':' to separate the name/type from the description,
-        then matches the name/type portion against the "name (type)" shape. If
-        it matches, both name and type are extracted. If it doesn't -- as is
-        conventional for Returns/Yields entries, which document only the type --
-        the entire name/type portion is treated as the type, and the name is
-        left as None.
+        When the item has no ':' separator at all, its type and description
+        cannot be told apart, so the whole item is preserved in the description
+        with name and type left as None. Otherwise the text before the first ':'
+        is split off and matched against the "name (type)" shape: on a match
+        both name and type are extracted; otherwise the name is left as None and
+        that text becomes the type, covering both the conventional
+        Returns/Yields "type: description" entry and a malformed parameter entry
+        whose "name (type)" could not be recovered.
 
         Args:
             item (str): A single joined item string.
@@ -65,11 +67,11 @@ class GoogleStructuredListParser(StructuredListParserBase):
         Returns:
             parameter (StructuredListParameter): The parsed parameter entry.
         """
-        if STRUCTURED_LIST_DESCRIPTION_SEPARATOR not in item:
+        if GOOGLE_STRUCTURED_LIST_DESCRIPTION_SEPARATOR not in item:
             parameter = StructuredListParameter(name=None, type=None, description=item)
             return parameter
 
-        colon_index = item.index(STRUCTURED_LIST_DESCRIPTION_SEPARATOR)
+        colon_index = item.index(GOOGLE_STRUCTURED_LIST_DESCRIPTION_SEPARATOR)
         name_and_type = item[:colon_index].strip()
         description = item[colon_index + 1 :].strip()
 
@@ -78,9 +80,6 @@ class GoogleStructuredListParser(StructuredListParserBase):
         if match:
             name = match.group("name")
             variable_type = match.group("type").strip()
-        elif keyword in GOOGLE_PARAMETER_SECTIONS - {"Returns", "Yields"}:
-            parameter = StructuredListParameter(name=None, type=None, description=item)
-            return parameter
         else:
             name = None
             variable_type = name_and_type
@@ -97,6 +96,9 @@ class GoogleStructuredListParser(StructuredListParserBase):
         """Parses a single error item string into a StructuredListError.
 
         Splits on the first ':' to separate the error type from the description.
+        When the item has no ':' the two cannot be told apart, so the whole item
+        is preserved in the description with error_type left as None, consistent
+        with how an unclassifiable parameter entry is handled.
 
         Args:
             item (str): A single joined item string.
@@ -104,11 +106,11 @@ class GoogleStructuredListParser(StructuredListParserBase):
         Returns:
             error (StructuredListError): The parsed error entry.
         """
-        if STRUCTURED_LIST_DESCRIPTION_SEPARATOR not in item:
-            error = StructuredListError(error_type=item, description="")
+        if GOOGLE_STRUCTURED_LIST_DESCRIPTION_SEPARATOR not in item:
+            error = StructuredListError(error_type=None, description=item)
             return error
 
-        colon_index = item.index(STRUCTURED_LIST_DESCRIPTION_SEPARATOR)
+        colon_index = item.index(GOOGLE_STRUCTURED_LIST_DESCRIPTION_SEPARATOR)
         error_type = item[:colon_index].strip()
         description = item[colon_index + 1 :].strip()
 
@@ -139,7 +141,7 @@ class GoogleStructuredListParser(StructuredListParserBase):
         entries = (
             [self._parse_error_item(item) for item in items]
             if keyword in GOOGLE_RAISES_SECTIONS
-            else [self._parse_parameter_item(item, keyword) for item in items]
+            else [self._parse_parameter_item(item) for item in items]
         )
 
         structured_list = StructuredList(
@@ -164,15 +166,16 @@ class NumpyStructuredListParser(StructuredListParserBase):
         self,
         header: str,
         description: str,
-        keyword: str,
     ) -> StructuredListParameter:
         """Parses a single (header, description) pair into a
         StructuredListParameter.
 
-        Splits the header on the first ':' to separate name from type. If the
-        header contains no ':', as is conventional for unnamed Returns/Yields
-        entries, which document only the type, the entire header is treated as
-        the type, and the name is left as None.
+        Splits the header on the first ':' to separate name from type. When the
+        header contains no ':', whether a conventional unnamed Returns/Yields
+        entry documenting only the type, or a malformed parameter entry, the
+        whole reader is treated as the type and the name is left as None. The
+        description is always kept separate, so no content is lost even when the
+        header cannot be split.
 
         Args:
             header (str): The item's header line, e.g. 'x : int' or 'bool'.
@@ -182,18 +185,10 @@ class NumpyStructuredListParser(StructuredListParserBase):
         Returns:
             parameter (StructuredListParameter): The parsed parameter entry.
         """
-        if STRUCTURED_LIST_DESCRIPTION_SEPARATOR in header:
-            # Reused across styles: here it separates name from type on the
-            # header line, not name/type from description as in Google.
-            colon_index = header.index(STRUCTURED_LIST_DESCRIPTION_SEPARATOR)
+        if NUMPY_STRUCTURED_LIST_NAME_TYPE_SEPARATOR in header:
+            colon_index = header.index(NUMPY_STRUCTURED_LIST_NAME_TYPE_SEPARATOR)
             name = header[:colon_index].strip()
             variable_type = header[colon_index + 1 :].strip()
-        elif keyword in {"Parameters", "Attributes"}:
-            full_text = " ".join(part for part in (header, description) if part)
-            parameter = StructuredListParameter(
-                name=None, type=None, description=full_text
-            )
-            return parameter
         else:
             name = None
             variable_type = header.strip()
@@ -222,7 +217,7 @@ class NumpyStructuredListParser(StructuredListParserBase):
         items = extract_structured_items(content, skip_first_line=True)
 
         entries = [
-            self._parse_parameter_item(header, description, keyword)
+            self._parse_parameter_item(header, description)
             for header, description in items
         ]
 

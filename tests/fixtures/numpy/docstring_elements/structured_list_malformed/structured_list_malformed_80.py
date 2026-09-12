@@ -2,11 +2,13 @@
 
 Parameters
 ----------
-missing_colon int This entry cannot be split safely.
+missing_colon int
+    This entry cannot be split safely.
 
 Attributes
 ----------
-missing_attribute_type This entry is preserved as text.
+missing_attribute_type
+    This entry is preserved as text.
 
 Returns
 -------
