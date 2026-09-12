@@ -153,7 +153,6 @@ def _process_files(
         diff (bool): If True, print a diff instead of writing files.
     """
     for file_path in python_files:
-        print(file_path)
         input_data = file_path.read_text(encoding=ENCODING)
         input_tree = cst.parse_module(source=input_data)
         modified_tree = input_tree.visit(visitor_factory())
