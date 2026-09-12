@@ -127,6 +127,16 @@ CASE_TEMPLATES_GOOGLE: list[CaseTemplate] = [
         parameter_grid={"line_length": [60, 80, 100]}
     ),
     CaseTemplate(
+        fixture_directory_name=Path("google/docstring_elements/structured_list_malformed"),
+        input_file_paths=[Path("structured_list_malformed_wrong_input.py")],
+        output_file_path_template=Path("structured_list_malformed_{line_length}.py"),
+        shared_parameters={
+            "from_style": DocstringStyle.google,
+            "to_style": DocstringStyle.google,
+        },
+        parameter_grid={"line_length": [80]}
+    ),
+    CaseTemplate(
         fixture_directory_name=Path("google/docstring_elements/simple_list"),
         input_file_paths=[
             Path("simple_list_wrong_input.py"),
@@ -222,6 +232,16 @@ CASE_TEMPLATES_GOOGLE: list[CaseTemplate] = [
 ]
 
 CASE_TEMPLATES_NUMPY: list[CaseTemplate] = [
+    CaseTemplate(
+        fixture_directory_name=Path("numpy/docstring_elements/structured_list_malformed"),
+        input_file_paths=[Path("structured_list_malformed_wrong_input.py")],
+        output_file_path_template=Path("structured_list_malformed_{line_length}.py"),
+        shared_parameters={
+            "from_style": DocstringStyle.numpy,
+            "to_style": DocstringStyle.numpy,
+        },
+        parameter_grid={"line_length": [80]}
+    ),
     CaseTemplate(
         fixture_directory_name=Path("numpy/docstring_elements/named_paragraph_code_block"),
         input_file_paths=[

@@ -392,6 +392,10 @@ class DocstringRendererBase(ABC):
         Returns:
             rendered (str): The rendered structured list string.
         """
+        if not section.entries:
+            header = self._render_section_header(name=section.keyword)
+            return header
+
         nested_context = (
             self._nested_body() if self._section_body_indented else nullcontext()
         )

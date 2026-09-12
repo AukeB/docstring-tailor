@@ -26,6 +26,10 @@ def extract_items(content: str, skip_first_line: bool = False) -> list[str]:
         lines = lines[1:]
 
     lines = [line for line in lines if line.strip()]
+
+    if not lines:
+        return []
+
     base_indent = min(len(line) - len(line.lstrip()) for line in lines)
 
     items: list[str] = []
@@ -82,6 +86,10 @@ def extract_structured_items(
         lines = lines[1:]
 
     lines = [line for line in lines if line.strip()]
+
+    if not lines:
+        return []
+
     base_indent = min(len(line) - len(line.lstrip()) for line in lines)
 
     items: list[tuple[str, str]] = []

@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 
 from docstring_tailor.constants import (
     DOCSTRING_KEYWORD_SEPARATOR,
+    GOOGLE_PARAMETER_SECTIONS,
     GOOGLE_RAISES_SECTIONS,
     RE_PATTERN_STRUCTURED_LIST_NAME_AND_TYPE,
     STRUCTURED_LIST_DESCRIPTION_SEPARATOR,
@@ -48,7 +49,7 @@ class GoogleStructuredListParser(StructuredListParserBase):
     based on the keyword on the first line, then parses each item accordingly.
     """
 
-    def _parse_parameter_item(self, item: str) -> StructuredListParameter:
+    def _parse_parameter_item(self, item: str, keyword: str) -> StructuredListParameter:
         """Parses a single parameter item string into a StructuredListParameter.
 
         Splits on the first ':' to separate the name/type from the description,
@@ -64,6 +65,10 @@ class GoogleStructuredListParser(StructuredListParserBase):
         Returns:
             parameter (StructuredListParameter): The parsed parameter entry.
         """
+        if STRUCTURED_LIST_DESCRIPTION_SEPARATOR not in item:
+            parameter = StructuredListParameter(name=None, type=None, description=item)
+            return parameter
+
         colon_index = item.index(STRUCTURED_LIST_DESCRIPTION_SEPARATOR)
         name_and_type = item[:colon_index].strip()
         description = item[colon_index + 1 :].strip()
@@ -73,6 +78,9 @@ class GoogleStructuredListParser(StructuredListParserBase):
         if match:
             name = match.group("name")
             variable_type = match.group("type").strip()
+        elif keyword in GOOGLE_PARAMETER_SECTIONS - {"Returns", "Yields"}:
+            parameter = StructuredListParameter(name=None, type=None, description=item)
+            return parameter
         else:
             name = None
             variable_type = name_and_type
@@ -96,6 +104,9 @@ class GoogleStructuredListParser(StructuredListParserBase):
         Returns:
             error (StructuredListError): The parsed error entry.
         """
+        if STRUCTURED_LIST_DESCRIPTION_SEPARATOR not in item:
+            error = StructuredListError(error_type=item, description="")
+
         colon_index = item.index(STRUCTURED_LIST_DESCRIPTION_SEPARATOR)
         error_type = item[:colon_index].strip()
         description = item[colon_index + 1 :].strip()
@@ -127,7 +138,7 @@ class GoogleStructuredListParser(StructuredListParserBase):
         entries = (
             [self._parse_error_item(item) for item in items]
             if keyword in GOOGLE_RAISES_SECTIONS
-            else [self._parse_parameter_item(item) for item in items]
+            else [self._parse_parameter_item(item, keyword) for item in items]
         )
 
         structured_list = StructuredList(
@@ -149,14 +160,17 @@ class NumpyStructuredListParser(StructuredListParserBase):
     """
 
     def _parse_parameter_item(
-        self, header: str, description: str
+        self,
+        header: str,
+        description: str,
+        keyword: str,
     ) -> StructuredListParameter:
         """Parses a single (header, description) pair into a
         StructuredListParameter.
 
         Splits the header on the first ':' to separate name from type. If the
-        header contains no ':' -- as is conventional for unnamed Returns/Yields
-        entries, which document only the type -- the entire header is treated as
+        header contains no ':', as is conventional for unnamed Returns/Yields
+        entries, which document only the type, the entire header is treated as
         the type, and the name is left as None.
 
         Args:
@@ -173,6 +187,12 @@ class NumpyStructuredListParser(StructuredListParserBase):
             colon_index = header.index(STRUCTURED_LIST_DESCRIPTION_SEPARATOR)
             name = header[:colon_index].strip()
             variable_type = header[colon_index + 1 :].strip()
+        elif keyword in {"Parameters", "Attributes"}:
+            full_text = " ".join(part for part in (header, description) if part)
+            parameter = StructuredListParameter(
+                name=None, type=None, description=full_text
+            )
+            return parameter
         else:
             name = None
             variable_type = header.strip()
@@ -201,7 +221,7 @@ class NumpyStructuredListParser(StructuredListParserBase):
         items = extract_structured_items(content, skip_first_line=True)
 
         entries = [
-            self._parse_parameter_item(header, description)
+            self._parse_parameter_item(header, description, keyword)
             for header, description in items
         ]
 

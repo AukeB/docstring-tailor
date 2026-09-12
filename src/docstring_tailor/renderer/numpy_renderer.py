@@ -92,6 +92,15 @@ class NumpyDocstringRenderer(DocstringRendererBase):
         else:
             header = entry.error_type
 
+        if not header:
+            description = format_text(
+                text=entry.description,
+                wrap_width=self._wrap_width,
+                line_separator=self._line_separator,
+            )
+
+            return description
+
         with self._nested_body():
             description = format_text(
                 text=entry.description,
