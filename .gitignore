@@ -55,6 +55,4 @@ Desktop.ini
 *.swo
 
 # Project-specific
-bitmaps/.~lock*
-bitmaps/.~lock.*#
 **/readme.todo
