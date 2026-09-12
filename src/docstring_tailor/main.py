@@ -135,6 +135,48 @@ def _resolve_common_options(
     return resolved_paths, resolved_line_length, resolved_exclude, file_config
 
 
+def _pluralize_files(file_count: int) -> str:
+    """Returns the correctly pluralized noun for a file count.
+
+    Args:
+        file_count (int): The number of files.
+
+    Returns:
+        noun (str): 'file' when count is 1, 'files' otherwise.
+    """
+    noun = "file" if file_count == 1 else "files"
+
+    return noun
+
+
+def _format_run_summary(counter_reformatted: int, counter_unchanged: int) -> str:
+    """Builds a Ruff-style one-line summary of a formatting run.
+
+    Mirrors 'ruff format': only the non-zero categories are named, except when
+    nothing was processed at all, in which case both are reported as zero.
+
+    Args:
+        counter_reformatted (int): Number of files whose content changed.
+        counter_unchanged (int): Number of files left unchanged.
+
+    Returns:
+        summary (str): The human-readable summary line.
+    """
+    reformatted_part = f"{counter_reformatted} {_pluralize_files(file_count=counter_reformatted)} reformatted"
+    unchanged_part = f"{counter_unchanged} {_pluralize_files(file_count=counter_unchanged)} left unchanged"
+
+    if counter_reformatted and counter_unchanged:
+        format_summary = f"{reformatted_part}, {unchanged_part}"
+    elif counter_reformatted:
+        format_summary = reformatted_part
+    elif counter_unchanged:
+        format_summary = unchanged_part
+    else:
+        format_summary = "0 files reformatted, 0 files left unchanged"
+
+    return format_summary
+
+
 def _process_files(
     python_files: list[Path],
     visitor_factory: Callable[[], DocstringVisitor],
@@ -144,7 +186,9 @@ def _process_files(
 
     A fresh DocstringVisitor is created per file via visitor_factory, since
     DocstringVisitor accumulates indentation state as it traverses a single
-    file's CST and cannot be safely reused across files.
+    file's CST and cannot be safely reused across files. Unchanged files are not
+    rewritten, so their on-disk timestamps are preserved. In write mode a Ruff-
+    style summary of the run is printed once all files are processed.
 
     Args:
         python_files (list[Path]): The collected files to process.
@@ -152,17 +196,34 @@ def _process_files(
             DocstringVisitor for each file.
         diff (bool): If True, print a diff instead of writing files.
     """
+    counter_reformatted: int = 0
+    counter_unchanged: int = 0
+
     for file_path in python_files:
         input_data = file_path.read_text(encoding=ENCODING)
         input_tree = cst.parse_module(source=input_data)
         modified_tree = input_tree.visit(visitor_factory())
 
         modified_code = modified_tree.code
+        is_changed = modified_code != input_data
+
+        if is_changed:
+            counter_reformatted += 1
+        else:
+            counter_unchanged += 1
 
         if diff:
             show_diff(original=input_data, modified=modified_code, path=file_path)
-        else:
+        elif is_changed:
             file_path.write_text(modified_code, encoding=ENCODING)
+
+    if not diff:
+        typer.echo(
+            _format_run_summary(
+                counter_reformatted=counter_reformatted,
+                counter_unchanged=counter_unchanged,
+            )
+        )
 
 
 @app.command("format")
