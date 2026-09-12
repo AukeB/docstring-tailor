@@ -1,0 +1,8 @@
+# Hook definition consumed via `repo: https://github.com/AukeB/docstring-tailor`.
+# Consumers must supply the style through `args`, e.g. args: ["style", "google"].
+- id: docstring-tailor
+  name: docstring-tailor
+  description: Format Python docstrings to a configurable line length and style.
+  entry: docstring_tailor format
+  language: python
+  types: [python]

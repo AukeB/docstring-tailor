@@ -11,16 +11,17 @@ Formats Python docstrings to PEP 257 style with configurable line length.
 ## Table of Contents
 1. [Demo](#demo)
 2. [Installation](#Installation)
-3. [Quick start](#quick_start)
+3. [Quick start](#quick-start)
 4. [API Overview](#api-overview)
     - [Command](#command)
     - [Options](#options)
     - [Examples](#examples)
-5. [Example docstrings](#example-docstrings)
-6. [What Your Line Length Says About You!](#what-your-line-length-says-about-you)
-7. [Resources](#resources)
-8. [Release Notes](#release_notes)
-9. [Roadmap](#roadmap)
+5. [Pre-commit and prek hook](#pre-commit-and-prek-hook)
+6. [Example docstrings](#example-docstrings)
+7. [What Your Line Length Says About You!](#what-your-line-length-says-about-you)
+8. [Resources](#resources)
+9. [Release Notes](#release-notes)
+10. [Roadmap](#roadmap)
 
 ## Demo
 
@@ -101,6 +102,8 @@ To convert existing docstrings from one style to another, use the `convert` comm
 ```bash
 uv run docstring_tailor convert my_file.py --from-style google --to-style numpy
 ```
+
+`docstring-tailor` can also run as a [pre-commit](https://pre-commit.com/) / [prek](https://github.com/j178/prek) hook so docstrings stay formatted on every commit, see [Pre-commit and prek hook](#pre-commit-and-prek-hook).
 
 ## API Overview
 
@@ -183,6 +186,56 @@ line-length = 88
 style = "google"
 exclude = ["tests", "src/generated/*.py"]
 ```
+
+## Pre-commit and prek hook
+
+`docstring-tailor` can run as a [pre-commit](https://pre-commit.com/) hook, and works unchanged with [prek](https://github.com/j178/prek), the drop-in reimplementation, so docstrings stay formatted automatically on every commit. When the hook reformats a file it rewrites it in place and stops the commit so you can review and re-stage the change, exactly like the Ruff or Black hooks.
+
+### Hosted hook
+
+Add the following to your `.pre-commit-config.yaml`:
+
+```yaml
+repos:
+  - repo: https://github.com/AukeB/docstring-tailor
+    rev: 0.4.1
+    hooks:
+      - id: docstring-tailor
+        args: ["--style", "google"]
+```
+
+- `--style` is required, use `google`, `numpy` or `sphinx`. Pass any other option (`--line-length`, `--exclude`) through `args`, or set them in a `[tool.docstring_tailor]` config block instead. `args` is a single flat list where every flag and every value is its own quoted element (e.g. `["--style", "google", "--line-length", "88"]`, with numbers quoted). Install the hook once with `pre-commit install` (or `prek install`).
+
+Prefer TOML? prek also reads a native `prek.toml`, a drop-in alternative to `.pre-commit-config.yaml` (upstream `pre-commit` ignores it). The same hook in `prek.toml`
+
+```toml
+[[repos]]
+repo = "https://github.com/AukeB/docstring-tailor"
+rev = "v0.4.1"
+hooks= [
+    { id = "docstring-tailor", args = ["--style", "google"] },
+]
+```
+
+`prek util yaml-to-toml` converts an existing YAML config for you.
+
+### Local hook
+
+If your project already installs `docstring-tailor` (for example as a `uv` dev dependency), you can run it as a `repo: local` hook. pre-commit then never clones a remote repo, which is handy in locked-down or offline environments:
+
+```yaml
+repos:
+  - repo: local
+    hooks:
+      - id: docstring-tailor
+        name: docstring-tailor
+        entry: uv run docstring_tailor format --style google
+        language: system
+        types: [python]
+        pass_filenames: true
+```
+
+For CI, run `docstring-tailor format --diff` instead: it never writes files and exits non-zero when any docstring would change, so it can gate a pipeline.
 
 ## Example docstrings
 
@@ -621,6 +674,7 @@ You don't wrap text because wrapping is a skill issue. You let photons travel un
 | `0.3.0` | 2026-07-20 | Feature update & bug fixes | <ul><li>Introduced a style-agnostic intermediate representation (IR) model and refactored parsing into an abstract base class hierarchy. Google and NumPy docstrings now parse into the same IR via `IndentationBasedParser` subclasses, enabling lossless conversion between styles. Structured list parsing is delegated to style-specific implementations to handle syntactic differences (Google's inline `name (type):` vs. NumPy's `name : type` on separate lines).</li><li>Refactored rendering to match the parser architecture: `DocstringRendererBase` (ABC) with style-specific subclasses that implement two hooks — section header formatting (Google's `Args:` vs. NumPy's `Parameters` + underline) and section body indentation rules (confirmed against numpy's own docstrings to keep bodies flush with headers, unlike Google). Keyword translation between styles happens automatically during conversion.</li><li>Code sections and Python REPL blocks now also can be created outside the 'Example(s)' section.</li><li>Fixed a bug when codeblock sections contain blank lines.</li><li>Fixed a bug when the docstring starts immediately with an (un)ordered list.</li><li>Removed `detect-lists` as CLI parameter, because the logic should always be applied if the docstring contains (un)ordered lists.</li><li>Changed behaviour for empty docstrings so that it consistent with Ruff.</li></ul> |
 | `0.3.1` | 2026-07-21 | Small fixes | <ul><li>The `style` parameter does not have a default argument anymore, instead it always has to be configured explicitly by the user.</li><li>Fixed a bug where one-line docstrings inside indented scopes (e.g. class or method bodies) were wrapped to multiple lines prematurely, due to indentation being counted twice when checking against the configured line length.</li> <li>Added an exception, consistent with Ruff, allowing a one-line docstring to exceed the configured line length by up to 3 characters when only the closing triple quotes would otherwise be pushed onto their own line. This prevents docstring_tailor and Ruff from repeatedly reformatting the same docstring back and forth when both are run as pre-commit hooks.</li></ul> |
 | `0.4.0` | 2026-07-24 | Feature update | <ul><li>Added support for the Sphinx/reST docstring `style`, covering both parsing and rendering. Sphinx docstrings now parse into the same style-agnostic intermediate representation (IR) as Google and NumPy, enabling lossless conversion in all directions between the three styles (`format --style sphinx` and `convert` to/from `sphinx`).</li><li>Extracted a shared `DocstringParserBase` holding the style-agnostic flat-content pipeline; `IndentationBasedParser` (Google/NumPy) and the new directive-based `SphinxDocstringParser` both build on it, reusing the existing pipeline rather than duplicating logic.</li><li>The Sphinx parser handles info-field lists (`:param:`/`:type:`, `:returns:`/`:rtype:`, `:raises:`), the inline parameter form (`:param str name:`), field/type pairing by name, tag aliases (`:return:`, `:raise:`, `:except:`, `:exception:`), and informational directives (`.. note::`, `.. warning::`, `.. seealso::`, `.. example::`).</li><li>The Sphinx renderer emits a contiguous info-field list with separate `:type:`/`:rtype:` lines, with hanging-indent wrapping of field bodies.</li><li>Modelled an absent parameter type as `None` in the IR (never fabricated), and updated the Google and NumPy renderers to degrade gracefully when a type is undocumented.</li><li>Reorganized the golden-file test fixtures into per-style folders (`google/`, `sphinx/`, `convert/`), with the fixture style folder derived automatically from each test case's configuration.</li></ul> |
+| `0.4.1` | 2026-09-12 | Robustness & bug fixes | <ul><li> Made structured-list parsing resilient to malformed entries: a missing `:` separator or a missing `(type)` annotation no longer crashes. The entry's text is preserved (with name and type left unset) and rendered as written, so formatting never fails on imperfect docstrings.</li><li> Modelled a `Raises` entry that lacks a `:` as an unnamed error (`error_type` set to `None`) in the IR, consistent with how unclassifiable parameter entries are handled, and guarded the Google, Numpy and Sphinx renderes accordingly.</li><li> The CLI now processes each file independently: files that cannot be read, decoded, or parsed as Python are reported with a specific error message and skipped, so a single malformed file no longer aborts the whole run.</li><li> Added a Ruff-style run summary (e.g. `2 files reformatted, 1 file left unchanged`) and stopped rewriting files whose content did not change.</li><li>Aligned exit codes with Ruff: `format` exits non-zero only on errors (write mode) or when changes are needed (`--diff`), and `convert` exits non-zero only on errors, enabling reliable use in pre-commit and CI.</li><li>Removed a leftover debug `print` from the CLI output.</li><li> Published a `pre-commit-config.yaml` hook definition so `docstring-tailor` can run as a pre-commit / prek hook via `repo:`, with hosted, local, and `prek.toml` setups documented in the README </li></ul> |
 
 ## Roadmap
 
@@ -648,7 +702,6 @@ The core Sphinx style (parameters, returns, raises, and the common admonitions) 
 - Literal-body directives (`.. code-block::`, `.. math::`) — more involved, because their content must be preserved verbatim and never reflowed, and there is no clean equivalent in the current IR. Needs a dedicated literal-block IR node before it can be handled safely.
 
 ### Nice to have
-- Make sure the package can be used as a pre-commit hook.
 - LSP (Language Server Protocol) support, enabling real-time feedback on malformed
   docstrings directly in editors like VS Code, PyCharm and Neovim. Built on top of
   the validation layer and the existing parser, with `pygls` handling the protocol.
