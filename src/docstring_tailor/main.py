@@ -1,13 +1,7 @@
-"""Main module
-
-Todo
-
-- Fix that for return section the variable name is optional.
-- Fix that the program does not break if brackets can not be found for variable
-  types.
-"""
+"""Main module"""
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -177,11 +171,58 @@ def _format_run_summary(counter_reformatted: int, counter_unchanged: int) -> str
     return format_summary
 
 
+@dataclass(frozen=True)
+class _FormatResult:
+    """Outcome counts of a formatting run for multiple python files.
+
+    Attributes:
+        count_reformatted (int): Number of files whose content changed.
+        count_unchanged (int): Number of files left untouched.
+        count_errored (int): Number of files that could not be read, decoded, or
+            parsed and were skipped.
+    """
+
+    count_reformatted: int
+    count_unchanged: int
+    count_errored: int
+
+
+def _process_single_file(
+    file_path: Path,
+    visitor_factory: Callable[[], DocstringVisitor],
+    diff: bool,
+) -> bool:
+    """Reads, transforms, and writes or diffs a single Python file.
+
+    Args:
+        file_path (Path): The file to process.
+        visitor_factory (Callable[[], DocstringVisitor]): Builds a fresh
+            DocstringVisitor this file.
+        diff (bool): If True, print a diff instead of writing files.
+
+    Returns:
+        is_changed (bool): True if formatting changed the file's content.
+    """
+    input_data = file_path.read_text(encoding=ENCODING)
+    input_tree = cst.parse_module(source=input_data)
+    modified_tree = input_tree.visit(visitor_factory())
+
+    modified_code = modified_tree.code
+    is_changed = modified_code != input_data
+
+    if diff:
+        show_diff(original=input_data, modified=modified_code, path=file_path)
+    elif is_changed:
+        file_path.write_text(modified_code, encoding=ENCODING)
+
+    return is_changed
+
+
 def _process_files(
     python_files: list[Path],
     visitor_factory: Callable[[], DocstringVisitor],
     diff: bool,
-) -> None:
+) -> _FormatResult:
     """Parses, transforms, and writes or diffs each collected Python file.
 
     A fresh DocstringVisitor is created per file via visitor_factory, since
@@ -190,32 +231,58 @@ def _process_files(
     rewritten, so their on-disk timestamps are preserved. In write mode a Ruff-
     style summary of the run is printed once all files are processed.
 
+    A file that cannot be read, decoded, or parsed as Python is reported to
+    stderr and skipped, so a single malformed file never aborts the whole run
+    and every other file is still processed.
+
     Args:
         python_files (list[Path]): The collected files to process.
         visitor_factory (Callable[[], DocstringVisitor]): Builds a fresh
             DocstringVisitor for each file.
         diff (bool): If True, print a diff instead of writing files.
+
+    Returns:
+        result (_FormatResult): Counts of reformatted, unchanged, and errored
+            files, so the caller can choose an exit code.
+
+    Raises:
+        OSError: If the file cannot be read or written.
+        UnicodeDecodeError: If the file is not valid text in the expected
+            encoding.
+        cst.ParserSyntaxError: If the file is not valid python.
     """
     counter_reformatted: int = 0
     counter_unchanged: int = 0
+    counter_errored: int = 0
 
     for file_path in python_files:
-        input_data = file_path.read_text(encoding=ENCODING)
-        input_tree = cst.parse_module(source=input_data)
-        modified_tree = input_tree.visit(visitor_factory())
-
-        modified_code = modified_tree.code
-        is_changed = modified_code != input_data
+        try:
+            is_changed: bool = _process_single_file(
+                file_path=file_path,
+                visitor_factory=visitor_factory,
+                diff=diff,
+            )
+        except OSError as error:
+            typer.echo(
+                f"error: could not read or write '{file_path}': {error}", err=True
+            )
+            counter_errored += 1
+            continue
+        except UnicodeDecodeError as error:
+            typer.echo(
+                f"error: '{file_path}' is not valid {ENCODING} text: {error}", err=True
+            )
+            counter_errored += 1
+            continue
+        except cst.ParserSyntaxError as error:
+            typer.echo(f"error: '{file_path}' is not valid Python: {error}", err=True)
+            counter_errored += 1
+            continue
 
         if is_changed:
             counter_reformatted += 1
         else:
             counter_unchanged += 1
-
-        if diff:
-            show_diff(original=input_data, modified=modified_code, path=file_path)
-        elif is_changed:
-            file_path.write_text(modified_code, encoding=ENCODING)
 
     if not diff:
         typer.echo(
@@ -224,6 +291,12 @@ def _process_files(
                 counter_unchanged=counter_unchanged,
             )
         )
+
+    return _FormatResult(
+        count_reformatted=counter_reformatted,
+        count_unchanged=counter_unchanged,
+        count_errored=counter_errored,
+    )
 
 
 @app.command("format")
@@ -253,6 +326,10 @@ def format_command(
         exclude (list[str] | None): Glob patterns for paths to exclude.
         diff (bool): If True, print a unified diff to stdout instead of writing
             files.
+
+    Raises:
+        typer.Exit: With code 1 if any file was reformatted or could not be
+            processed, so the command can gate a pre-commit or CI run.
     """
     resolved_paths, resolved_line_length, resolved_exclude, file_config = (
         _resolve_common_options(paths=paths, line_length=line_length, exclude=exclude)
@@ -278,7 +355,7 @@ def format_command(
         exclude_patterns=resolved_exclude,
     )
 
-    _process_files(
+    format_result = _process_files(
         python_files=python_files,
         visitor_factory=lambda: DocstringVisitor(
             line_length=resolved_line_length,
@@ -287,6 +364,9 @@ def format_command(
         ),
         diff=diff,
     )
+
+    if format_result.count_reformatted or format_result.count_errored:
+        raise typer.Exit(code=1)
 
 
 @app.command("convert")
@@ -325,8 +405,10 @@ def convert_command(
             files.
 
     Raises:
-        typer.Exit: If from_style and to_style are the same.
+        typer.Exit: With code 1 if from_style and to_style are the same.
+        typer.Exit: With code 1 if any file could not be processed.
     """
+
     if from_style == to_style:
         typer.echo(
             f"--from-style and --to-style were both '{from_style.value}'. "
@@ -348,7 +430,7 @@ def convert_command(
         exclude_patterns=resolved_exclude,
     )
 
-    _process_files(
+    format_result = _process_files(
         python_files=python_files,
         visitor_factory=lambda: DocstringVisitor(
             line_length=resolved_line_length,
@@ -357,6 +439,9 @@ def convert_command(
         ),
         diff=diff,
     )
+
+    if format_result.count_errored:
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":
