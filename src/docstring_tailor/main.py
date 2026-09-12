@@ -328,8 +328,9 @@ def format_command(
             files.
 
     Raises:
-        typer.Exit: With code 1 if any file was reformatted or could not be
-            processed, so the command can gate a pre-commit or CI run.
+        typer.Exit: With code 1 if any file could not be processed, or, in
+            --diff mode, if any file would be reformatted, so --diff can gate a
+            CI run while a normal write run still succeeds after fixing files.
     """
     resolved_paths, resolved_line_length, resolved_exclude, file_config = (
         _resolve_common_options(paths=paths, line_length=line_length, exclude=exclude)
@@ -365,7 +366,9 @@ def format_command(
         diff=diff,
     )
 
-    if format_result.count_reformatted or format_result.count_errored:
+    # Write mode treats a reformat as success (files are fixed). Only --diff
+    # gates on changes.
+    if format_result.count_errored or (diff and format_result.count_reformatted):
         raise typer.Exit(code=1)
 
 
