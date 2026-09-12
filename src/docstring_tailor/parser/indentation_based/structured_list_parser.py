@@ -106,6 +106,7 @@ class GoogleStructuredListParser(StructuredListParserBase):
         """
         if STRUCTURED_LIST_DESCRIPTION_SEPARATOR not in item:
             error = StructuredListError(error_type=item, description="")
+            return error
 
         colon_index = item.index(STRUCTURED_LIST_DESCRIPTION_SEPARATOR)
         error_type = item[:colon_index].strip()
