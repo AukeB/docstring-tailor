@@ -229,9 +229,13 @@ repos:
     hooks:
       - id: docstring-tailor
         name: docstring-tailor
-        entry: uv run docstring_tailor format --style google
+        entry: uv run docstring_tailor format
         language: system
         types: [python]
+        args: [
+            "--style", "google",
+            "--line-length", "100"
+        ]
         pass_filenames: true
 ```
 
@@ -675,6 +679,7 @@ You don't wrap text because wrapping is a skill issue. You let photons travel un
 | `0.3.1` | 2026-07-21 | Small fixes | <ul><li>The `style` parameter does not have a default argument anymore, instead it always has to be configured explicitly by the user.</li><li>Fixed a bug where one-line docstrings inside indented scopes (e.g. class or method bodies) were wrapped to multiple lines prematurely, due to indentation being counted twice when checking against the configured line length.</li> <li>Added an exception, consistent with Ruff, allowing a one-line docstring to exceed the configured line length by up to 3 characters when only the closing triple quotes would otherwise be pushed onto their own line. This prevents docstring_tailor and Ruff from repeatedly reformatting the same docstring back and forth when both are run as pre-commit hooks.</li></ul> |
 | `0.4.0` | 2026-07-24 | Feature update | <ul><li>Added support for the Sphinx/reST docstring `style`, covering both parsing and rendering. Sphinx docstrings now parse into the same style-agnostic intermediate representation (IR) as Google and NumPy, enabling lossless conversion in all directions between the three styles (`format --style sphinx` and `convert` to/from `sphinx`).</li><li>Extracted a shared `DocstringParserBase` holding the style-agnostic flat-content pipeline; `IndentationBasedParser` (Google/NumPy) and the new directive-based `SphinxDocstringParser` both build on it, reusing the existing pipeline rather than duplicating logic.</li><li>The Sphinx parser handles info-field lists (`:param:`/`:type:`, `:returns:`/`:rtype:`, `:raises:`), the inline parameter form (`:param str name:`), field/type pairing by name, tag aliases (`:return:`, `:raise:`, `:except:`, `:exception:`), and informational directives (`.. note::`, `.. warning::`, `.. seealso::`, `.. example::`).</li><li>The Sphinx renderer emits a contiguous info-field list with separate `:type:`/`:rtype:` lines, with hanging-indent wrapping of field bodies.</li><li>Modelled an absent parameter type as `None` in the IR (never fabricated), and updated the Google and NumPy renderers to degrade gracefully when a type is undocumented.</li><li>Reorganized the golden-file test fixtures into per-style folders (`google/`, `sphinx/`, `convert/`), with the fixture style folder derived automatically from each test case's configuration.</li></ul> |
 | `0.4.1` | 2026-09-12 | Robustness & bug fixes | <ul><li> Made structured-list parsing resilient to malformed entries: a missing `:` separator or a missing `(type)` annotation no longer crashes. The entry's text is preserved (with name and type left unset) and rendered as written, so formatting never fails on imperfect docstrings.</li><li> Modelled a `Raises` entry that lacks a `:` as an unnamed error (`error_type` set to `None`) in the IR, consistent with how unclassifiable parameter entries are handled, and guarded the Google, Numpy and Sphinx renderes accordingly.</li><li> The CLI now processes each file independently: files that cannot be read, decoded, or parsed as Python are reported with a specific error message and skipped, so a single malformed file no longer aborts the whole run.</li><li> Added a Ruff-style run summary (e.g. `2 files reformatted, 1 file left unchanged`) and stopped rewriting files whose content did not change.</li><li>Aligned exit codes with Ruff: `format` exits non-zero only on errors (write mode) or when changes are needed (`--diff`), and `convert` exits non-zero only on errors, enabling reliable use in pre-commit and CI.</li><li>Removed a leftover debug `print` from the CLI output.</li><li> Published a `pre-commit-config.yaml` hook definition so `docstring-tailor` can run as a pre-commit / prek hook via `repo:`, with hosted, local, and `prek.toml` setups documented in the README </li></ul> |
+| `0.4.2` | T.B.D. | | <ul></ul> |
 
 ## Roadmap
 
