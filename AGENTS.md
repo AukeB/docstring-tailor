@@ -29,7 +29,21 @@
 ### Code order
 - Order code bottom-up: define a function or method before the code that calls it. In a module, put helper functions above the functions that use them.
 - In a class, put `__init__`, `@classmethod`, and `@staticmethod` methods at the top, next to each other. Then put the other methods below them, with each helper defined above the method that calls it.
-- Recursion does not change the bottom-up rule. When functions call each other in a cycle, one call necessarily points forward. Break the cycle at the function that is entered first when the chain starts: put it at the bottom, so the functions it calls sit above it. Then the functions it calls are defined before it, and the one call that points back to it is the only forward reference.
+- Recursion does not change the bottom-up rule. When functions call each other in a cycle, one call necessarily points forward. Break the cycle at the function that is part of the cycle and is called first from the public entry point: put it at the bottom, so the functions it calls sit above it. The one call that points back to it is the only forward reference.
+  - Example: `main` calls `run`, and `run` calls `step`. `step` calls `visit`, and `visit` calls `step` again. The cycle is `step` and `visit`. `step` is reached first from `run`, so `step` goes at the bottom and `visit` goes above it:
+
+    ```python
+    def visit(node: Node) -> Result:
+        ...
+        return step(node.child)
+
+
+    def step(node: Node) -> Result:
+        ...
+        return visit(node)
+    ```
+
+    Here `visit` calls `step`, which is defined below it. That is the single forward reference. `run` and `main` go below both of them, since they are not part of the cycle.
 - Framework hooks, such as libcst `visit_*` and `leave_*` methods, are not called by our code, so they may go in traversal order after the helpers they use.
 
 ### Statements
