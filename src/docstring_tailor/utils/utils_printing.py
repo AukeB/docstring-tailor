@@ -15,7 +15,6 @@ from docstring_tailor.ir_model import (
     Paragraph,
     SimpleList,
     StructuredList,
-    StructuredListError,
     StructuredListParameter,
 )
 
@@ -51,7 +50,7 @@ def _print_node(node: DocstringNode, indent: int = 0) -> None:
                     logger.debug(f"{prefix}  {entry.name=}")
                     logger.debug(f"{prefix}  {entry.type=}")
                     logger.debug(f"{prefix}  {entry.description=}")
-                elif isinstance(entry, StructuredListError):
+                else:
                     logger.debug(f"{prefix}  {entry.error_type=}")
                     logger.debug(f"{prefix}  {entry.description=}")
 

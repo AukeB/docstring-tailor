@@ -98,9 +98,8 @@ def extract_items(content: str, skip_first_line: bool = False) -> list[str]:
         else:
             current_item_lines.append(line)
 
-    if current_item_lines:
-        item = _join_item_lines(item_lines=current_item_lines)
-        items.append(item)
+    item = _join_item_lines(item_lines=current_item_lines)
+    items.append(item)
 
     items = [re.sub(RE_PATTERN_SIMPLE_LIST_MARKER, "", item) for item in items]
 
@@ -161,8 +160,7 @@ def extract_structured_items(
         else:
             current_item_lines.append(line)
 
-    if current_item_lines:
-        item = _build_structured_item(item_lines=current_item_lines)
-        items.append(item)
+    item = _build_structured_item(item_lines=current_item_lines)
+    items.append(item)
 
     return items
