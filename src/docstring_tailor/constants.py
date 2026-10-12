@@ -19,6 +19,7 @@ RE_PATTERN_SIMPLE_LIST_MARKER = re.compile(r"^[-*+]\s+|^\d+[.)]\s+")
 RE_PATTERN_STRUCTURED_LIST_NAME_AND_TYPE = re.compile(
     r"^(?P<name>\S+)\s\((?P<type>.*)\)$"
 )
+
 RE_PATTERN_NUMPY_SECTION_UNDERLINE = re.compile(r"^-+$")
 
 
@@ -73,10 +74,12 @@ GOOGLE_NAMED_PARAGRAPH_SECTIONS = frozenset(
         "Examples",
     }
 )
+
 GOOGLE_RAISES_SECTIONS = frozenset({"Raises"})
 GOOGLE_PARAMETER_SECTIONS = frozenset(
     {"Args", "Arguments", "Attributes", "Returns", "Yields"}
 )
+
 GOOGLE_STRUCTURED_LIST_SECTIONS = GOOGLE_RAISES_SECTIONS | GOOGLE_PARAMETER_SECTIONS
 GOOGLE_ALL_SECTION_KEYWORDS = (
     GOOGLE_NAMED_PARAGRAPH_SECTIONS | GOOGLE_STRUCTURED_LIST_SECTIONS
@@ -89,6 +92,7 @@ GOOGLE_STRUCTURED_LIST_DESCRIPTION_SEPARATOR: str = ":"
 NUMPY_ITEM_SECTIONS = frozenset(
     {"Attributes", "Methods", "Parameters", "Raises", "Receives", "Returns", "Yields"}
 )
+
 NUMPY_PLAIN_SECTIONS = frozenset({"Examples", "Notes", "References", "See Also"})
 NUMPY_SECTION_HEADERS = NUMPY_ITEM_SECTIONS | NUMPY_PLAIN_SECTIONS
 
@@ -99,6 +103,7 @@ SPHINX_ITEM_DIRECTIVES = frozenset({":param", ":raises", ":returns", ":rtype", "
 SPHINX_PLAIN_DIRECTIVES = frozenset(
     {".. example::", ".. note::", ".. seealso::", ".. warning::"}
 )
+
 SPHINX_DIRECTIVES = SPHINX_ITEM_DIRECTIVES | SPHINX_PLAIN_DIRECTIVES
 
 # === Sphinx ===

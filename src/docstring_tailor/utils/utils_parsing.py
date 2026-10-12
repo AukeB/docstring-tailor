@@ -3,6 +3,54 @@
 import re
 
 from docstring_tailor.constants import RE_PATTERN_SIMPLE_LIST_MARKER
+from docstring_tailor.utils.utils_formatting import get_indent
+
+
+def _join_item_lines(item_lines: list[str]) -> str:
+    """Joins the raw lines of one item into a single flat string.
+
+    The first line is stripped and the continuation lines are stripped and
+    joined by a single space.
+
+    Args:
+        item_lines (list[str]): The raw lines belonging to one item, header
+            first.
+
+    Returns:
+        item (str): The flattened item string.
+    """
+
+    first_line = item_lines[0].strip()
+    continuation_lines = [line.strip() for line in item_lines[1:]]
+    continuation = " ".join(continuation_lines)
+
+    item = f"{first_line} {continuation}".strip()
+
+    return item
+
+
+def _build_structured_item(item_lines: list[str]) -> tuple[str, str]:
+    """Builds a single (header, description) tuple from an item's raw lines.
+
+    Args:
+        item_lines (list[str]): The raw lines belonging to one item, header
+            first.
+
+    Returns:
+        item (tuple[str, str]): The stripped, marker-free header, paired with
+            its description built by joining continuation lines with a single
+            space.
+    """
+
+    stripped_header = item_lines[0].strip()
+    header = re.sub(RE_PATTERN_SIMPLE_LIST_MARKER, "", stripped_header)
+
+    description_lines = [line.strip() for line in item_lines[1:]]
+    description = " ".join(description_lines)
+
+    item = (header, description)
+
+    return item
 
 
 def extract_items(content: str, skip_first_line: bool = False) -> list[str]:
@@ -20,6 +68,7 @@ def extract_items(content: str, skip_first_line: bool = False) -> list[str]:
     Returns:
         items (list[str]): Each item as a single joined string.
     """
+
     lines = content.splitlines()
 
     if skip_first_line:
@@ -28,28 +77,30 @@ def extract_items(content: str, skip_first_line: bool = False) -> list[str]:
     lines = [line for line in lines if line.strip()]
 
     if not lines:
-        return []
+        empty_items: list[str] = []
 
-    base_indent = min(len(line) - len(line.lstrip()) for line in lines)
+        return empty_items
+
+    indents = [get_indent(line) for line in lines]
+    base_indent = min(indents)
 
     items: list[str] = []
     current_item_lines: list[str] = []
 
     for line in lines:
-        current_indent = len(line) - len(line.lstrip())
+        current_indent = get_indent(line)
 
         if current_indent == base_indent and current_item_lines:
-            first_line = current_item_lines[0].strip()
-            continuation = " ".join(l.strip() for l in current_item_lines[1:])
-            items.append(f"{first_line} {continuation}".strip())
+            item = _join_item_lines(item_lines=current_item_lines)
+            items.append(item)
+
             current_item_lines = [line]
         else:
             current_item_lines.append(line)
 
     if current_item_lines:
-        first_line = current_item_lines[0].strip()
-        continuation = " ".join(l.strip() for l in current_item_lines[1:])
-        items.append(f"{first_line} {continuation}".strip())
+        item = _join_item_lines(item_lines=current_item_lines)
+        items.append(item)
 
     items = [re.sub(RE_PATTERN_SIMPLE_LIST_MARKER, "", item) for item in items]
 
@@ -80,6 +131,7 @@ def extract_structured_items(
             tuple, with continuation lines in the description joined by a single
             space.
     """
+
     lines = content.splitlines()
 
     if skip_first_line:
@@ -88,42 +140,29 @@ def extract_structured_items(
     lines = [line for line in lines if line.strip()]
 
     if not lines:
-        return []
+        empty_items: list[tuple[str, str]] = []
 
-    base_indent = min(len(line) - len(line.lstrip()) for line in lines)
+        return empty_items
+
+    indents = [get_indent(line) for line in lines]
+    base_indent = min(indents)
 
     items: list[tuple[str, str]] = []
     current_item_lines: list[str] = []
 
     for line in lines:
-        current_indent = len(line) - len(line.lstrip())
+        current_indent = get_indent(line)
 
         if current_indent == base_indent and current_item_lines:
-            items.append(_build_structured_item(current_item_lines))
+            item = _build_structured_item(item_lines=current_item_lines)
+            items.append(item)
+
             current_item_lines = [line]
         else:
             current_item_lines.append(line)
 
     if current_item_lines:
-        items.append(_build_structured_item(current_item_lines))
+        item = _build_structured_item(item_lines=current_item_lines)
+        items.append(item)
 
     return items
-
-
-def _build_structured_item(item_lines: list[str]) -> tuple[str, str]:
-    """Builds a single (header, description) tuple from an item's raw lines.
-
-    Args:
-        item_lines (list[str]): The raw lines belonging to one item, header
-            first.
-
-    Returns:
-        item (tuple[str, str]): The stripped, marker-free header, paired with
-            its description built by joining continuation lines with a single
-            space.
-    """
-    header = re.sub(RE_PATTERN_SIMPLE_LIST_MARKER, "", item_lines[0].strip())
-    description = " ".join(line.strip() for line in item_lines[1:])
-    item = (header, description)
-
-    return item

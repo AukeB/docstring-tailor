@@ -16,6 +16,7 @@ def read_fixture(relative_file_path: Path) -> str:
     Returns:
         file_content (str): The contents of the fixture file.
     """
+
     path = DIR_PATH_TEST_FIXTURES / relative_file_path
     file_content = path.read_text(encoding="utf-8")
 
@@ -34,9 +35,13 @@ def generate_case_ids(case: Case) -> str:
     Returns:
         case_id (str): A readable and deterministic pytest test ID.
     """
+
+    parameter_items = case.parameters.items()
+    sorted_parameters = sorted(parameter_items)
+
     parameter_settings = "_".join(
         f"{parameter_name}={parameter_value}"
-        for parameter_name, parameter_value in sorted(case.parameters.items())
+        for parameter_name, parameter_value in sorted_parameters
     )
 
     case_id = f"{case.input_file_path}__{case.output_file_path}__{parameter_settings}"

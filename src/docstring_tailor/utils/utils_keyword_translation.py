@@ -143,6 +143,7 @@ def _get_translation_table(
     Raises:
         ValueError: If no translation table exists for the given style pair.
     """
+
     tables: dict[tuple[DocstringStyle, DocstringStyle], dict[str, str]] = {
         (DocstringStyle.google, DocstringStyle.numpy): GOOGLE_TO_NUMPY_KEYWORDS,
         (DocstringStyle.numpy, DocstringStyle.google): NUMPY_TO_GOOGLE_KEYWORDS,
@@ -188,20 +189,23 @@ def translate_keywords(
         ValueError: If from_style and to_style are not a supported translation
             pair.
     """
+
     translation_table = _get_translation_table(from_style, to_style)
     translated_ir: list[DocstringNode] = []
 
     for node in ir:
         if isinstance(node, StructuredList):
             translated_keyword = translation_table.get(node.keyword, node.keyword)
-            translated_ir.append(
-                StructuredList(keyword=translated_keyword, entries=node.entries)
+            translated_node = StructuredList(
+                keyword=translated_keyword, entries=node.entries
             )
+
+            translated_ir.append(translated_node)
         elif isinstance(node, NamedParagraph):
             translated_header = translation_table.get(node.header, node.header)
-            translated_ir.append(
-                NamedParagraph(header=translated_header, body=node.body)
-            )
+            translated_node = NamedParagraph(header=translated_header, body=node.body)
+
+            translated_ir.append(translated_node)
         else:
             translated_ir.append(node)
 

@@ -47,48 +47,6 @@ class SphinxDocstringRenderer(DocstringRendererBase):
     bypassed by the overrides. All flat-content rendering is inherited.
     """
 
-    def _join_rendered_nodes(
-        self, nodes: list[DocstringNode], rendered_parts: list[str]
-    ) -> str:
-        """Joins rendered node strings, keeping consecutive field-list blocks
-        contiguous.
-
-        Sphinx splits documented parameters, returns, and raises into separate
-        StructuredList nodes, but reST renders them as one uninterrupted field
-        list with no blank lines between the groups. So a junction between two
-        StructuredList nodes uses the single line separator; every other
-        junction defers to the shared base behaviour (blank line, except the
-        SimpleList adjacency the base already special-cases).
-
-        Args:
-            nodes (list[DocstringNode]): The IR nodes corresponding to
-                rendered_parts, in the same order.
-            rendered_parts (list[str]): Each node's rendered string form, in
-                order.
-
-        Returns:
-            joined (str): The fully joined string.
-        """
-
-        if not rendered_parts:
-            return ""
-
-        joined = rendered_parts[0]
-
-        for previous, node, part in zip(nodes, nodes[1:], rendered_parts[1:]):
-            if isinstance(previous, StructuredList) and isinstance(
-                node, StructuredList
-            ):
-                separator = self._line_separator
-            elif isinstance(node, SimpleList) and not node.has_leading_blank_line:
-                separator = self._line_separator
-            else:
-                separator = self._paragraph_separator
-
-            joined += separator + part
-
-        return joined
-
     @property
     def _section_body_indented(self) -> bool:
         """Sphinx field lists and directive bodies are rendered by the overrides
@@ -133,7 +91,53 @@ class SphinxDocstringRenderer(DocstringRendererBase):
             rendered (str): An empty string.
         """
 
-        return ""
+        empty_entry = ""
+
+        return empty_entry
+
+    def _join_rendered_nodes(
+        self, nodes: list[DocstringNode], rendered_parts: list[str]
+    ) -> str:
+        """Joins rendered node strings, keeping consecutive field-list blocks
+        contiguous.
+
+        Sphinx splits documented parameters, returns, and raises into separate
+        StructuredList nodes, but reST renders them as one uninterrupted field
+        list with no blank lines between the groups. So a junction between two
+        StructuredList nodes uses the single line separator; every other
+        junction defers to the shared base behaviour (blank line, except the
+        SimpleList adjacency the base already special-cases).
+
+        Args:
+            nodes (list[DocstringNode]): The IR nodes corresponding to
+                rendered_parts, in the same order.
+            rendered_parts (list[str]): Each node's rendered string form, in
+                order.
+
+        Returns:
+            joined (str): The fully joined string.
+        """
+
+        if not rendered_parts:
+            return ""
+
+        joined = rendered_parts[0]
+
+        for previous, node, part in zip(nodes, nodes[1:], rendered_parts[1:]):
+            is_field_block_junction = isinstance(
+                previous, StructuredList
+            ) and isinstance(node, StructuredList)
+
+            if is_field_block_junction:
+                separator = self._line_separator
+            elif isinstance(node, SimpleList) and not node.has_leading_blank_line:
+                separator = self._line_separator
+            else:
+                separator = self._paragraph_separator
+
+            joined += separator + part
+
+        return joined
 
     def _render_field(self, tag: str, body: str) -> str:
         """Renders a single reST field line, wrapping its body with a hanging
@@ -149,6 +153,7 @@ class SphinxDocstringRenderer(DocstringRendererBase):
         """
 
         text = f"{tag}{body}"
+
         rendered = format_text(
             text=text,
             wrap_width=self._wrap_width,
@@ -178,18 +183,15 @@ class SphinxDocstringRenderer(DocstringRendererBase):
         """
 
         param_token = entry.name if entry.name is not None else entry.type or ""
-        lines = [
-            self._render_field(
-                f"{SPHINX_RENDER_PARAM_TAG} {param_token}: ", entry.description
-            )
-        ]
+        param_tag = f"{SPHINX_RENDER_PARAM_TAG} {param_token}: "
+
+        lines = [self._render_field(param_tag, entry.description)]
 
         if entry.name is not None and entry.type is not None:
-            lines.append(
-                self._render_field(
-                    f"{SPHINX_RENDER_TYPE_TAG} {entry.name}: ", entry.type
-                )
-            )
+            type_tag = f"{SPHINX_RENDER_TYPE_TAG} {entry.name}: "
+            type_line = self._render_field(type_tag, entry.type)
+
+            lines.append(type_line)
 
         return lines
 
@@ -204,10 +206,15 @@ class SphinxDocstringRenderer(DocstringRendererBase):
             lines (list[str]): One or two rendered field lines.
         """
 
-        lines = [self._render_field(f"{SPHINX_RENDER_RETURNS_TAG} ", entry.description)]
+        returns_tag = f"{SPHINX_RENDER_RETURNS_TAG} "
+
+        lines = [self._render_field(returns_tag, entry.description)]
 
         if entry.type is not None:
-            lines.append(self._render_field(f"{SPHINX_RENDER_RTYPE_TAG} ", entry.type))
+            rtype_tag = f"{SPHINX_RENDER_RTYPE_TAG} "
+            rtype_line = self._render_field(rtype_tag, entry.type)
+
+            lines.append(rtype_line)
 
         return lines
 
@@ -220,14 +227,13 @@ class SphinxDocstringRenderer(DocstringRendererBase):
         Returns:
             rendered (str): The rendered field line.
         """
+
         if entry.error_type is not None:
-            rendered = self._render_field(
-                f"{SPHINX_RENDER_RAISES_TAG} {entry.error_type}: ", entry.description
-            )
+            raises_tag = f"{SPHINX_RENDER_RAISES_TAG} {entry.error_type}: "
         else:
-            rendered = self._render_field(
-                f"{SPHINX_RENDER_RAISES_TAG}: ", entry.description
-            )
+            raises_tag = f"{SPHINX_RENDER_RAISES_TAG}: "
+
+        rendered = self._render_field(raises_tag, entry.description)
 
         return rendered
 
@@ -251,11 +257,17 @@ class SphinxDocstringRenderer(DocstringRendererBase):
 
         for entry in section.entries:
             if isinstance(entry, StructuredListError):
-                lines.append(self._render_error_field(entry))
+                error_line = self._render_error_field(entry)
+
+                lines.append(error_line)
             elif section.keyword == SPHINX_KEYWORD_RETURNS:
-                lines.extend(self._render_return_fields(entry))
+                return_lines = self._render_return_fields(entry)
+
+                lines.extend(return_lines)
             else:
-                lines.extend(self._render_parameter_fields(entry))
+                parameter_lines = self._render_parameter_fields(entry)
+
+                lines.extend(parameter_lines)
 
         rendered = self._line_separator.join(lines)
 
@@ -277,9 +289,9 @@ class SphinxDocstringRenderer(DocstringRendererBase):
             rendered (str): The rendered admonition block.
         """
 
-        directive = SPHINX_HEADER_DIRECTIVES.get(
-            section.header, f".. {section.header.lower()}::"
-        )
+        fallback_directive = f".. {section.header.lower()}::"
+
+        directive = SPHINX_HEADER_DIRECTIVES.get(section.header, fallback_directive)
 
         with self._nested_body():
             rendered_body_nodes = [self._render_node(node) for node in section.body]

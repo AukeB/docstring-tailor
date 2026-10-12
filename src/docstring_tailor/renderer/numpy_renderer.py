@@ -26,6 +26,7 @@ class NumpyDocstringRenderer(DocstringRendererBase):
         Returns:
             result (bool): Always False for NumPy.
         """
+
         result = False
 
         return result
@@ -46,6 +47,7 @@ class NumpyDocstringRenderer(DocstringRendererBase):
         Returns:
             header (str): The header string, e.g. 'Parameters\\n----------'.
         """
+
         underline = "-" * len(name)
         header = name + "\n" + self._base_indent_level + underline
 
@@ -82,6 +84,7 @@ class NumpyDocstringRenderer(DocstringRendererBase):
             rendered (str): The wrapped, indented entry string, header and
                 description together.
         """
+
         if isinstance(entry, StructuredListParameter):
             if entry.name is not None and entry.type is not None:
                 header = f"{entry.name} : {entry.type}"

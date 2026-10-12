@@ -23,6 +23,10 @@ dev = [
     "ty>=0.0.29",
 ]
 
+[tool.ruff]
+# Golden-file fixtures are formatter inputs and expected outputs, not code to lint.
+extend-exclude = ["tests/fixtures"]
+
 [tool.ruff.lint]
 select = [
     "I",    # isort-style import sorting

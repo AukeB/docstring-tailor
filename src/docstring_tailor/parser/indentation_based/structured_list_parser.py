@@ -39,6 +39,7 @@ class StructuredListParserBase(ABC):
         Returns:
             structured_list (StructuredList): Fully parsed structured list node.
         """
+
         ...
 
 
@@ -67,8 +68,10 @@ class GoogleStructuredListParser(StructuredListParserBase):
         Returns:
             parameter (StructuredListParameter): The parsed parameter entry.
         """
+
         if GOOGLE_STRUCTURED_LIST_DESCRIPTION_SEPARATOR not in item:
             parameter = StructuredListParameter(name=None, type=None, description=item)
+
             return parameter
 
         colon_index = item.index(GOOGLE_STRUCTURED_LIST_DESCRIPTION_SEPARATOR)
@@ -106,8 +109,10 @@ class GoogleStructuredListParser(StructuredListParserBase):
         Returns:
             error (StructuredListError): The parsed error entry.
         """
+
         if GOOGLE_STRUCTURED_LIST_DESCRIPTION_SEPARATOR not in item:
             error = StructuredListError(error_type=None, description=item)
+
             return error
 
         colon_index = item.index(GOOGLE_STRUCTURED_LIST_DESCRIPTION_SEPARATOR)
@@ -135,6 +140,7 @@ class GoogleStructuredListParser(StructuredListParserBase):
         Returns:
             structured_list (StructuredList): Fully parsed structured list node.
         """
+
         keyword = content.splitlines()[0].strip().rstrip(DOCSTRING_KEYWORD_SEPARATOR)
         items = extract_items(content, skip_first_line=True)
 
@@ -185,6 +191,7 @@ class NumpyStructuredListParser(StructuredListParserBase):
         Returns:
             parameter (StructuredListParameter): The parsed parameter entry.
         """
+
         if NUMPY_STRUCTURED_LIST_NAME_TYPE_SEPARATOR in header:
             colon_index = header.index(NUMPY_STRUCTURED_LIST_NAME_TYPE_SEPARATOR)
             name = header[:colon_index].strip()
@@ -213,6 +220,7 @@ class NumpyStructuredListParser(StructuredListParserBase):
         Returns:
             structured_list (StructuredList): Fully parsed structured list node.
         """
+
         keyword = content.splitlines()[0].strip()
         items = extract_structured_items(content, skip_first_line=True)
 

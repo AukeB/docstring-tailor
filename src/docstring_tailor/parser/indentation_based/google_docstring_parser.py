@@ -12,6 +12,7 @@ from docstring_tailor.parser.indentation_based.structured_list_parser import (
     GoogleStructuredListParser,
     StructuredListParserBase,
 )
+from docstring_tailor.utils.utils_formatting import get_indent
 
 
 class GoogleDocstringParser(IndentationBasedParser):
@@ -31,6 +32,7 @@ class GoogleDocstringParser(IndentationBasedParser):
             structured_list_sections (frozenset[str]): Keywords such as 'Args',
                 'Raises', 'Returns', 'Yields', 'Attributes'.
         """
+
         structured_list_sections = GOOGLE_STRUCTURED_LIST_SECTIONS
 
         return structured_list_sections
@@ -42,6 +44,7 @@ class GoogleDocstringParser(IndentationBasedParser):
             named_paragraph_sections (frozenset[str]): Keywords such as 'Note',
                 'Examples', 'See Also', 'Warning'.
         """
+
         named_paragraph_sections = GOOGLE_NAMED_PARAGRAPH_SECTIONS
 
         return named_paragraph_sections
@@ -53,6 +56,7 @@ class GoogleDocstringParser(IndentationBasedParser):
             structured_list_parser (StructuredListParserBase): Parser for
                 Args/Raises/Returns- like sections written in Google style.
         """
+
         structured_list_parser = GoogleStructuredListParser()
 
         return structured_list_parser
@@ -81,6 +85,7 @@ class GoogleDocstringParser(IndentationBasedParser):
                 (is_keyword_section, content) where content is the raw joined
                 lines for that segment.
         """
+
         segments: list[tuple[bool, str]] = []
         current_lines: list[str] = []
         current_is_keyword = False
@@ -89,9 +94,10 @@ class GoogleDocstringParser(IndentationBasedParser):
         for line in lines:
             if not line.strip():
                 blank_buffer.append(line)
+
                 continue
 
-            indent = len(line) - len(line.lstrip())
+            indent = get_indent(line)
             keyword = line.strip().rstrip(DOCSTRING_KEYWORD_SEPARATOR)
             is_base = indent == base_indent
             is_keyword_line = is_base and (
@@ -101,12 +107,16 @@ class GoogleDocstringParser(IndentationBasedParser):
 
             if is_keyword_line:
                 if current_lines:
-                    segments.append((current_is_keyword, "\n".join(current_lines)))
+                    segment_content = "\n".join(current_lines)
+                    segments.append((current_is_keyword, segment_content))
+
                 current_lines = [line]
                 current_is_keyword = True
                 blank_buffer = []
             elif is_base and current_is_keyword:
-                segments.append((True, "\n".join(current_lines)))
+                segment_content = "\n".join(current_lines)
+                segments.append((True, segment_content))
+
                 current_lines = [line]
                 current_is_keyword = False
                 blank_buffer = []
@@ -116,6 +126,7 @@ class GoogleDocstringParser(IndentationBasedParser):
                 current_lines.append(line)
 
         if current_lines:
-            segments.append((current_is_keyword, "\n".join(current_lines)))
+            segment_content = "\n".join(current_lines)
+            segments.append((current_is_keyword, segment_content))
 
         return segments

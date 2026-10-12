@@ -4,6 +4,22 @@ import re
 import textwrap
 
 
+def get_indent(line: str) -> int:
+    """Returns the number of leading whitespace characters of a line.
+
+    Args:
+        line (str): The line to measure.
+
+    Returns:
+        indent (int): The count of leading whitespace characters.
+    """
+
+    stripped = line.lstrip()
+    indent = len(line) - len(stripped)
+
+    return indent
+
+
 def format_text(
     text: str,
     wrap_width: int,
@@ -26,10 +42,14 @@ def format_text(
     Returns:
         formatted (str): The wrapped and joined paragraph string.
     """
-    normalized = re.sub(r"\s+", " ", text.strip())
+
+    stripped = text.strip()
+    normalized = re.sub(r"\s+", " ", stripped)
+
     lines = textwrap.wrap(
         normalized, width=wrap_width, subsequent_indent=subsequent_indent
     )
+
     formatted = line_separator.join(lines)
 
     return formatted
@@ -51,15 +71,20 @@ def format_code(text: str, line_separator: str) -> str:
     Returns:
         formatted_code_block (str): The re-indented code block string.
     """
+
     lines = text.split("\n")
     non_empty_lines = [line for line in lines if line.strip()]
 
     if not non_empty_lines:
-        return ""
+        empty_block = ""
 
-    base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
+        return empty_block
+
+    indents = [get_indent(line) for line in non_empty_lines]
+    base_indent = min(indents)
 
     formatted_lines: list[str] = []
+
     for line in lines:
         if line.strip():
             formatted_lines.append(line[base_indent:])
@@ -68,6 +93,7 @@ def format_code(text: str, line_separator: str) -> str:
 
     while formatted_lines and not formatted_lines[0]:
         formatted_lines.pop(0)
+
     while formatted_lines and not formatted_lines[-1]:
         formatted_lines.pop()
 

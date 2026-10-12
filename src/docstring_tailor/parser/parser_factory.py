@@ -33,6 +33,7 @@ def create_parser(style: DocstringStyle) -> DocstringParserBase:
     Raises:
         ValueError: If style has no registered parser.
     """
+
     parser_class = _PARSER_CLASSES.get(style)
 
     if parser_class is None:

@@ -21,6 +21,7 @@ class GoogleDocstringRenderer(DocstringRendererBase):
         Returns:
             result (bool): Always True for Google.
         """
+
         result = True
 
         return result
@@ -35,6 +36,7 @@ class GoogleDocstringRenderer(DocstringRendererBase):
         Returns:
             header (str): The header string, e.g. 'Args:'.
         """
+
         header = f"{name}:"
 
         return header
@@ -65,6 +67,7 @@ class GoogleDocstringRenderer(DocstringRendererBase):
         Returns:
             rendered (str): The wrapped, indented entry string.
         """
+
         if isinstance(entry, StructuredListParameter):
             if entry.name is not None and entry.type is not None:
                 item_text = f"{entry.name} ({entry.type}): {entry.description}"

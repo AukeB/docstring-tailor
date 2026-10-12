@@ -28,7 +28,11 @@ class DocstringNode:
 
 @dataclass
 class Paragraph(DocstringNode):
-    """Represents a single typed chunk of raw text in the docstring IR."""
+    """Represents a single typed chunk of raw text in the docstring IR.
+
+    Attributes:
+        content (str): The raw text of the paragraph.
+    """
 
     content: str
 
@@ -49,7 +53,11 @@ class CodeBlock(DocstringNode):
 
 @dataclass
 class CodeREPL(DocstringNode):
-    """Represents an interactive REPL-style code section in the docstring IR."""
+    """Represents an interactive REPL-style code section in the docstring IR.
+
+    Attributes:
+        code (str): The raw REPL session, including prompts and output.
+    """
 
     code: str
 

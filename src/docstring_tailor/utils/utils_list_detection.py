@@ -5,6 +5,7 @@ from docstring_tailor.constants import (
     RE_PATTERN_UNORDERED_LIST_ITEM,
 )
 from docstring_tailor.ir_model import SimpleListType
+from docstring_tailor.utils.utils_formatting import get_indent
 
 
 def _find_unordered_list_start(lines: list[str]) -> int | None:
@@ -23,11 +24,15 @@ def _find_unordered_list_start(lines: list[str]) -> int | None:
         start_index (int | None): The index of the first line of the earliest
             confirmed run, or None if no confirmed run exists.
     """
+
     non_empty_lines = [line for line in lines if line.strip()]
+
     if not non_empty_lines:
         return None
 
-    base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
+    indents = [get_indent(line) for line in non_empty_lines]
+    base_indent = min(indents)
+
     count = 0
     candidate_index: int | None = None
 
@@ -35,7 +40,7 @@ def _find_unordered_list_start(lines: list[str]) -> int | None:
         if not line.strip():
             continue
 
-        if len(line) - len(line.lstrip()) == base_indent:
+        if get_indent(line) == base_indent:
             if RE_PATTERN_UNORDERED_LIST_ITEM.match(line):
                 if count == 0:
                     candidate_index = index
@@ -67,11 +72,15 @@ def _find_ordered_list_start(lines: list[str]) -> int | None:
         start_index (int | None): The index of the first line of the earliest
             confirmed run, or None if no confirmed run exists.
     """
+
     non_empty_lines = [line for line in lines if line.strip()]
+
     if not non_empty_lines:
         return None
 
-    base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
+    indents = [get_indent(line) for line in non_empty_lines]
+    base_indent = min(indents)
+
     expected = 1
     count = 0
     candidate_index: int | None = None
@@ -80,10 +89,16 @@ def _find_ordered_list_start(lines: list[str]) -> int | None:
         if not line.strip():
             continue
 
-        if len(line) - len(line.lstrip()) == base_indent:
+        if get_indent(line) == base_indent:
             match = RE_PATTERN_ORDERED_LIST_ITEM.match(line)
 
-            if match and int(match.group(1)) == expected:
+            if match:
+                number_text = match.group(1)
+                number = int(number_text)
+            else:
+                number = None
+
+            if number == expected:
                 if count == 0:
                     candidate_index = index
 
@@ -110,22 +125,9 @@ def _is_unordered_list(lines: list[str]) -> bool:
     Returns:
         result (bool): True if an unordered list is detected, False otherwise.
     """
-    result = _find_unordered_list_start(lines) is not None
 
-    return result
-
-
-def _is_ordered_list(lines: list[str]) -> bool:
-    """Returns True if at least two consecutive sequentially numbered list items
-    are found, ignoring continuation lines from wrapped items.
-
-    Args:
-        lines (list[str]): The lines to check.
-
-    Returns:
-        result (bool): True if an ordered list is detected, False otherwise.
-    """
-    result = _find_ordered_list_start(lines) is not None
+    start_index = _find_unordered_list_start(lines)
+    result = start_index is not None
 
     return result
 
@@ -147,9 +149,11 @@ def find_list_start(text: str) -> int | None:
         list_start_index (int | None): The index of the first line of the
             confirmed list run, or None if no confirmed list exists.
     """
+
     lines = text.split("\n")
     unordered_start = _find_unordered_list_start(lines)
     ordered_start = _find_ordered_list_start(lines)
+
     candidates = [
         index for index in (unordered_start, ordered_start) if index is not None
     ]
@@ -162,27 +166,12 @@ def find_list_start(text: str) -> int | None:
     return list_start_index
 
 
-def is_list(text: str) -> bool:
-    """Returns True if the text block contains an unordered or ordered list.
-
-    Args:
-        text (str): The text block to check.
-
-    Returns:
-        result (bool): True if a list is detected, False otherwise.
-    """
-    lines = text.split("\n")
-    result = _is_unordered_list(lines=lines) or _is_ordered_list(lines=lines)
-
-    return result
-
-
 def get_list_type(text: str) -> SimpleListType:
     """Returns whether a confirmed list is ordered or unordered.
 
     Assumes the text is already confirmed to contain a list. Checks for
     unordered markers first, falling back to ordered. Note that this function
-    intentionally repeats the detection scan already performed by is_list,
+    intentionally repeats the detection scan already performed by the caller,
     favouring single responsibility over avoiding redundant computation.
 
     Args:
@@ -191,7 +180,9 @@ def get_list_type(text: str) -> SimpleListType:
     Returns:
         list_type (SimpleListType): 'unordered' or 'ordered'.
     """
+
     lines = text.split("\n")
+
     list_type: SimpleListType = "unordered" if _is_unordered_list(lines) else "ordered"
 
     return list_type

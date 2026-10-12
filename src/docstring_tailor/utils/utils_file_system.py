@@ -2,12 +2,16 @@
 file system.
 """
 
+import tomllib
 from pathlib import Path
+from typing import cast
 
 import typer
 
+from docstring_tailor.cli_config import FileConfig
 
-def load_config() -> dict:
+
+def load_config() -> FileConfig:
     """Loads configuration from docstring_tailor.toml or pyproject.toml.
 
     Walks up from the current directory. docstring_tailor.toml takes priority
@@ -15,25 +19,37 @@ def load_config() -> dict:
     found containing docstring_tailor configuration.
 
     Returns:
-        config (dict): Configuration settings, or an empty dict if none found.
+        config (FileConfig): Configuration settings, or an empty dict if none
+            found.
     """
-    import tomllib
 
     for directory in [Path.cwd(), *Path.cwd().parents]:
         tailor_config = directory / "docstring_tailor.toml"
+
         if tailor_config.exists():
             with open(tailor_config, "rb") as file:
-                return tomllib.load(file)
+                data = tomllib.load(file)
+
+            config = cast(FileConfig, data)
+
+            return config
 
         pyproject = directory / "pyproject.toml"
+
         if pyproject.exists():
             with open(pyproject, "rb") as file:
                 data = tomllib.load(file)
-            tool_config = data.get("tool", {}).get("docstring_tailor", {})
-            if tool_config:
-                return tool_config
 
-    return {}
+            tool_config = data.get("tool", {}).get("docstring_tailor", {})
+
+            if tool_config:
+                config = cast(FileConfig, tool_config)
+
+                return config
+
+    config = cast(FileConfig, {})
+
+    return config
 
 
 def _is_excluded(path: Path, exclude_patterns: list[str], project_root: Path) -> bool:
@@ -56,11 +72,14 @@ def _is_excluded(path: Path, exclude_patterns: list[str], project_root: Path) ->
     Returns:
         excluded (bool): True if the path matches at least one pattern.
     """
+
     for pattern in exclude_patterns:
         is_relative_pattern = "/" in pattern or "\\" in pattern
+
         if is_relative_pattern:
             try:
                 relative_path = path.relative_to(project_root)
+
                 if relative_path.match(pattern):
                     return True
             except ValueError:
@@ -89,6 +108,7 @@ def collect_python_files(
     Returns:
         python_files (list[Path]): A flat list of all collected .py file paths.
     """
+
     resolved_patterns = exclude_patterns or []
     project_root = Path.cwd()
     python_files: list[Path] = []
@@ -114,7 +134,9 @@ def validate_paths(paths: list[Path]) -> None:
     Raises:
         typer.Exit: If any path does not exist.
     """
+
     for path in paths:
         if not path.exists():
             typer.echo(f"Error: path '{path}' does not exist.")
+
             raise typer.Exit(code=1)

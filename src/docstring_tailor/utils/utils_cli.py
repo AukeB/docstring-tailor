@@ -16,10 +16,38 @@ def version_callback(value: bool) -> None:
     Raises:
         typer.Exit: Always raised after printing, to halt execution.
     """
+
     if value:
         version = metadata.version("docstring-tailor")
+
         typer.echo(version)
+
         raise typer.Exit()
+
+
+def _style_diff_line(line: str) -> str:
+    """Applies colour to a single unified diff line based on its prefix.
+
+    Header lines are bold, additions are green, removals are red, and all other
+    lines are returned unchanged.
+
+    Args:
+        line (str): A single line of the unified diff.
+
+    Returns:
+        styled_line (str): The line with ANSI styling applied, or unchanged.
+    """
+
+    if line.startswith("+++") or line.startswith("---"):
+        styled_line = typer.style(line, bold=True)
+    elif line.startswith("+"):
+        styled_line = typer.style(line, fg=typer.colors.GREEN)
+    elif line.startswith("-"):
+        styled_line = typer.style(line, fg=typer.colors.RED)
+    else:
+        styled_line = line
+
+    return styled_line
 
 
 def show_diff(original: str, modified: str, path: Path) -> None:
@@ -35,22 +63,21 @@ def show_diff(original: str, modified: str, path: Path) -> None:
         modified (str): The source text after formatting.
         path (Path): The file path, used as the diff header label.
     """
+
     if original == modified:
         return
 
+    original_lines = original.splitlines(keepends=True)
+    modified_lines = modified.splitlines(keepends=True)
+
     diff_lines = difflib.unified_diff(
-        original.splitlines(keepends=True),
-        modified.splitlines(keepends=True),
+        original_lines,
+        modified_lines,
         fromfile=f"{path} (original)",
         tofile=f"{path} (formatted)",
     )
 
     for line in diff_lines:
-        if line.startswith("+++") or line.startswith("---"):
-            typer.echo(typer.style(line, bold=True), nl=False)
-        elif line.startswith("+"):
-            typer.echo(typer.style(line, fg=typer.colors.GREEN), nl=False)
-        elif line.startswith("-"):
-            typer.echo(typer.style(line, fg=typer.colors.RED), nl=False)
-        else:
-            typer.echo(line, nl=False)
+        styled_line = _style_diff_line(line=line)
+
+        typer.echo(styled_line, nl=False)

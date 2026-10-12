@@ -90,6 +90,7 @@ class DocstringRendererBase(ABC):
             indent_unit (str): The indentation unit string used in the source
                 file.
         """
+
         self._line_length = line_length
         self._base_indent_level = current_indent
         self._indent_unit = indent_unit
@@ -115,6 +116,7 @@ class DocstringRendererBase(ABC):
             header (str): The fully rendered header, ready to be followed
                 directly by the section body on the next indented line.
         """
+
         ...
 
     @abstractmethod
@@ -141,6 +143,7 @@ class DocstringRendererBase(ABC):
         Returns:
             rendered (str): The fully rendered, indented entry string.
         """
+
         ...
 
     @property
@@ -164,6 +167,7 @@ class DocstringRendererBase(ABC):
             result (bool): True if the section body sits one level deeper than
                 its header.
         """
+
         ...
 
     @property
@@ -175,6 +179,7 @@ class DocstringRendererBase(ABC):
             relative_indent (str): The base indent plus one indent unit per
                 level of relative nesting.
         """
+
         relative_indent = (
             self._base_indent_level + self._relative_indent_level * self._indent_unit
         )
@@ -189,6 +194,7 @@ class DocstringRendererBase(ABC):
             wrap_width (int): Maximum content width after accounting for the
                 base indent and any relative nesting depth.
         """
+
         wrap_width = self._line_length - len(self._relative_indent)
 
         return wrap_width
@@ -202,6 +208,7 @@ class DocstringRendererBase(ABC):
             line_separator (str): A newline followed by the indentation for the
                 current relative indent level.
         """
+
         line_separator = "\n" + self._relative_indent
 
         return line_separator
@@ -215,6 +222,7 @@ class DocstringRendererBase(ABC):
             paragraph_separator (str): A blank line followed by the indentation
                 for the current relative indent level.
         """
+
         paragraph_separator = "\n\n" + self._relative_indent
 
         return paragraph_separator
@@ -231,6 +239,7 @@ class DocstringRendererBase(ABC):
         decrement happens in a finally clause so the level is restored even if
         rendering a body node raises.
         """
+
         self._relative_indent_level += 1
 
         try:
@@ -255,6 +264,7 @@ class DocstringRendererBase(ABC):
             result (bool): True if a leading newline must be inserted before the
                 first node.
         """
+
         result = bool(ir) and not isinstance(ir[0], Paragraph)
 
         return result
@@ -281,6 +291,7 @@ class DocstringRendererBase(ABC):
         Returns:
             joined (str): The fully joined string.
         """
+
         if not rendered_parts:
             return ""
 
@@ -292,40 +303,10 @@ class DocstringRendererBase(ABC):
                 if isinstance(node, SimpleList) and not node.has_leading_blank_line
                 else self._paragraph_separator
             )
+
             joined += separator + part
 
         return joined
-
-    def _render_named_paragraph(self, section: NamedParagraph) -> str:
-        """Renders a NAMED_PARAGRAPH section, rendering each body node
-        independently.
-
-        Whether the body renders one level deeper than the header (Google) or
-        flush with it (NumPy) is style-specific -- see _section_body_indented.
-        nullcontext stands in for _nested_body when the body stays flush, so
-        every node dispatched through _render_node still picks up the correct
-        wrap width and separators for whichever level applies, without a
-        separate indented dispatcher.
-
-        Args:
-            section (NamedParagraph): A parsed named paragraph node.
-
-        Returns:
-            rendered (str): The rendered named paragraph string.
-        """
-        nested_context = (
-            self._nested_body() if self._section_body_indented else nullcontext()
-        )
-
-        with nested_context:
-            rendered_body_nodes = [self._render_node(node) for node in section.body]
-            body = self._join_rendered_nodes(section.body, rendered_body_nodes)
-
-        body_indent = self._indent_unit if self._section_body_indented else ""
-        header = self._render_section_header(section.header)
-        rendered = header + "\n" + self._base_indent_level + body_indent + body
-
-        return rendered
 
     def _render_simple_list(self, section: SimpleList) -> str:
         """Renders a SIMPLE_LIST section by rendering each parsed item
@@ -349,13 +330,19 @@ class DocstringRendererBase(ABC):
         Returns:
             rendered (str): The rendered list string.
         """
+
         if section.list_type == "unordered":
             marker_width = len(UNORDERED_LIST_MARKER)
             formatted_items = [
                 f"{UNORDERED_LIST_MARKER}{item}" for item in section.items
             ]
         else:
-            marker_width = len(str(len(section.items))) + len(ORDERED_LIST_SEPARATOR)
+            item_count = len(section.items)
+            item_count_text = str(item_count)
+            count_width = len(item_count_text)
+
+            marker_width = count_width + len(ORDERED_LIST_SEPARATOR)
+
             formatted_items = [
                 f"{index + 1}{ORDERED_LIST_SEPARATOR}{item}"
                 for index, item in enumerate(section.items)
@@ -392,6 +379,7 @@ class DocstringRendererBase(ABC):
         Returns:
             rendered (str): The rendered structured list string.
         """
+
         header = self._render_section_header(section.keyword)
 
         if not section.entries:
@@ -405,6 +393,7 @@ class DocstringRendererBase(ABC):
             rendered_entries = [
                 self._render_structured_list_entry(entry) for entry in section.entries
             ]
+
             body = self._line_separator.join(rendered_entries)
 
         entries_indent = self._indent_unit if self._section_body_indented else ""
@@ -427,6 +416,7 @@ class DocstringRendererBase(ABC):
             rendered (str): The re-indented code block string including fence
                 delimiters.
         """
+
         rendered_content = format_code(
             text=section.code,
             line_separator=self._line_separator,
@@ -441,6 +431,38 @@ class DocstringRendererBase(ABC):
             + self._relative_indent
             + section.delimiter
         )
+
+        return rendered
+
+    def _render_named_paragraph(self, section: NamedParagraph) -> str:
+        """Renders a NAMED_PARAGRAPH section, rendering each body node
+        independently.
+
+        Whether the body renders one level deeper than the header (Google) or
+        flush with it (NumPy) is style-specific -- see _section_body_indented.
+        nullcontext stands in for _nested_body when the body stays flush, so
+        every node dispatched through _render_node still picks up the correct
+        wrap width and separators for whichever level applies, without a
+        separate indented dispatcher.
+
+        Args:
+            section (NamedParagraph): A parsed named paragraph node.
+
+        Returns:
+            rendered (str): The rendered named paragraph string.
+        """
+
+        nested_context = (
+            self._nested_body() if self._section_body_indented else nullcontext()
+        )
+
+        with nested_context:
+            rendered_body_nodes = [self._render_node(node) for node in section.body]
+            body = self._join_rendered_nodes(section.body, rendered_body_nodes)
+
+        body_indent = self._indent_unit if self._section_body_indented else ""
+        header = self._render_section_header(section.header)
+        rendered = header + "\n" + self._base_indent_level + body_indent + body
 
         return rendered
 
@@ -465,6 +487,7 @@ class DocstringRendererBase(ABC):
                 or if a StructuredList or NamedParagraph node is encountered
                 while already inside a NamedParagraph body.
         """
+
         if (
             isinstance(node, StructuredList | NamedParagraph)
             and self._relative_indent_level > 0
@@ -505,7 +528,10 @@ class DocstringRendererBase(ABC):
         Returns:
             rendered_paragraph (str): The wrapped paragraph string.
         """
-        normalized = re.sub(RE_PATTERN_WHITESPACE, " ", paragraph.strip())
+
+        stripped = paragraph.strip()
+        normalized = re.sub(RE_PATTERN_WHITESPACE, " ", stripped)
+
         lines = textwrap.wrap(
             normalized,
             width=self._wrap_width,
@@ -536,13 +562,16 @@ class DocstringRendererBase(ABC):
             rendered_parts (list[str]): Each node rendered to its string form,
                 in order.
         """
+
         rendered_parts: list[str] = []
 
         for index, node in enumerate(ir):
             if index == 0 and isinstance(node, Paragraph):
-                rendered_parts.append(self._render_opening_paragraph(node.content))
+                rendered_part = self._render_opening_paragraph(node.content)
             else:
-                rendered_parts.append(self._render_node(node))
+                rendered_part = self._render_node(node)
+
+            rendered_parts.append(rendered_part)
 
         return rendered_parts
 
@@ -571,6 +600,7 @@ class DocstringRendererBase(ABC):
                 exceeds the line length by more than DOCSTRING_DELIMITER_LENGTH
                 characters.
         """
+
         if not ir:
             content = ""
         elif len(ir) == 1 and isinstance(ir[0], Paragraph):
@@ -578,7 +608,9 @@ class DocstringRendererBase(ABC):
         else:
             return None
 
-        normalized = re.sub(RE_PATTERN_WHITESPACE, " ", content.strip()) or " "
+        stripped = content.strip()
+        normalized = re.sub(RE_PATTERN_WHITESPACE, " ", stripped) or " "
+
         total_length = (
             len(self._base_indent_level)
             + len(normalized)
@@ -587,6 +619,7 @@ class DocstringRendererBase(ABC):
 
         # Allow up to DOCSTRING_DELIMITER_LENGTH characters of overage (the
         # closing """) for Ruff compatibility in pre-commit hooks.
+
         if total_length > self._line_length + DOCSTRING_DELIMITER_LENGTH:
             return None
 
@@ -609,6 +642,7 @@ class DocstringRendererBase(ABC):
         Returns:
             rendered_docstring (str): The fully rendered docstring string.
         """
+
         one_line = self._render_one_line(ir)
 
         if one_line is not None:

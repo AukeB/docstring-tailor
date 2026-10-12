@@ -15,6 +15,7 @@ from docstring_tailor.parser.docstring_parser_base import DocstringParserBase
 from docstring_tailor.parser.indentation_based.structured_list_parser import (
     StructuredListParserBase,
 )
+from docstring_tailor.utils.utils_formatting import get_indent
 
 
 class IndentationBasedParser(DocstringParserBase):
@@ -35,6 +36,10 @@ class IndentationBasedParser(DocstringParserBase):
     Subclasses supply the style-specific keyword sets, structured list parser
     instance, and top- level segment scanning rule; the classification pipeline
     beneath that is inherited unchanged.
+
+    Attributes:
+        _structured_list_parser (StructuredListParserBase): The style-specific
+            parser used for keyword sections that hold structured entries.
     """
 
     def __init__(self) -> None:
@@ -50,6 +55,7 @@ class IndentationBasedParser(DocstringParserBase):
             structured_list_sections (frozenset[str]): The set of keywords, e.g.
                 'Args', 'Raises', 'Returns'.
         """
+
         ...
 
     @abstractmethod
@@ -61,6 +67,7 @@ class IndentationBasedParser(DocstringParserBase):
             named_paragraph_sections (frozenset[str]): The set of keywords, e.g.
                 'Note', 'Examples', 'See Also'.
         """
+
         ...
 
     @abstractmethod
@@ -76,6 +83,7 @@ class IndentationBasedParser(DocstringParserBase):
             structured_list_parser (StructuredListParserBase): The style-
                 specific parser used to parse structured list section entries.
         """
+
         ...
 
     @abstractmethod
@@ -102,6 +110,7 @@ class IndentationBasedParser(DocstringParserBase):
                 (is_keyword_section, content) where content is the raw joined
                 lines for that segment.
         """
+
         ...
 
     def _parse_named_paragraph(self, content: str) -> NamedParagraph:
@@ -117,9 +126,11 @@ class IndentationBasedParser(DocstringParserBase):
         Returns:
             named_paragraph (NamedParagraph): Fully parsed node with typed body.
         """
+
         lines = content.splitlines()
         header = lines[0].strip().rstrip(DOCSTRING_KEYWORD_SEPARATOR)
         body_content = "\n".join(lines[1:])
+
         body = self._parse_named_paragraph_body(body_content)
 
         named_paragraph = NamedParagraph(header=header, body=body)
@@ -136,9 +147,11 @@ class IndentationBasedParser(DocstringParserBase):
         Returns:
             node (DocstringNode): A StructuredList or NamedParagraph node.
         """
-        keyword = content.splitlines()[0].strip().rstrip(DOCSTRING_KEYWORD_SEPARATOR)
 
-        if keyword in self._detect_structured_list_sections():
+        keyword = content.splitlines()[0].strip().rstrip(DOCSTRING_KEYWORD_SEPARATOR)
+        structured_list_sections = self._detect_structured_list_sections()
+
+        if keyword in structured_list_sections:
             node = self._structured_list_parser.parse(content)
         else:
             node = self._parse_named_paragraph(content)
@@ -160,22 +173,31 @@ class IndentationBasedParser(DocstringParserBase):
         Returns:
             nodes (list[DocstringNode]): Fully parsed IR.
         """
+
         lines = content.splitlines()
         non_empty_lines = [line for line in lines if line.strip()]
 
         if not non_empty_lines:
-            return []
+            empty_nodes: list[DocstringNode] = []
 
-        base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
+            return empty_nodes
+
+        indents = [get_indent(line) for line in non_empty_lines]
+        base_indent = min(indents)
+
         segments = self._scan_top_level_segments(lines, base_indent)
 
         nodes: list[DocstringNode] = []
 
         for is_keyword, segment_content in segments:
             if is_keyword:
-                nodes.append(self._parse_keyword_section(segment_content))
+                node = self._parse_keyword_section(segment_content)
+
+                nodes.append(node)
             else:
-                nodes.extend(self._parse_flat_content(segment_content))
+                flat_nodes = self._parse_flat_content(segment_content)
+
+                nodes.extend(flat_nodes)
 
         return nodes
 
@@ -191,9 +213,12 @@ class IndentationBasedParser(DocstringParserBase):
         Returns:
             ir (list[DocstringNode]): Fully parsed and typed IR.
         """
-        docstring_body = cleandoc(
-            content[DOCSTRING_DELIMITER_LENGTH:-DOCSTRING_DELIMITER_LENGTH]
-        )
+
+        body_with_delimiters = content[
+            DOCSTRING_DELIMITER_LENGTH:-DOCSTRING_DELIMITER_LENGTH
+        ]
+
+        docstring_body = cleandoc(body_with_delimiters)
 
         ir = self._parse_top_level(docstring_body)
 

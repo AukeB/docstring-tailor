@@ -29,6 +29,7 @@ def get_renderer_class(style: DocstringStyle) -> type[DocstringRendererBase]:
     Raises:
         ValueError: If style has no registered renderer.
     """
+
     renderer_class = _RENDERER_CLASSES.get(style)
 
     if renderer_class is None:

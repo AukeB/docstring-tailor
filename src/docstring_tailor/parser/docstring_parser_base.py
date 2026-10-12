@@ -29,6 +29,7 @@ from docstring_tailor.ir_model import (
     Paragraph,
     SimpleList,
 )
+from docstring_tailor.utils.utils_formatting import get_indent
 from docstring_tailor.utils.utils_list_detection import find_list_start, get_list_type
 from docstring_tailor.utils.utils_parsing import extract_items
 
@@ -56,6 +57,7 @@ class DocstringParserBase(ABC):
         Returns:
             ir (list[DocstringNode]): Fully parsed and typed IR.
         """
+
         ...
 
     def _parse_simple_list(
@@ -73,6 +75,7 @@ class DocstringParserBase(ABC):
             simple_list (SimpleList): Parsed simple list with markers stripped
                 from items.
         """
+
         list_type = get_list_type(text=content)
         items = extract_items(content=content)
 
@@ -108,20 +111,26 @@ class DocstringParserBase(ABC):
                 CodeREPL chunk, or a Paragraph followed by a SimpleList when a
                 list run immediately follows leading prose within the chunk.
         """
+
         first_line = content.splitlines()[0].strip()
 
         if first_line.startswith(CODE_REPL_PROMPT):
-            return [CodeREPL(code=content)]
+            code_repl = CodeREPL(code=content)
+
+            return [code_repl]
 
         list_start = find_list_start(content)
 
         if list_start is None:
-            return [Paragraph(content=content)]
+            paragraph = Paragraph(content=content)
+
+            return [paragraph]
 
         if list_start == 0:
             simple_list = self._parse_simple_list(
                 content=content, has_leading_blank_line=True
             )
+
             return [simple_list]
 
         lines = content.split("\n")
@@ -129,11 +138,14 @@ class DocstringParserBase(ABC):
         list_content = "\n".join(lines[list_start:])
 
         paragraph = Paragraph(content=paragraph_content)
+
         simple_list = self._parse_simple_list(
             content=list_content, has_leading_blank_line=False
         )
 
-        return [paragraph, simple_list]
+        nodes: list[DocstringNode] = [paragraph, simple_list]
+
+        return nodes
 
     def _extract_code_blocks(self, content: str) -> list[CodeBlock | str]:
         """Splits content on code fences, preserving fence structure.
@@ -150,6 +162,7 @@ class DocstringParserBase(ABC):
             chunks (list[CodeBlock | str]): CodeBlock nodes and plain string
                 segments in document order.
         """
+
         raw_chunks = RE_PATTERN_CODE_BLOCK_DELIMITER.split(content)
         result: list[CodeBlock | str] = []
         in_fence = False
@@ -158,21 +171,25 @@ class DocstringParserBase(ABC):
             fence_match = RE_PATTERN_CODE_BLOCK_DELIMITER.match(chunk)
 
             if fence_match:
-                code_block_delimiter = (
-                    cast(CodeBlockDelimiterType, fence_match.group(1))
-                    if not in_fence
-                    else code_block_delimiter
-                )
+                if not in_fence:
+                    delimiter_text = fence_match.group(1)
+
+                    code_block_delimiter = cast(CodeBlockDelimiterType, delimiter_text)
+
                 in_fence = not in_fence
+
                 continue
 
             if not chunk.strip():
                 continue
 
             if in_fence:
-                result.append(
-                    CodeBlock(code=chunk.strip(), delimiter=code_block_delimiter)
+                stripped_code = chunk.strip()
+                code_block = CodeBlock(
+                    code=stripped_code, delimiter=code_block_delimiter
                 )
+
+                result.append(code_block)
             else:
                 result.append(chunk)
 
@@ -192,17 +209,22 @@ class DocstringParserBase(ABC):
         Returns:
             nodes (list[DocstringNode]): Parsed IR nodes in document order.
         """
+
         chunks = self._extract_code_blocks(content)
         nodes: list[DocstringNode] = []
 
         for chunk in chunks:
             if isinstance(chunk, CodeBlock):
                 nodes.append(chunk)
+
                 continue
 
             for paragraph in RE_PATTERN_BLANK_LINES.split(chunk):
                 if paragraph.strip():
-                    nodes.extend(self._classify_chunk(paragraph.strip()))
+                    stripped_paragraph = paragraph.strip()
+                    classified_nodes = self._classify_chunk(stripped_paragraph)
+
+                    nodes.extend(classified_nodes)
 
         return nodes
 
@@ -220,16 +242,20 @@ class DocstringParserBase(ABC):
         Returns:
             body (list[DocstringNode]): Parsed body nodes.
         """
+
         lines = content.splitlines()
         non_empty_lines = [line for line in lines if line.strip()]
 
         if not non_empty_lines:
-            return []
+            empty_body: list[DocstringNode] = []
 
-        base_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
-        dedented = "\n".join(
-            line[base_indent:] if line.strip() else "" for line in lines
-        )
+            return empty_body
+
+        indents = [get_indent(line) for line in non_empty_lines]
+        base_indent = min(indents)
+
+        dedented_lines = [line[base_indent:] if line.strip() else "" for line in lines]
+        dedented = "\n".join(dedented_lines)
 
         body = self._parse_flat_content(dedented)
 

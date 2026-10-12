@@ -83,6 +83,7 @@ class DocstringVisitor(cst.CSTTransformer):
                 the same value as from_style for a same-style format; a
                 different value performs a style conversion.
         """
+
         self._line_length = line_length
         self._current_indent = ""
         self._indent_unit = "    "
@@ -102,6 +103,7 @@ class DocstringVisitor(cst.CSTTransformer):
         Args:
             node (cst.Module): The root module node.
         """
+
         self._indent_unit = node.default_indent
 
     def visit_IndentedBlock(self, node: cst.IndentedBlock) -> None:
@@ -115,6 +117,7 @@ class DocstringVisitor(cst.CSTTransformer):
         Args:
             node (cst.IndentedBlock): The indented block node being visited.
         """
+
         self._current_indent += self._indent_unit
 
     def leave_IndentedBlock(
@@ -136,7 +139,9 @@ class DocstringVisitor(cst.CSTTransformer):
         Returns:
             updated_node (cst.IndentedBlock): The updated node, unchanged.
         """
-        self._current_indent = self._current_indent[: -len(self._indent_unit)]
+
+        indent_length = len(self._indent_unit)
+        self._current_indent = self._current_indent[:-indent_length]
 
         return updated_node
 
@@ -155,6 +160,7 @@ class DocstringVisitor(cst.CSTTransformer):
         Returns:
             rendered (str): The fully rendered docstring string.
         """
+
         ir = self._parser.parse(content=content)
 
         if self._from_style != self._to_style:
@@ -189,6 +195,7 @@ class DocstringVisitor(cst.CSTTransformer):
             updated_node (cst.SimpleStatementLine): The updated node with the
                 rendered docstring.
         """
+
         # Extract
         raw_docstring = node.body[0].value.value  # type: ignore
 
@@ -217,6 +224,7 @@ class DocstringVisitor(cst.CSTTransformer):
             is_docstring (bool): True if the node is a docstring, False
                 otherwise.
         """
+
         is_docstring: bool = (
             len(node.body) == 1
             and isinstance(node.body[0], cst.Expr)
@@ -249,7 +257,10 @@ class DocstringVisitor(cst.CSTTransformer):
         Returns:
             node (cst.BaseStatement): The final statement after transformation.
         """
+
         if self._is_docstring(node=updated_node):
             updated_node = self._process_docstring_node(node=updated_node)
 
-        return super().leave_SimpleStatementLine(original_node, updated_node)
+        result = super().leave_SimpleStatementLine(original_node, updated_node)
+
+        return result

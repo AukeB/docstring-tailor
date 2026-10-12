@@ -12,6 +12,7 @@ from docstring_tailor.parser.indentation_based.structured_list_parser import (
     NumpyStructuredListParser,
     StructuredListParserBase,
 )
+from docstring_tailor.utils.utils_formatting import get_indent
 
 
 class NumpyDocstringParser(IndentationBasedParser):
@@ -31,6 +32,7 @@ class NumpyDocstringParser(IndentationBasedParser):
             structured_list_sections (frozenset[str]): Keywords such as
                 'Parameters', 'Raises', 'Returns', 'Yields', 'Attributes'.
         """
+
         structured_list_sections = NUMPY_ITEM_SECTIONS
 
         return structured_list_sections
@@ -42,6 +44,7 @@ class NumpyDocstringParser(IndentationBasedParser):
             named_paragraph_sections (frozenset[str]): Keywords such as 'Notes',
                 'Examples', 'See Also', 'References'.
         """
+
         named_paragraph_sections = NUMPY_PLAIN_SECTIONS
 
         return named_paragraph_sections
@@ -53,6 +56,7 @@ class NumpyDocstringParser(IndentationBasedParser):
             structured_list_parser (StructuredListParserBase): Parser for
                 Parameters/Raises/Returns- like sections written in NumPy style.
         """
+
         structured_list_parser = NumpyStructuredListParser()
 
         return structured_list_parser
@@ -74,6 +78,7 @@ class NumpyDocstringParser(IndentationBasedParser):
             result (bool): True if the line at index is a genuine section
                 header.
         """
+
         keyword = lines[index].strip()
         is_recognised_keyword = (
             keyword in self._detect_named_paragraph_sections()
@@ -89,9 +94,9 @@ class NumpyDocstringParser(IndentationBasedParser):
         # if next_index >= len(lines):
         #     return False
 
-        result = bool(
-            RE_PATTERN_NUMPY_SECTION_UNDERLINE.match(lines[next_index].strip())
-        )
+        next_line = lines[next_index].strip()
+        underline_match = RE_PATTERN_NUMPY_SECTION_UNDERLINE.match(next_line)
+        result = bool(underline_match)
 
         return result
 
@@ -122,6 +127,7 @@ class NumpyDocstringParser(IndentationBasedParser):
                 lines for that segment, with any consumed underline lines
                 excluded.
         """
+
         segments: list[tuple[bool, str]] = []
         current_lines: list[str] = []
         current_is_keyword = False
@@ -136,13 +142,15 @@ class NumpyDocstringParser(IndentationBasedParser):
                 index += 1
                 continue
 
-            indent = len(line) - len(line.lstrip())
+            indent = get_indent(line)
             is_base = indent == base_indent
             is_section_header = is_base and self._is_section_header(lines, index)
 
             if is_section_header:
                 if current_lines:
-                    segments.append((current_is_keyword, "\n".join(current_lines)))
+                    segment_content = "\n".join(current_lines)
+                    segments.append((current_is_keyword, segment_content))
+
                 current_lines = [line]
                 current_is_keyword = True
                 blank_buffer = []
@@ -158,6 +166,7 @@ class NumpyDocstringParser(IndentationBasedParser):
             index += 1
 
         if current_lines:
-            segments.append((current_is_keyword, "\n".join(current_lines)))
+            segment_content = "\n".join(current_lines)
+            segments.append((current_is_keyword, segment_content))
 
         return segments

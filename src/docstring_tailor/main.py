@@ -1,7 +1,9 @@
 """Main module"""
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -15,6 +17,7 @@ from docstring_tailor.cli_config import (
     LINE_LENGTH_MIN,
     SUPPORTED_STYLES,
     DocstringStyle,
+    FileConfig,
 )
 from docstring_tailor.constants import ENCODING
 from docstring_tailor.docstring_visitor import DocstringVisitor
@@ -31,12 +34,14 @@ app = typer.Typer()
 _PATHS_ARGUMENT = typer.Argument(
     help="Files or directories to process. Defaults to 'src/'."
 )
+
 _LINE_LENGTH_OPTION = typer.Option(
     "--line-length",
     help=f"Maximum line length. Must be between {LINE_LENGTH_MIN} and {LINE_LENGTH_MAX}.",
     min=LINE_LENGTH_MIN,
     max=LINE_LENGTH_MAX,
 )
+
 _EXCLUDE_OPTION = typer.Option(
     "--exclude",
     help=(
@@ -46,6 +51,7 @@ _EXCLUDE_OPTION = typer.Option(
         "against the path relative to the project root."
     ),
 )
+
 _DIFF_OPTION = typer.Option(
     "--diff",
     help="Show a diff of changes without modifying any files.",
@@ -77,6 +83,8 @@ def app_callback(
         version (bool | None): If passed, print the version and exit.
     """
 
+    logging.basicConfig(level=logging.WARNING)
+
 
 def _validate_supported_style(style: DocstringStyle) -> None:
     """Validates that a style is currently supported.
@@ -87,11 +95,15 @@ def _validate_supported_style(style: DocstringStyle) -> None:
     Raises:
         typer.Exit: If style is not in SUPPORTED_STYLES.
     """
+
     if style not in SUPPORTED_STYLES:
+        supported_styles = ", ".join(s.value for s in SUPPORTED_STYLES)
+
         typer.echo(
             f"Style '{style.value}' is not yet supported. "
-            f"Currently supported: {', '.join(s.value for s in SUPPORTED_STYLES)}."
+            f"Currently supported: {supported_styles}."
         )
+
         raise typer.Exit(code=1)
 
 
@@ -99,7 +111,7 @@ def _resolve_common_options(
     paths: list[Path] | None,
     line_length: int | None,
     exclude: list[str] | None,
-) -> tuple[list[Path], int, list[str], dict]:
+) -> tuple[list[Path], int, list[str], FileConfig]:
     """Resolves paths, line_length, and exclude with priority: CLI argument >
     config file > built-in default.
 
@@ -114,16 +126,18 @@ def _resolve_common_options(
         exclude (list[str] | None): Exclude patterns, from the CLI.
 
     Returns:
-        resolved (tuple[list[Path], int, list[str], dict]): resolved_paths,
-            resolved_line_length, resolved_exclude, and file_config, in that
-            order.
+        resolved (tuple[list[Path], int, list[str], FileConfig]):
+            resolved_paths, resolved_line_length, resolved_exclude, and
+            file_config, in that order.
     """
+
     file_config = load_config()
 
     resolved_paths = paths or [Path(p) for p in DEFAULT_PATHS]
     resolved_line_length = line_length or file_config.get(
         "line-length", LINE_LENGTH_DEFAULT
     )
+
     resolved_exclude = exclude or file_config.get("exclude", [])
 
     return resolved_paths, resolved_line_length, resolved_exclude, file_config
@@ -138,6 +152,7 @@ def _pluralize_files(file_count: int) -> str:
     Returns:
         noun (str): 'file' when count is 1, 'files' otherwise.
     """
+
     noun = "file" if file_count == 1 else "files"
 
     return noun
@@ -156,6 +171,7 @@ def _format_run_summary(counter_reformatted: int, counter_unchanged: int) -> str
     Returns:
         summary (str): The human-readable summary line.
     """
+
     reformatted_part = f"{counter_reformatted} {_pluralize_files(file_count=counter_reformatted)} reformatted"
     unchanged_part = f"{counter_unchanged} {_pluralize_files(file_count=counter_unchanged)} left unchanged"
 
@@ -187,6 +203,33 @@ class _FormatResult:
     count_errored: int
 
 
+def _create_visitor_factory(
+    line_length: int,
+    from_style: DocstringStyle,
+    to_style: DocstringStyle,
+) -> Callable[[], DocstringVisitor]:
+    """Builds a factory that creates a fresh DocstringVisitor on each call.
+
+    Args:
+        line_length (int): The maximum line length to wrap docstrings to.
+        from_style (DocstringStyle): The docstring style to parse docstrings as.
+        to_style (DocstringStyle): The docstring style to render docstrings as.
+
+    Returns:
+        visitor_factory (Callable[[], DocstringVisitor]): Returns a new
+            DocstringVisitor configured with the given options.
+    """
+
+    visitor_factory = partial(
+        DocstringVisitor,
+        line_length=line_length,
+        from_style=from_style,
+        to_style=to_style,
+    )
+
+    return visitor_factory
+
+
 def _process_single_file(
     file_path: Path,
     visitor_factory: Callable[[], DocstringVisitor],
@@ -203,9 +246,12 @@ def _process_single_file(
     Returns:
         is_changed (bool): True if formatting changed the file's content.
     """
+
     input_data = file_path.read_text(encoding=ENCODING)
     input_tree = cst.parse_module(source=input_data)
-    modified_tree = input_tree.visit(visitor_factory())
+
+    visitor = visitor_factory()
+    modified_tree = input_tree.visit(visitor)
 
     modified_code = modified_tree.code
     is_changed = modified_code != input_data
@@ -251,6 +297,7 @@ def _process_files(
             encoding.
         cst.ParserSyntaxError: If the file is not valid python.
     """
+
     counter_reformatted: int = 0
     counter_unchanged: int = 0
     counter_errored: int = 0
@@ -266,12 +313,14 @@ def _process_files(
             typer.echo(
                 f"error: could not read or write '{file_path}': {error}", err=True
             )
+
             counter_errored += 1
             continue
         except UnicodeDecodeError as error:
             typer.echo(
                 f"error: '{file_path}' is not valid {ENCODING} text: {error}", err=True
             )
+
             counter_errored += 1
             continue
         except cst.ParserSyntaxError as error:
@@ -285,18 +334,20 @@ def _process_files(
             counter_unchanged += 1
 
     if not diff:
-        typer.echo(
-            _format_run_summary(
-                counter_reformatted=counter_reformatted,
-                counter_unchanged=counter_unchanged,
-            )
+        summary = _format_run_summary(
+            counter_reformatted=counter_reformatted,
+            counter_unchanged=counter_unchanged,
         )
 
-    return _FormatResult(
+        typer.echo(summary)
+
+    format_result = _FormatResult(
         count_reformatted=counter_reformatted,
         count_unchanged=counter_unchanged,
         count_errored=counter_errored,
     )
+
+    return format_result
 
 
 @app.command("format")
@@ -332,6 +383,7 @@ def format_command(
             --diff mode, if any file would be reformatted, so --diff can gate a
             CI run while a normal write run still succeeds after fixing files.
     """
+
     resolved_paths, resolved_line_length, resolved_exclude, file_config = (
         _resolve_common_options(paths=paths, line_length=line_length, exclude=exclude)
     )
@@ -344,6 +396,7 @@ def format_command(
             "Pass --style on the command line or set 'style' in your config file "
             "(pyproject.toml or docstring_tailor.toml)."
         )
+
         raise typer.Exit(code=1)
 
     resolved_style = DocstringStyle(resolved_style)
@@ -351,23 +404,27 @@ def format_command(
     _validate_supported_style(resolved_style)
 
     validate_paths(paths=resolved_paths)
+
     python_files = collect_python_files(
         paths=resolved_paths,
         exclude_patterns=resolved_exclude,
     )
 
+    visitor_factory = _create_visitor_factory(
+        line_length=resolved_line_length,
+        from_style=resolved_style,
+        to_style=resolved_style,
+    )
+
     format_result = _process_files(
         python_files=python_files,
-        visitor_factory=lambda: DocstringVisitor(
-            line_length=resolved_line_length,
-            from_style=resolved_style,
-            to_style=resolved_style,
-        ),
+        visitor_factory=visitor_factory,
         diff=diff,
     )
 
     # Write mode treats a reformat as success (files are fixed). Only --diff
     # gates on changes.
+
     if format_result.count_errored or (diff and format_result.count_reformatted):
         raise typer.Exit(code=1)
 
@@ -418,6 +475,7 @@ def convert_command(
             "Use the 'format' command instead when source and target styles "
             "match."
         )
+
         raise typer.Exit(code=1)
 
     _validate_supported_style(from_style)
@@ -428,18 +486,21 @@ def convert_command(
     )
 
     validate_paths(paths=resolved_paths)
+
     python_files = collect_python_files(
         paths=resolved_paths,
         exclude_patterns=resolved_exclude,
     )
 
+    visitor_factory = _create_visitor_factory(
+        line_length=resolved_line_length,
+        from_style=from_style,
+        to_style=to_style,
+    )
+
     format_result = _process_files(
         python_files=python_files,
-        visitor_factory=lambda: DocstringVisitor(
-            line_length=resolved_line_length,
-            from_style=from_style,
-            to_style=to_style,
-        ),
+        visitor_factory=visitor_factory,
         diff=diff,
     )
 
