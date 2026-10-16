@@ -49,3 +49,6 @@ packages = ["src/docstring_tailor"]
 
 [project.scripts]
 docstring_tailor = "docstring_tailor.main:app"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN"]  # tests are not held to annotation rules
