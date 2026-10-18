@@ -117,21 +117,27 @@ class DocstringParserBase(ABC):
         if first_line.startswith(CODE_REPL_PROMPT):
             code_repl = CodeREPL(code=content)
 
-            return [code_repl]
+            nodes: list[DocstringNode] = [code_repl]
+
+            return nodes
 
         list_start = find_list_start(content)
 
         if list_start is None:
             paragraph = Paragraph(content=content)
 
-            return [paragraph]
+            nodes: list[DocstringNode] = [paragraph]
+
+            return nodes
 
         if list_start == 0:
             simple_list = self._parse_simple_list(
                 content=content, has_leading_blank_line=True
             )
 
-            return [simple_list]
+            nodes: list[DocstringNode] = [simple_list]
+
+            return nodes
 
         lines = content.split("\n")
         paragraph_content = "\n".join(lines[:list_start]).strip()
@@ -165,33 +171,30 @@ class DocstringParserBase(ABC):
 
         raw_chunks = RE_PATTERN_CODE_BLOCK_DELIMITER.split(content)
         result: list[CodeBlock | str] = []
-        in_fence = False
+        open_delimiter: CodeBlockDelimiterType | None = None
 
         for chunk in raw_chunks:
             fence_match = RE_PATTERN_CODE_BLOCK_DELIMITER.match(chunk)
 
             if fence_match:
-                if not in_fence:
+                if open_delimiter is None:
                     delimiter_text = fence_match.group(1)
-
-                    code_block_delimiter = cast(CodeBlockDelimiterType, delimiter_text)
-
-                in_fence = not in_fence
+                    open_delimiter = cast(CodeBlockDelimiterType, delimiter_text)
+                else:
+                    open_delimiter = None
 
                 continue
 
             if not chunk.strip():
                 continue
 
-            if in_fence:
+            if open_delimiter is None:
+                result.append(chunk)
+            else:
                 stripped_code = chunk.strip()
-                code_block = CodeBlock(
-                    code=stripped_code, delimiter=code_block_delimiter
-                )
+                code_block = CodeBlock(code=stripped_code, delimiter=open_delimiter)
 
                 result.append(code_block)
-            else:
-                result.append(chunk)
 
         return result
 

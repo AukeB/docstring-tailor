@@ -140,7 +140,14 @@ def _resolve_common_options(
 
     resolved_exclude = exclude or file_config.get("exclude", [])
 
-    return resolved_paths, resolved_line_length, resolved_exclude, file_config
+    resolved_options = (
+        resolved_paths,
+        resolved_line_length,
+        resolved_exclude,
+        file_config,
+    )
+
+    return resolved_options
 
 
 def _pluralize_files(file_count: int) -> str:

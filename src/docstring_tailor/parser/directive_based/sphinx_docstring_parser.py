@@ -317,7 +317,9 @@ class SphinxDocstringParser(DocstringParserBase):
         head = head.strip()
         body = body.strip()
 
-        return head, body
+        head_and_body = (head, body)
+
+        return head_and_body
 
     def _blank_continues_block(self, lines: list[str], index: int) -> bool:
         """Whether a blank line at index is followed by another field line.
@@ -392,7 +394,9 @@ class SphinxDocstringParser(DocstringParserBase):
 
         self._append_field(fields, head, body_parts)
 
-        return fields, index
+        fields_and_index = (fields, index)
+
+        return fields_and_index
 
     def _tag_of_head(self, head: str) -> str:
         """Returns the normalised field tag from a collected head string.
@@ -437,12 +441,16 @@ class SphinxDocstringParser(DocstringParserBase):
         if len(rest) == 1:
             name = rest[0]
 
-            return name, None
+            name_and_type = (name, None)
+
+            return name_and_type
 
         name = rest[-1]
         inline_type = " ".join(rest[:-1])
 
-        return name, inline_type
+        name_and_type = (name, inline_type)
+
+        return name_and_type
 
     def _apply_param_field(
         self,
@@ -567,7 +575,9 @@ class SphinxDocstringParser(DocstringParserBase):
 
         body_content = "\n".join(body_lines)
 
-        return body_content, index
+        body_and_index = (body_content, index)
+
+        return body_and_index
 
     def _parse_directive_block(self, lines: list[str], start: int) -> NamedParagraph:
         """Parses an admonition directive into a NamedParagraph node.

@@ -13,7 +13,7 @@ ruff:
 	@echo "🔧 Successfully executed ruff."
 
 format-docstrings:
-	uv run docstring_tailor format $(PROJECT_NAME)
+	uv run python -m docstring_tailor.main format $(PROJECT_NAME) --style google --line-length 80
 	@echo "🔧 Successfully executed docstring-tailor."
 
 # Static type-check code with pyright (same engine as Pylance in VS Code).
