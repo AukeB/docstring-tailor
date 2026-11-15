@@ -1,0 +1,91 @@
+{
+  "type": "slides",
+  "data": {
+    "cells": [
+      {
+        "type": "skip"
+      },
+      {
+        "type": "slide",
+        "speakerNotes": "Introduce yourself. docstring-tailor is a side project, published on PyPI.\nNext: switch to VS Code before moving to the next slide.",
+        "showCode": false
+      },
+      {
+        "type": "slide",
+        "speakerNotes": "VS Code part. Beforehand, copy presentation/examples/messy_module.py to presentation/demo/messy_module.py.\n1. Open presentation/demo/messy_module.py: messy code and messy docstrings, about 180 lines.\n2. Run: uv run ruff check --select I --fix presentation/demo/messy_module.py\n   Sorts the imports. (--select I keeps the annotation rules from pyproject.toml out of the output.)\n3. Run: uv run ruff format presentation/demo/messy_module.py\n   The code is clean now, but the docstrings are still too long and ragged.\n4. Say: Ruff formats your code. Who formats your docstrings?\n5. Run: uv run docstring_tailor format presentation/demo/messy_module.py --style google --line-length 88\n   Every docstring now wraps neatly at 88, the same line length Ruff uses.\nThen come back to the slides.",
+        "showCode": false
+      },
+      {
+        "type": "slide",
+        "speakerNotes": "These slides are one Python module: presentation/presentation.py.\nmarimo is a reactive notebook, an alternative to Jupyter, saved as plain .py.\nSliders and dropdowns rerun the cells that depend on them, and there is a new slides mode.\nThe next slides load example .py modules and run the real formatter on them.\nStress: the CLI and pre-commit hook are the recommended way to use it. This is only to show what it does.",
+        "showCode": false
+      },
+      {
+        "type": "skip"
+      },
+      {
+        "type": "skip"
+      },
+      {
+        "type": "skip"
+      },
+      {
+        "type": "skip"
+      },
+      {
+        "type": "slide",
+        "speakerNotes": "Drag the slider slowly from 120 down to 30. The red line is the line-length limit.\nPoint out the Returns description wrapping, and what does not change: the Args indentation, and the code itself.\nThis is the real formatter running on every slider step, about one millisecond each.\nOptional: press C to show the code behind this slide.",
+        "showCode": false
+      },
+      {
+        "type": "skip"
+      },
+      {
+        "type": "slide",
+        "speakerNotes": "Pick 0.2s in the Auto-sweep dropdown to start, and off to pause. It sweeps from 120 down to 30 and back.\nWhile it runs, walk through the list on the right: both list types, the Note, the >>> example and the code block.\nMention the Google Python Style Guide as the starting point for all parsing and rendering rules.\nThe rule: it may only change whitespace and line breaks, never meaning.",
+        "showCode": false
+      },
+      {
+        "type": "slide",
+        "speakerNotes": "It started as a pure formatter that edited the text directly. I rewrote everything before arriving at this design.\nLibCST, not ast: CST stands for concrete syntax tree. Like the standard ast module it parses Python into a tree, but unlike ast's abstract syntax tree it keeps everything: whitespace, comments, parentheses and quotes, so a file can be written back byte for byte. It was built by Instagram for large automated refactorings (codemods). docstring-tailor uses it to find every module, class and function docstring, swap in the reformatted text, and write the file back with all other code exactly as it was.\nThe parser turns a docstring into a style-agnostic IR; the renderer writes it fresh at the new line length.\nWrapping is the easy part; recognising structure is the hard part.",
+        "showCode": false
+      },
+      {
+        "type": "skip"
+      },
+      {
+        "type": "slide",
+        "speakerNotes": "Because everything goes through the IR, converting is just rendering with a different renderer: not even one extra line of code.\nSwitch the style to NumPy, then drag the slider: conversion and wrapping happen together.\nUse case: migrating a codebase between styles once, with docstring_tailor convert.",
+        "showCode": false
+      },
+      {
+        "type": "slide",
+        "speakerNotes": "The diff on the right is real, generated on this slide: the simple example at line length 60, reformatted to 50. It shows only the changed lines.\n--diff never writes files and exits with code 1 when something would change, which is what makes it useful in CI.\n--exclude, several paths at once, and the config file in pyproject.toml or docstring_tailor.toml. Command-line options win over the config file.",
+        "showCode": false
+      },
+      {
+        "type": "slide",
+        "speakerNotes": "Left: install, format, check in CI with --diff, and convert once. With the config block, format needs no options.\nRight: the full pre-commit config, then install the hook once. Works with prek too.\nAlready in use in several codebases in my team, and in CI/CD pipelines.",
+        "showCode": false
+      },
+      {
+        "type": "slide",
+        "speakerNotes": "Golden files: for each docstring element there is a messy input and an expected file per line length (60, 80, 100). Every arrow is one test, so 12 per element.\nWhy this beats many small unit tests:\n- The test is the real thing a user sees: a whole file in, a whole file out. No mocks, no internal functions.\n- Features interact. Wrapping, indentation, sections and code blocks affect each other, and whole-file cases catch that; small unit tests of one function don't.\n- Easy to review: a change in behaviour shows up as a readable diff of an expected file.\n- Adding a case is adding a file, not writing test code.\n- The arrows between the expected files give two guarantees for free: formatting is stable (an expected file stays unchanged at its own length), and the result doesn't depend on where you start.\nThe cost: an intended change means regenerating and reviewing the expected files.\nBug story: Ruff and docstring-tailor undoing each other in a pre-commit hook. Tools interact in ways you don't test for.",
+        "showCode": false
+      },
+      {
+        "type": "slide",
+        "speakerNotes": "Roadmap: finish Sphinx, add Epydoc, more parsing rules.\nThe LSP: show a warning in the editor while you type, when a docstring breaks the parsing rules, before it ever reaches the formatter.\nInvite people to try it on one module and report what breaks. Issues and contributions welcome.",
+        "showCode": false
+      },
+      {
+        "type": "slide",
+        "speakerNotes": "Keep the simple slider slide one keypress away: questions often end in 'can you show it with ...?'",
+        "showCode": false
+      }
+    ],
+    "deck": {
+      "transition": "slide"
+    }
+  }
+}
