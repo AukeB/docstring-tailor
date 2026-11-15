@@ -24,10 +24,24 @@ dev = [
     "ruff>=0.11.6",
     "ty>=0.0.29",
 ]
+presentation = [
+    "marimo>=0.25.2",
+    "pygments>=2.19.2",
+]
+presentation-pdf = [
+    "nbconvert>=7.17.2",
+    "nbformat>=5.11.1",
+    "playwright>=1.65.2",
+]
+
+[tool.uv]
+# "presentation" is a default group so tests/test_presentation.py can run the notebook.
+default-groups = ["dev", "presentation"]
 
 [tool.ruff]
-# Golden-file fixtures are formatter inputs and expected outputs, not code to lint.
-extend-exclude = ["tests/fixtures"]
+# Golden-file fixtures and the presentation's example modules are formatter inputs
+# (some deliberately messy), not code to lint.
+extend-exclude = ["tests/fixtures", "presentation/examples"]
 
 [tool.ruff.lint]
 select = [
@@ -50,9 +64,12 @@ packages = ["src/docstring_tailor"]
 
 [tool.deptry]
 known_first_party = ["docstring_tailor"]
+# The marimo presentation is not part of the package; marimo lives in the "presentation" group.
+extend_exclude = ["presentation"]
 
 [project.scripts]
 docstring_tailor = "docstring_tailor.main:app"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN", "I001"]  # tests are not held to annotation rules; two blank lines separate imports from section comments
+"presentation/**" = ["ANN"]  # marimo cells are generated as unannotated "def _(mo):" functions

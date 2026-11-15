@@ -68,3 +68,19 @@ all:
 	make clean
 	make git
 	@echo "⚡ Successfully executed all tasks."
+
+# Reset the module for the VS Code part of the presentation to its messy state
+presentation-reset:
+	mkdir -p presentation/demo
+	cp presentation/examples/messy_module.py presentation/demo/messy_module.py
+	@echo "🧵 Reset presentation/demo/messy_module.py."
+
+# Export the presentation as slides to presentation/presentation.pdf.
+# Uses the "presentation-pdf" dependency group (nbconvert, Playwright), which is not a default group.
+# The first run downloads a headless Chromium (about 125 MB) into ~/.cache/ms-playwright.
+presentation-pdf:
+	uv run --group presentation-pdf playwright install chromium
+	uv run --group presentation-pdf \
+		marimo export pdf presentation/presentation.py \
+		-o presentation/presentation.pdf --as=slides --no-include-inputs --force
+	@echo "📄 Exported presentation/presentation.pdf."
